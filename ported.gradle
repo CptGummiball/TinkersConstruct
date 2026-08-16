@@ -130,3 +130,8 @@ slimeknights/tconstruct/fluids/fluids/SlimeFluidType.java
 # status effects living in the tools module (registered by TinkerEffects)
 slimeknights/tconstruct/tools/modifiers/effect/**
 slimeknights/tconstruct/tools/modifiers/traits/skull/SelfDestructiveModifier.java
+
+# --- Phase 4: fluids module (~90 fluids, bottles, potion bucket, cauldron/brewing/dispenser) ---
+slimeknights/tconstruct/fluids/**
+slimeknights/tconstruct/library/recipe/FluidValues.java
+slimeknights/tconstruct/tools/network/FluidDataSerializer.java

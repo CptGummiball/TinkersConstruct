@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.pathfinder.PathType;
 
 import javax.annotation.Nullable;
 import java.util.Optional;
@@ -89,12 +90,12 @@ public class FluidType implements FluidVariantAttributeHandler {
     return properties.rarity;
   }
 
-  /** Forge derived this from a negative density; kept so buoyancy checks read the same. */
   /** If true, entities drown in this fluid; mirrors the Forge FluidType hook. Read by the entity-in-fluid handling once the event layer lands. */
   public boolean canDrownIn(net.minecraft.world.entity.LivingEntity entity) {
-    return true;
+    return properties.canDrown;
   }
 
+  /** Forge derived this from a negative density; kept so buoyancy checks read the same. */
   public boolean isLighterThanAir() {
     return properties.density <= 0;
   }
@@ -103,8 +104,26 @@ public class FluidType implements FluidVariantAttributeHandler {
     return properties.descriptionId;
   }
 
+  /** Gets the description id for the given stack; NBT-sensitive types (potion) override */
+  public String getDescriptionId(FluidStack stack) {
+    return getDescriptionId();
+  }
+
   public Component getDescription() {
     return Component.translatable(properties.descriptionId);
+  }
+
+  /** Gets the description for the given stack; NBT-sensitive types (potion) override */
+  public Component getDescription(FluidStack stack) {
+    return Component.translatable(getDescriptionId(stack));
+  }
+
+  /**
+   * Gets the filled bucket for the given fluid stack, letting NBT-sensitive types (potion)
+   * copy their data onto the bucket item; mirrors the Forge FluidType hook.
+   */
+  public net.minecraft.world.item.ItemStack getBucket(FluidStack stack) {
+    return new net.minecraft.world.item.ItemStack(stack.getFluid().getBucket());
   }
 
   public SoundEvent getSound(SoundAction action) {
@@ -207,5 +226,54 @@ public class FluidType implements FluidVariantAttributeHandler {
       }
       return this;
     }
+
+    /* Behavior hooks mirrored from Forge's FluidType.Properties. The values are stored so
+     * the entity-in-fluid handling can read them once the event layer lands; nothing on
+     * Fabric consumes them yet. */
+
+    /** How strongly this fluid pushes entities, as a per-tick motion scale */
+    public Properties motionScale(double motionScale) {
+      this.motionScale = motionScale;
+      return this;
+    }
+
+    /** If true, this fluid extinguishes burning entities */
+    public Properties canExtinguish(boolean canExtinguish) {
+      this.canExtinguish = canExtinguish;
+      return this;
+    }
+
+    /** If false, entities cannot swim upwards in this fluid */
+    public Properties canSwim(boolean canSwim) {
+      this.canSwim = canSwim;
+      return this;
+    }
+
+    /** If false, entities do not drown in this fluid */
+    public Properties canDrown(boolean canDrown) {
+      this.canDrown = canDrown;
+      return this;
+    }
+
+    /** Path node type mobs treat this fluid as (lava-like fluids use {@link PathType#LAVA}) */
+    public Properties pathType(@Nullable PathType pathType) {
+      this.pathType = pathType;
+      return this;
+    }
+
+    /** Path node type for blocks adjacent to this fluid */
+    public Properties adjacentPathType(@Nullable PathType adjacentPathType) {
+      this.adjacentPathType = adjacentPathType;
+      return this;
+    }
+
+    private double motionScale = 0.014;
+    private boolean canExtinguish = false;
+    private boolean canSwim = true;
+    private boolean canDrown = true;
+    @Nullable
+    private PathType pathType = PathType.WATER;
+    @Nullable
+    private PathType adjacentPathType = PathType.WATER_BORDER;
   }
 }

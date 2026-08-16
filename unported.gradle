@@ -135,3 +135,9 @@ slimeknights/tconstruct/shared/AchievementEvents.java
 slimeknights/tconstruct/tools/modifiers/effect/HelmetChargingEffect.java
 # base block entity for tables; pulls tables.menu + tables.network (tables module)
 slimeknights/tconstruct/shared/block/entity/TableBlockEntity.java
+
+# --- fluids module: pieces deferred from the phase-4 gate-in ---
+# client render/tint handlers (phase 5)
+slimeknights/tconstruct/fluids/FluidClientEvents.java
+# datagen providers (phase 7)
+slimeknights/tconstruct/fluids/data/**

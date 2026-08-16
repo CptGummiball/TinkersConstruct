@@ -299,6 +299,45 @@ Load-bearing decisions:
   blocks and 8 fluid-container-transfer entries referencing fluids/gadgets items — both
   resolve as those modules gate in. `FillFluidContainerTransfer`/`Empty…` serializers now
   register in the bootstrap (Forge Mantle did it in its mod constructor).
+
+### Phase 4, second slice: the fluids module — **DONE, server boots clean (Done 0.946s)**
+
+All ~90 fluids register (slimes, foods, stones, ores, alloys, compat metals, potion),
+including the two upward-flowing InvertedFluids (ichor, molten cinderslime) enabled by the
+earlier access-widener work. The transfer-info boot errors from the shared round are gone —
+the bottle items and fluids they referenced now exist. Load-bearing decisions:
+
+- **Item fluid containers on Fabric storage**: `TinkerFluidStorage` registers
+  `FullItemFluidStorage` for venom/slime/magma bottles (drain-all → glass bottle) and a
+  potion-aware storage for the potion bucket; replaces Forge `initCapabilities` and the
+  powdered-snow `AttachCapabilitiesEvent` (now a registration on the vanilla item in
+  `FluidEvents.init`). The mantle bridge (`TransferUtil.getFluidHandlerItem`) resolves the
+  same lookup, so recipes see identical behavior. `ConstantFluidContainerWrapper` survives
+  as a plain `IFluidHandlerItem` for future in-code use.
+- **Potion bucket dual representation**: the item carries the vanilla `potion_contents`
+  component (vanilla naming/tooltips work), the fluid keeps the legacy `Potion` NBT key the
+  recipe data expects; `PotionFluidType` converts at the boundaries. `PotionUtils` is gone.
+- **Brewing-stand limitation found**: 1.21's `PotionBrewing.Builder` validates containers
+  via `expectPotion` — only `PotionItem`s allowed, so the Forge-era generic
+  `BrewingRecipe`s (glass bottle + congealed slime → slime bottle, bottle → splash/lingering
+  bottle, magma bottle) cannot register through the vanilla builder. They return with a
+  `PotionBrewing` mixin in the event-layer step; `BottleBrewingRecipe` was deleted with the
+  rest of the Forge brewing coupling.
+- **Fluid shim growth**: `FluidType.Properties` stores the Forge behavior hooks
+  (motionScale, canExtinguish, canSwim/canDrown, pathType/adjacentPathType) for the event
+  layer; `FluidType` gained stack-sensitive `getDescriptionId/getDescription/getBucket`
+  virtuals; `FluidDeferredRegister` gained `invertedFlowing()`; `FluidObject.getCommonTag()`
+  exposed. `LiquidBlock` subclasses pass the fluid directly (1.21 constructor); the Forge
+  `getFluidTypeHeight` immersion check became a fluid-surface height comparison.
+- **Misc 1.21**: cauldron interactions return `ItemInteractionResult` and live in
+  `map()`-wrapped records; `FluidDataSerializer` is stream-codec based and registers via
+  `EntityDataSerializers.registerSerializer`; dispenser bucket behavior on the `BlockSource`
+  record with 4-arg `emptyContents`; blazing blood fuel via `FuelRegistry`; creative tab
+  lost `withSearchBar` (removed in 1.21). Deferred: `FluidClientEvents` (phase 5),
+  `fluids/data` providers (phase 7), copper can/tank tab variants + `TinkerSmeltery`'s
+  import of the deleted TiC `EmptyPotionTransfer` alias → smeltery round registers
+  mantle's `EmptyPotionTransfer` instead. Forge's milk fluid does not exist on Fabric;
+  the milk decision lands with the smeltery recipe pass.
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

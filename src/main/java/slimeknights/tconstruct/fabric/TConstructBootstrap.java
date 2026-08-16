@@ -18,6 +18,7 @@ import slimeknights.mantle.transfer.fluid.TransferComponents;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.json.condition.TagDifferencePresentCondition;
 import slimeknights.tconstruct.library.json.condition.TagIntersectionPresentCondition;
+import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.shared.TinkerAttributes;
 import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.TinkerEffects;
@@ -77,6 +78,7 @@ public class TConstructBootstrap implements ModInitializer {
     TinkerEffects.init();
     TinkerCommons.init();
     TinkerMaterials.init();
+    TinkerFluids.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

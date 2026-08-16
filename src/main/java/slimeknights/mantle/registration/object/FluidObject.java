@@ -82,6 +82,12 @@ public class FluidObject<F extends Fluid> implements Supplier<F>, ItemLike, IdAw
     return still.get().getBucket();
   }
 
+  /** Gets the common (c:) tag for this fluid, null if it registered without one */
+  @Nullable
+  public TagKey<Fluid> getCommonTag() {
+    return commonTag;
+  }
+
   /**
    * Creates an ingredient from this object
    * @param amount     Ingredient amount

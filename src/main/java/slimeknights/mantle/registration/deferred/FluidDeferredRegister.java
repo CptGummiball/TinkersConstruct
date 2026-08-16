@@ -20,6 +20,7 @@ import slimeknights.mantle.transfer.fluid.ForgeFlowingFluid.Properties;
 import slimeknights.mantle.registration.RegistryObject;
 import slimeknights.mantle.block.fluid.BurningLiquidBlock;
 import slimeknights.mantle.block.fluid.MobEffectLiquidBlock;
+import slimeknights.mantle.fluid.InvertedFluid;
 import slimeknights.mantle.fluid.InvertedFluidType;
 import slimeknights.mantle.fluid.TextureFluidType;
 import slimeknights.mantle.fluid.UnplaceableFluid;
@@ -217,10 +218,10 @@ public class FluidDeferredRegister extends DeferredRegisterWrapper<Fluid> {
       return flowing(ForgeFlowingFluid.Source::new, ForgeFlowingFluid.Flowing::new);
     }
 
-    /** Builds a flowing fluid with the default constructors */
-    // invertedFlowing() is intentionally absent until InvertedFluid's 1.21 rewrite lands
-    // (see unported.gradle). Removing it means TinkerFluids' ichor/cinderslime registration
-    // fails at compile time rather than at runtime.
+    /** Builds an upward-flowing fluid (ichor, molten cinderslime) with the inverted constructors */
+    public FlowingFluidObject<InvertedFluid> invertedFlowing() {
+      return flowing(InvertedFluid.Source::new, InvertedFluid.Flowing::new);
+    }
 
     /**
      * Builds a flowing fluid with the given constructors
