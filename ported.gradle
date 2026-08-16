@@ -38,3 +38,6 @@ slimeknights/mantle/recipe/ICustomOutputRecipe.java
 slimeknights/mantle/recipe/container/**
 slimeknights/mantle/recipe/ingredient/**
 slimeknights/mantle/recipe/helper/**
+slimeknights/mantle/fluid/**
+slimeknights/mantle/datagen/MantleTags.java
+slimeknights/mantle/util/TranslationHelper.java

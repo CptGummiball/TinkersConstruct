@@ -37,6 +37,9 @@ public interface ICondition {
       }
     };
 
+    /** Context with no information available; answers every tag query empty, like Forge's. */
+    IContext EMPTY = TAGS_INVALID;
+
     <T> Map<ResourceLocation, Collection<Holder<T>>> getAllTags(ResourceKey<? extends Registry<T>> registry);
 
     default <T> Collection<Holder<T>> getTag(TagKey<T> key) {

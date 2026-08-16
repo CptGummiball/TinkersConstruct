@@ -11,9 +11,6 @@
 # connection that hands over a plain buffer, so they stay out until it is done properly.
 
 
-# Waiting on mantle.recipe (FluidIngredient, FluidOutput), which is the next package.
-slimeknights/mantle/registration/object/FluidObject.java
-slimeknights/mantle/registration/object/FlowingFluidObject.java
 
 # --- mantle.recipe stragglers, each blocked on a different piece of real work ---
 
@@ -34,3 +31,32 @@ slimeknights/mantle/recipe/helper/LoadableIngredientSerializer.java
 slimeknights/mantle/recipe/helper/SimpleFinishedRecipe.java
 slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 
+
+# --- mantle.fluid: client/datagen/network pieces, deferred to their phases ---
+# texture/: IClientFluidTypeExtensions is Forge client API; Fabric side is
+# FluidRenderHandlerRegistry and belongs to phase 5 (client) / phase 7 (datagen providers).
+slimeknights/mantle/fluid/texture/AbstractFluidTextureProvider.java
+slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
+slimeknights/mantle/fluid/texture/ClientTextureFluidType.java
+slimeknights/mantle/fluid/texture/FluidTextureCameraProvider.java
+slimeknights/mantle/fluid/texture/FluidTextureManager.java
+# TextureFluidType/InvertedFluidType only exist to carry client render extensions.
+slimeknights/mantle/fluid/TextureFluidType.java
+slimeknights/mantle/fluid/InvertedFluidType.java
+# Needs mantle.network (IThreadsafePacket), which is the next module.
+slimeknights/mantle/fluid/transfer/FluidContainerTransferPacket.java
+# Datagen providers, phase 7.
+slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
+slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
+# Missed in the first fluid pass:
+slimeknights/mantle/fluid/texture/FluidTexture.java
+# Client module work: needs SafeClientAccess/TooltipKey plus Fabric reload listeners.
+slimeknights/mantle/fluid/tooltip/FluidTooltipHandler.java
+slimeknights/mantle/fluid/tooltip/FluidUnit.java
+slimeknights/mantle/fluid/tooltip/FluidUnitList.java
+
+# InvertedFluid copies FlowingFluid's private spread machinery from 1.20.1 and inverts it.
+# 1.21 refactored those internals -- getCacheKey and canPassThrough no longer exist, so this
+# is a rewrite against the new base class, not a patch. Needed before phase 4: ichor and
+# molten cinderslime are upward-flowing core fluids (negative density).
+slimeknights/mantle/fluid/InvertedFluid.java

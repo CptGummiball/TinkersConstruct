@@ -34,15 +34,34 @@ public class FluidType implements FluidVariantAttributeHandler {
   /** A bucket in millibuckets. The overwhelmingly most-used member of Forge's class. */
   public static final int BUCKET_VOLUME = FluidStack.BUCKET_VOLUME;
 
+  /**
+   * Fluid → type lookup. Forge hung the type off the fluid itself
+   * ({@code Fluid.getFluidType()}, 23 TConstruct files); on Fabric that back-reference has
+   * to live here, filled by {@link #register(Fluid...)}.
+   */
+  private static final java.util.Map<Fluid, FluidType> TYPES = new java.util.concurrent.ConcurrentHashMap<>();
+
+  /** Water-like fallback so lookups of unregistered (e.g. other mods') fluids stay safe. */
+  private static final FluidType DEFAULT = new FluidType(Properties.create());
+
+  /**
+   * Replacement for Forge's {@code Fluid.getFluidType()}. Falls back to water-like defaults
+   * for fluids that never registered a type, matching Forge's behaviour for plain fluids.
+   */
+  public static FluidType of(Fluid fluid) {
+    return TYPES.getOrDefault(fluid, DEFAULT);
+  }
+
   private final Properties properties;
 
   public FluidType(Properties properties) {
     this.properties = properties;
   }
 
-  /** Registers this as the Fabric attribute handler for the given fluids. */
+  /** Registers this as the Fabric attribute handler and the fluids' type lookup. */
   public void register(Fluid... fluids) {
     for (Fluid fluid : fluids) {
+      TYPES.put(fluid, this);
       FluidVariantAttributes.register(fluid, this);
     }
   }

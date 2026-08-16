@@ -122,10 +122,13 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
 - [~] **2 — Mantle-lite.** Ported: `data.loadable` (unblocks 398 dependent files),
       `data.predicate` (98), `registration.object` (92), `data.registry`, `data.gson`, `util`.
-      `recipe.container`. Still to do: the rest of `recipe` (see below), fluid +
-      `fluid.transfer`, block/inventory/network, client + book, and a Fabric-native
-      replacement for `registration.deferred`/`adapter` (Forge's DeferredRegister model has
-      no Fabric counterpart — Fabric registers eagerly).
+      `recipe.container`, **`fluid` + `fluid.transfer`** (transfer helper, container
+      transfers with Fabric-native reload listener, `FluidBuilder`, `ForgeFlowingFluid`
+      shim, `FabricFluidHandlerItem`, `FluidType.of()` lookup, `MantleTags`,
+      `TranslationHelper`), and both fluid registration objects. Still to do: the rest of
+      `recipe` (custom ingredients), block/inventory/network, client + book, and a
+      Fabric-native replacement for `registration.deferred`/`adapter` (Forge's
+      DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
 
       **`mantle.recipe`, partially done.** `ingredient` (`SizedIngredient`, `FluidIngredient`,
       `EntityIngredient` — 62 of 65 call sites), `helper` (`ItemOutput`, `FluidOutput`,
@@ -159,7 +162,16 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
 The Forge `accesstransformer.cfg` (294 entries) uses SRG names without field descriptors,
 which AccessWidener requires. Entries are therefore migrated per-module alongside the code
 that needs them rather than in one unverifiable batch. Migrated so far:
-`Entity.wasEyeInWater`, `WoodType.register`.
+`Entity.wasEyeInWater`, `WoodType.register`, `BucketItem.content`, and six `FlowingFluid`
+spread internals.
+
+### InvertedFluid needs a 1.21 rewrite (before phase 4)
+
+`InvertedFluid` copies FlowingFluid's private 1.20.1 spread machinery and inverts it for
+upward-flowing fluids. 1.21 refactored those internals — `getCacheKey` and
+`canPassThrough` no longer exist — so this is a rewrite against the new base class, not a
+patch. It matters: **ichor and molten cinderslime are upward-flowing core fluids**
+(negative density). Tracked in `unported.gradle`.
 
 ## Vanilla removals handled
 
@@ -178,6 +190,12 @@ Things 1.21 deleted outright, where the replacement was a judgement call:
 | `ForgeSpawnEggItem`, `SpawnEggItem.fromEntityType` | `SpawnEggItem`, `SpawnEggItem.byId` | Forge additions with vanilla equivalents |
 | `FriendlyByteBuf.write/readItem`, `write/readFluidStack` | the respective stream codecs | Forge buffer extensions |
 | Forge tag preference (config + `TagsUpdatedEvent`) | fixed priority: `minecraft` → `tconstruct` → alphabetical | Fabric has neither the event nor the config. Determinism is the point — an unstable pick would silently change recipe outputs between launches. |
+| `Fluid.getFluidType()` (23 files) | `FluidType.of(fluid)` static lookup | filled by `FluidType.register` at fluid registration |
+| `BucketItem.getFluid()` | access-widened `content` field | Forge getter over a private vanilla field |
+| `ItemStack.getCraftingRemainingItem()` | Fabric's `getRecipeRemainder()` | stack-aware remainder |
+| `ForgeI18n` | vanilla `Language.getInstance()` | server-safe language table |
+| `PotionUtils.getPotion` | `POTION_CONTENTS` component | potion transfers rebuild the legacy `{Potion: id}` tag so the potion fluid's format is unchanged |
+| `AddReloadListenerEvent` / `OnDatapackSyncEvent` | Fabric `ResourceManagerHelper` / join-sync via network module | `FluidContainerTransferManager.init()` |
 
 ## Build
 
