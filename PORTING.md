@@ -137,12 +137,16 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
          `CustomIngredient` API in `fabric-recipe-api-v1`: implement `CustomIngredient` +
          `CustomIngredientSerializer` and expose the result via `toVanilla()`. Low urgency —
          one TConstruct call site between them.
-      2. **The 1.21 recipe-system rewrite.** The bridging decision is **made**:
-         `LoadableMapCodec` and `LoadableStreamCodec` adapt a `Loadable` to the
-         `MapCodec` + `StreamCodec` pair `RecipeSerializer` now demands, so the ~400
-         loadable definitions stay as they are. Rewiring `LoadableRecipeSerializer`,
-         `RecipeHelper`, `ICommonRecipe` and `ICustomOutputRecipe` onto them follows
-         mechanically — except for the recipe-ID problem below.
+      2. **The 1.21 recipe-system rewrite — done.** `LoadableRecipeSerializer` (plus
+         `TypeAware` and `Deprecated`), `LoggingRecipeSerializer`, `SimpleRecipeSerializer`,
+         `RecipeHelper`, `ICommonRecipe` and `ICustomOutputRecipe` are rewired onto
+         `LoadableMapCodec`/`LoadableStreamCodec`. `Container` → `RecipeInput`,
+         `RegistryAccess` → `HolderLookup.Provider`, holders throughout `RecipeHelper`
+         (`byType` went private; `getAllRecipesFor` is the accessor). API consequences for
+         phase 3, all stemming from the recipe-ID problem below: `SimpleRecipeSerializer`
+         now takes a `Supplier<T>` (2 call sites), `LoggingRecipeSerializer.fromNetworkSafe`
+         lost its id parameter (3), and `RecipeHelper.getJEIRecipes` takes a
+         `RecipeHolder` stream.
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.

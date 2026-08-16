@@ -33,6 +33,8 @@ slimeknights/mantle/registration/**
 # ingredient system (AbstractIngredient/IIngredientSerializer), which maps onto
 # Fabric's CustomIngredient API in fabric-recipe-api-v1. Next chunk of work.
 slimeknights/mantle/recipe/IMultiRecipe.java
+slimeknights/mantle/recipe/ICommonRecipe.java
+slimeknights/mantle/recipe/ICustomOutputRecipe.java
 slimeknights/mantle/recipe/container/**
 slimeknights/mantle/recipe/ingredient/**
 slimeknights/mantle/recipe/helper/**

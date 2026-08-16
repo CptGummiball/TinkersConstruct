@@ -34,14 +34,3 @@ slimeknights/mantle/recipe/helper/LoadableIngredientSerializer.java
 slimeknights/mantle/recipe/helper/SimpleFinishedRecipe.java
 slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 
-# 1.21 replaced RecipeSerializer's fromJson/toNetwork/fromNetwork with codec() and
-# streamCodec(). Mantle's serializer helpers are the bridge between its Loadable framework
-# and vanilla's recipe system, so reshaping them means deciding how a Loadable becomes a
-# MapCodec + StreamCodec pair -- a design step, not a rewrite. Blocks nothing else.
-slimeknights/mantle/recipe/helper/LoadableRecipeSerializer.java
-slimeknights/mantle/recipe/helper/LoggingRecipeSerializer.java
-slimeknights/mantle/recipe/helper/SimpleRecipeSerializer.java
-slimeknights/mantle/recipe/helper/TypeAwareRecipeSerializer.java
-# Same rewrite: 1.21 changed Recipe<Container> to Recipe<RecipeInput> and
-# RecipeManager.byType now returns RecipeHolder rather than the recipe itself.
-slimeknights/mantle/recipe/helper/RecipeHelper.java
