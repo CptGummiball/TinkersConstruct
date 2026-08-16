@@ -64,13 +64,16 @@ That unblocked:
   `Damage:0`, which is the vanilla default and so loses nothing. Item stacks carrying real
   vanilla component data would need per-component mapping instead.
 
-### Still open: `Loadables.ENCHANTMENT`
+- **`Loadables.ENCHANTMENT`** — 1.21 moved enchantments into a **datapack** registry, so a
+  static `BuiltInRegistries` lookup cannot reach them. Resolved with `DynamicRegistryLoadable`,
+  which reads the registry from `ContextKey.REGISTRY_ACCESS` (JSON) or the buffer's own
+  registry access (network).
 
-1.21 moved enchantments into a **datapack** registry, so they cannot be resolved from a
-static `BuiltInRegistries` lookup. `LazyRegistryLoadable` is explicitly documented as unfit
-for world registries. The fix is a `DynamicRegistryLoadable` resolving through
-`ContextKey.REGISTRY_ACCESS`, which now exists. Two call sites wait on it:
-`BreakBlockFluidEffect` and `EnchantmentModule`.
+  It yields `Holder<Enchantment>` rather than a bare `Enchantment`. That is not a stylistic
+  choice: `getKey` is handed no context, so a bare value could never be turned back into an id
+  — a holder carries its own key. It is also what vanilla's 1.21 enchantment APIs expect.
+  **The two call sites (`BreakBlockFluidEffect`, `EnchantmentModule`) must therefore be ported
+  to holders**, which they need anyway.
 
 ## Deferred, tracked so it is not lost
 

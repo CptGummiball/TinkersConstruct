@@ -1,6 +1,7 @@
 package slimeknights.mantle.data.loadable;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.particles.ParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -25,6 +26,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
 import slimeknights.mantle.item.ToolAction;
+import slimeknights.mantle.data.loadable.common.DynamicRegistryLoadable;
 import slimeknights.mantle.data.loadable.common.GsonLoadable;
 import slimeknights.mantle.data.loadable.common.LazyRegistryLoadable;
 import slimeknights.mantle.data.loadable.common.RegistryLoadable;
@@ -50,11 +52,16 @@ public class Loadables {
   public static final ResourceLocationLoadable<Fluid> FLUID = new RegistryLoadable<>(BuiltInRegistries.FLUID);
   public static final ResourceLocationLoadable<MobEffect> MOB_EFFECT = new RegistryLoadable<>(BuiltInRegistries.MOB_EFFECT);
   public static final ResourceLocationLoadable<Block> BLOCK = new RegistryLoadable<>(BuiltInRegistries.BLOCK);
-  // ENCHANTMENT is intentionally absent. 1.21 moved enchantments out of BuiltInRegistries
-  // into a datapack registry, so resolving one needs a HolderLookup.Provider that this
-  // framework does not carry. It returns once Loadable gains registry-aware context —
-  // see "Buffer type decision" in PORTING.md, which is the same underlying gap.
-  // Two call sites in TConstruct depend on it.
+  /**
+   * Enchantments, as holders.
+   *
+   * <p>1.21 moved enchantments into a datapack registry, so they resolve through
+   * {@link slimeknights.mantle.data.loadable.field.ContextKey#REGISTRY_ACCESS} rather than a
+   * static lookup, and the value is a {@code Holder} — which is both what makes serialization
+   * possible without registry access and what vanilla's enchantment APIs now expect.
+   */
+  public static final ResourceLocationLoadable<Holder<Enchantment>> ENCHANTMENT =
+    new DynamicRegistryLoadable<>(Registries.ENCHANTMENT);
   public static final ResourceLocationLoadable<EntityType<?>> ENTITY_TYPE = new RegistryLoadable<>(BuiltInRegistries.ENTITY_TYPE);
   public static final ResourceLocationLoadable<Item> ITEM = new RegistryLoadable<>(BuiltInRegistries.ITEM);
   public static final ResourceLocationLoadable<Potion> POTION = new RegistryLoadable<>(BuiltInRegistries.POTION);
