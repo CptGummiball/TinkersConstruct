@@ -3,10 +3,6 @@ package slimeknights.tconstruct.library.materials;
 import com.google.common.annotations.VisibleForTesting;
 import net.minecraft.server.level.ServerPlayer;
 import slimeknights.mantle.event.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.network.PacketDistributor.PacketTarget;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.command.argument.TagSource;
 import slimeknights.mantle.network.packet.ISimplePacket;
@@ -81,9 +77,18 @@ public final class MaterialRegistry {
   public static void init() {
     // create registry instance
     INSTANCE = new MaterialRegistry();
-    // add event listeners
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::onDatapackSync);
+    // Fabric: the three managers register directly as reload listeners; sync runs on join
+    // and after successful /reload.
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(INSTANCE.materialManager);
+    INSTANCE.materialManager.setConditionContext(slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE);
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(INSTANCE.materialStatsManager);
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(INSTANCE.materialTraitsManager);
+    net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> INSTANCE.onDatapackSync(handler.getPlayer(), server));
+    net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        INSTANCE.onDatapackSync(null, server);
+      }
+    });
     // on the client, mark materials not fully loaded when the client logs out.
     // this also runs when starting a world in SP, but its early enough that the player login event will correct the state later (see handleLogin method)
     // TODO: is this still needed? disabled as it runs before the world finishes unloading in SP
@@ -241,13 +246,6 @@ public final class MaterialRegistry {
 
   /* Reloading */
 
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(materialManager);
-    materialManager.setConditionContext(event.getConditionContext());
-    event.addListener(materialStatsManager);
-    event.addListener(materialTraitsManager);
-  }
 
   /** Sends all relevant packets to the given player */
   private void sendPackets(ServerPlayer player, ISimplePacket[] packets) {
@@ -264,28 +262,25 @@ public final class MaterialRegistry {
       MinecraftForge.EVENT_BUS.post(new MaterialsLoadedEvent());
     } else {
       TinkerNetwork network = TinkerNetwork.getInstance();
-      PacketTarget target = PacketDistributor.PLAYER.with(() -> player);
       for (ISimplePacket packet : packets) {
-        network.send(target, packet);
+        network.sendTo(packet, player);
       }
     }
   }
 
   /** Called when the player logs in to send packets */
-  private void onDatapackSync(OnDatapackSyncEvent event) {
+  private void onDatapackSync(@Nullable ServerPlayer targetedPlayer, net.minecraft.server.MinecraftServer server) {
     ISimplePacket[] packets = {
       materialManager.getUpdatePacket(),
       materialStatsManager.getUpdatePacket(),
       materialTraitsManager.getUpdatePacket()
     };
 
-    // send to single player
-    ServerPlayer targetedPlayer = event.getPlayer();
+    // send to single player on join, or everyone after a reload
     if (targetedPlayer != null) {
       sendPackets(targetedPlayer, packets);
     } else {
-      // send to all players
-      for (ServerPlayer player : event.getPlayerList().getPlayers()) {
+      for (ServerPlayer player : server.getPlayerList().getPlayers()) {
         sendPackets(player, packets);
       }
     }

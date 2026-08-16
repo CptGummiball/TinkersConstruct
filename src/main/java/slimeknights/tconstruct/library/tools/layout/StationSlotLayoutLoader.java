@@ -1,5 +1,11 @@
 package slimeknights.tconstruct.library.tools.layout;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
+import slimeknights.mantle.util.DataLoadedConditionContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -21,8 +27,6 @@ import net.minecraft.world.item.crafting.Ingredient;
 import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.recipe.partbuilder.Pattern;
 
@@ -41,7 +45,7 @@ import java.util.stream.Collectors;
  * Loader for tinker station slot layouts, loaded serverside as that makes it eaiser to modify with recipes and the filters are needed both sides
  */
 @Log4j2
-public class StationSlotLayoutLoader extends SimpleJsonResourceReloadListener {
+public class StationSlotLayoutLoader extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   public static final String FOLDER = "tinkering/station_layouts";
   public static final Gson GSON = (new GsonBuilder())
     .registerTypeHierarchyAdapter(Ingredient.class, new IngredientSerializer())
@@ -128,15 +132,9 @@ public class StationSlotLayoutLoader extends SimpleJsonResourceReloadListener {
   /* Events */
 
   /** Called on datapack sync to send the tool data to all players */
-  private void onDatapackSync(OnDatapackSyncEvent event) {
+  private void onDatapackSync(@Nullable net.minecraft.server.level.ServerPlayer player, net.minecraft.server.players.PlayerList playerList) {
     UpdateTinkerSlotLayoutsPacket packet = new UpdateTinkerSlotLayoutsPacket(layoutMap.values());
-    TinkerNetwork.getInstance().sendToPlayerList(event.getPlayer(), event.getPlayerList(), packet);
-  }
-
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(this);
-    conditionContext = event.getConditionContext();
+    TinkerNetwork.getInstance().sendToPlayerList(player, playerList, packet);
   }
 
 
@@ -149,8 +147,14 @@ public class StationSlotLayoutLoader extends SimpleJsonResourceReloadListener {
 
   /** Initializes the tool definition loader */
   public static void init() {
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::onDatapackSync);
+    ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(INSTANCE);
+    INSTANCE.conditionContext = DataLoadedConditionContext.INSTANCE;
+    ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> INSTANCE.onDatapackSync(handler.getPlayer(), server.getPlayerList()));
+    ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        INSTANCE.onDatapackSync(null, server.getPlayerList());
+      }
+    });
   }
 
   /** GSON serializer for ingredients */
@@ -164,5 +168,10 @@ public class StationSlotLayoutLoader extends SimpleJsonResourceReloadListener {
     public JsonElement serialize(Ingredient ingredient, Type typeOfSrc, JsonSerializationContext context) {
       return ingredient.toJson();
     }
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("station_slot_layouts");
   }
 }

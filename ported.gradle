@@ -58,12 +58,10 @@ slimeknights/tconstruct/TConstruct.java
 slimeknights/tconstruct/common/network/TinkerNetwork.java
 slimeknights/tconstruct/common/config/Config.java
 slimeknights/tconstruct/common/config/ConfigurableAction.java
-# --- Core slice: parked at 1409 (from 2987). Next roots, in order:
-#   Managers (ModifierManager, MaterialRegistry family): AddReloadListener/OnDatapackSync
-#     -> Fabric reload listeners + join sync (established pattern), ~5 files.
-#   ForgeHooks call sites (11), Loadables.ENCHANTMENT holder migration (6),
-#   broadcastBreakEvent rename (6), getHitResult sites (7),
-#   LazyOptional/ToolCapabilityProvider remnants in item classes.
+# --- Core slice: parked at 1360 (from 2987). All six data managers are converted to
+# Fabric reload listeners + join/reload sync. Next roots: ForgeHooks call sites,
+# Loadables.ENCHANTMENT holder migration, broadcastBreakEvent rename, getHitResult
+# sites, LazyOptional/ToolCapabilityProvider remnants in the item classes.
 slimeknights/mantle/client/TooltipKey.java
 slimeknights/mantle/client/SafeClientAccess.java
 slimeknights/mantle/event/**
@@ -76,3 +74,4 @@ slimeknights/tconstruct/library/recipe/RecipeResult.java
 slimeknights/mantle/item/TierSortingRegistry.java
 slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java
 slimeknights/tconstruct/library/tools/capability/TinkerDataCapability.java
+slimeknights/mantle/data/listener/**

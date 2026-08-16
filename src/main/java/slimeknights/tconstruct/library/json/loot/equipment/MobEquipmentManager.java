@@ -15,8 +15,7 @@ import net.minecraft.world.entity.Mob;
 import slimeknights.mantle.event.MinecraftForge;
 import net.minecraftforge.common.crafting.CraftingHelper;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.entity.living.MobSpawnEvent.FinalizeSpawn;
+import slimeknights.mantle.event.entity.living.MobSpawnEvent.FinalizeSpawn;
 import slimeknights.mantle.event.EventPriority;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.data.loadable.Loadable;
@@ -36,7 +35,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** Loads the list of mob equipment replacements from JSON */
-public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
+public class MobEquipmentManager extends SimpleJsonResourceReloadListener implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   public static final String FOLDER = "tinkering/mob_equipment";
   /** Singleton instance of the manager */
   private static final MobEquipmentManager INSTANCE = new MobEquipmentManager();
@@ -54,7 +53,8 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
   /** @apiNote no need for addons to call this */
   @Internal
   public static void init() {
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, AddReloadListenerEvent.class, INSTANCE::addDataPackListeners);
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(INSTANCE);
+    INSTANCE.conditionContext = slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE;
     MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawn.class, INSTANCE::finalizeSpawn);
   }
 
@@ -136,5 +136,10 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener {
     if (!equipment.isEmpty() && MobEquipment.apply(equipment, mob, event)) {
       event.setCanceled(true);
     }
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("mob_equipment");
   }
 }

@@ -27,16 +27,8 @@ import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
 import slimeknights.mantle.event.Event;
 import slimeknights.mantle.event.EventPriority;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModLoader;
-import net.minecraftforge.fml.event.IModBusEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLLoader;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.mantle.util.RegistryHelper;
@@ -66,7 +58,7 @@ import java.util.stream.Stream;
 
 /** Modifier registry and JSON loader */
 @Log4j2
-public class ModifierManager extends SimpleJsonResourceReloadListener {
+public class ModifierManager extends SimpleJsonResourceReloadListener implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   /** Location of dynamic modifiers */
   public static final String FOLDER = "tinkering/modifiers";
   /** Location of modifier tags */
@@ -126,22 +118,25 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
 
   /** For internal use only */
   public void init() {
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, FMLCommonSetupEvent.class, e -> e.enqueueWork(this::fireRegistryEvent));
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, AddReloadListenerEvent.class, this::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, e -> JsonUtils.syncPackets(e, new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap)));
+    // Fabric bootstrap runs at what Forge called common setup, so the registration event
+    // fires immediately; addons in this jar listen on the shim bus.
+    fireRegistryEvent();
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(this);
+    this.conditionContext = slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE;
+    net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> JsonUtils.syncPackets(server, handler.getPlayer(), new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap)));
+    net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        JsonUtils.syncPackets(server, null, new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap));
+      }
+    });
   }
 
   /** Fires the modifier registry event */
   private void fireRegistryEvent() {
-    ModLoader.get().runEventGenerator(ModifierRegistrationEvent::new);
+    MinecraftForge.EVENT_BUS.post(new ModifierRegistrationEvent(null));
     modifiersRegistered = true;
   }
 
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(this);
-    conditionContext = event.getConditionContext();
-  }
 
   @SuppressWarnings("removal")
   @Override
@@ -458,9 +453,10 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
 
   /** Event for registering modifiers */
   @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-  public class ModifierRegistrationEvent extends Event implements IModBusEvent {
-    /** Container receiving this event */
-    private final ModContainer container;
+  public class ModifierRegistrationEvent extends Event {
+    /** Container receiving this event; null on Fabric where registration is a single broadcast */
+    @Nullable
+    private final Object container;
 
     /** Validates the namespace of the container registering */
     private void checkModNamespace(ResourceLocation name) {
@@ -518,5 +514,10 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
     public boolean shouldDisplay(boolean advanced) {
       return false;
     }
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("modifiers");
   }
 }

@@ -1,5 +1,11 @@
 package slimeknights.tconstruct.library.modifiers.fluid;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
+import slimeknights.mantle.util.DataLoadedConditionContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
@@ -13,8 +19,6 @@ import net.minecraft.world.level.material.Fluid;
 import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
 import slimeknights.mantle.event.EventPriority;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.data.loadable.field.ContextKey;
@@ -32,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /** Manager for spilling fluids for spilling, slurping, and wetting */
-public class FluidEffectManager extends SimpleJsonResourceReloadListener {
+public class FluidEffectManager extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   /** Recipe folder */
   public static final String FOLDER = "tinkering/fluid_effects";
 
@@ -57,15 +61,18 @@ public class FluidEffectManager extends SimpleJsonResourceReloadListener {
 
   /** For internal use only */
   public void init() {
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, AddReloadListenerEvent.class, this::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, e -> JsonUtils.syncPackets(e, new UpdateFluidEffectsPacket(this.fluids)));
+    // Fabric: register as a reload listener directly; conditions evaluate against loaded
+    // data. Sync runs on player join and after successful /reload.
+    ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(this);
+    this.conditionContext = DataLoadedConditionContext.INSTANCE;
+    ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> JsonUtils.syncPackets(server, handler.getPlayer(), new UpdateFluidEffectsPacket(this.fluids)));
+    ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        JsonUtils.syncPackets(server, null, new UpdateFluidEffectsPacket(this.fluids));
+      }
+    });
   }
 
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(this);
-    conditionContext = event.getConditionContext();
-  }
 
   /** Creates context for modifier parsing */
   public static TypedMapBuilder contextBuilder(ResourceLocation key) {
@@ -124,5 +131,10 @@ public class FluidEffectManager extends SimpleJsonResourceReloadListener {
    */
   public FluidEffects find(Fluid fluid) {
     return cache.computeIfAbsent(fluid, FIND_UNCACHED);
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("fluid_effects");
   }
 }

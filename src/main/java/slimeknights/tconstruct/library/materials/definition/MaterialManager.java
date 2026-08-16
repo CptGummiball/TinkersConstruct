@@ -50,7 +50,7 @@ import static java.util.Objects.requireNonNullElse;
  * So if your mods name is "foobar", the location for your mods materials is "data/foobar/materials".
  */
 @Log4j2
-public class MaterialManager extends SimpleJsonResourceReloadListener {
+public class MaterialManager extends SimpleJsonResourceReloadListener implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   /** Location of materials */
   public static final String FOLDER = "tinkering/materials/definition";
   /** Location of material tags */
@@ -279,5 +279,10 @@ public class MaterialManager extends SimpleJsonResourceReloadListener {
       log.error("Could not deserialize material {}. JSON: {}", materialId, jsonObject, e);
       return null;
     }
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("materials");
   }
 }

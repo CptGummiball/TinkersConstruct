@@ -1,5 +1,11 @@
 package slimeknights.tconstruct.library.tools.definition;
 
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
+import slimeknights.mantle.util.DataLoadedConditionContext;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.JsonElement;
 import lombok.extern.log4j.Log4j2;
@@ -9,8 +15,6 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.mantle.util.typed.TypedMapBuilder;
@@ -24,7 +28,7 @@ import java.util.Map.Entry;
 
 /** JSON loader that loads tool definitions from JSON */
 @Log4j2
-public class ToolDefinitionLoader extends SimpleJsonResourceReloadListener {
+public class ToolDefinitionLoader extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   public static final String FOLDER = "tinkering/tool_definitions";
   private static final ToolDefinitionLoader INSTANCE = new ToolDefinitionLoader();
 
@@ -48,8 +52,14 @@ public class ToolDefinitionLoader extends SimpleJsonResourceReloadListener {
 
   /** Initializes the tool definition loader */
   public static void init() {
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(INSTANCE::onDatapackSync);
+    ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(INSTANCE);
+    INSTANCE.conditionContext = DataLoadedConditionContext.INSTANCE;
+    ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> INSTANCE.onDatapackSync(handler.getPlayer(), server.getPlayerList()));
+    ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        INSTANCE.onDatapackSync(null, server.getPlayerList());
+      }
+    });
   }
 
   /**
@@ -108,16 +118,10 @@ public class ToolDefinitionLoader extends SimpleJsonResourceReloadListener {
     return definitions.values();
   }
 
-  /** Called on datapack sync to send the tool data to all players */
-  private void onDatapackSync(OnDatapackSyncEvent event) {
+  /** Called on join/reload to send the tool data to one or all players */
+  private void onDatapackSync(@Nullable net.minecraft.server.level.ServerPlayer player, net.minecraft.server.players.PlayerList playerList) {
     UpdateToolDefinitionDataPacket packet = new UpdateToolDefinitionDataPacket(dataMap);
-    TinkerNetwork.getInstance().sendToPlayerList(event.getPlayer(), event.getPlayerList(), packet);
-  }
-
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(this);
-    conditionContext = event.getConditionContext();
+    TinkerNetwork.getInstance().sendToPlayerList(player, playerList, packet);
   }
 
   /** Registers a tool definition with the loader */
@@ -127,5 +131,10 @@ public class ToolDefinitionLoader extends SimpleJsonResourceReloadListener {
       throw new IllegalArgumentException("Duplicate tool definition " + name);
     }
     definitions.put(name, definition);
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("tool_definitions");
   }
 }
