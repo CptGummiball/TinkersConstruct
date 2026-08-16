@@ -72,4 +72,15 @@ public class RegistrationHelper {
   public static <T extends ArgumentType<?>> Class<T> genericArgumentType(Class<? super T> type) {
     return (Class<T>) type;
   }
+
+  /**
+   * Standard block properties for a fluid block. Lived on FluidDeferredRegister in Forge
+   * Mantle; that class is not ported (Fabric registers eagerly), so the factory lives here.
+   */
+  public static net.minecraft.world.level.block.state.BlockBehaviour.Properties createFluidProperties(net.minecraft.world.level.material.MapColor color, int lightLevel) {
+    return net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+      .mapColor(color).replaceable().noCollission().randomTicks().strength(100.0F)
+      .lightLevel(state -> lightLevel).pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+      .noLootTable().liquid().sound(net.minecraft.world.level.block.SoundType.EMPTY);
+  }
 }

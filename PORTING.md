@@ -125,8 +125,8 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       `recipe.container`, **`fluid` + `fluid.transfer`** (transfer helper, container
       transfers with Fabric-native reload listener, `FluidBuilder`, `ForgeFlowingFluid`
       shim, `FabricFluidHandlerItem`, `FluidType.of()` lookup, `MantleTags`,
-      `TranslationHelper`), and both fluid registration objects. Still to do: the rest of
-      `recipe` (custom ingredients), block/inventory/network, client + book, and a
+      `TranslationHelper`), and both fluid registration objects. Done since: **`block` + `inventory`** (see the smoke-test section below). Still to do:
+      the rest of `recipe` (custom ingredients), client + book, and a
       Fabric-native replacement for `registration.deferred`/`adapter` (Forge's
       DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
 
@@ -208,6 +208,17 @@ Things 1.21 deleted outright, where the replacement was a judgement call:
 | `ForgeI18n` | vanilla `Language.getInstance()` | server-safe language table |
 | `PotionUtils.getPotion` | `POTION_CONTENTS` component | potion transfers rebuild the legacy `{Potion: id}` tag so the potion fluid's format is unchanged |
 | `AddReloadListenerEvent` / `OnDatapackSyncEvent` | Fabric `ResourceManagerHelper` / join-sync via network module | `FluidContainerTransferManager.init()` |
+
+## Runtime verification
+
+A Loom dev **server boots to "Done" with the ported jar** — entrypoints, component
+registration, the network channel and the fluid-transfer reload listener all run. The
+transfer manager loaded its JSONs and rejected exactly those whose items are not yet
+registered (loudly, as designed). Remaining log noise is data referencing phase-4 content.
+
+Temporarily excluded from the jar until their registration code is ported (fatal registry
+errors otherwise — see the note in `build.gradle`): `data/tconstruct/worldgen`,
+`data/tconstruct/trim_material`.
 
 ## Build
 

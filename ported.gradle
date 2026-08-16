@@ -42,3 +42,8 @@ slimeknights/mantle/fluid/**
 slimeknights/mantle/datagen/MantleTags.java
 slimeknights/mantle/util/TranslationHelper.java
 slimeknights/mantle/network/**
+slimeknights/mantle/block/**
+slimeknights/mantle/inventory/**
+slimeknights/mantle/util/ItemStackList.java
+slimeknights/mantle/util/BlockEntityHelper.java
+slimeknights/mantle/util/RetexturedHelper.java

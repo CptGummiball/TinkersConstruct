@@ -61,3 +61,6 @@ slimeknights/mantle/fluid/InvertedFluid.java
 
 # Waits on OffhandCooldownTracker (phase-3 tool logic: events + TinkerData capability).
 # mantle.util.OffhandCooldownTracker itself is not copied in yet.
+
+# Retextured-block system: carries Forge ModelData, belongs to the client model phase.
+slimeknights/mantle/block/entity/DefaultRetexturedBlockEntity.java
