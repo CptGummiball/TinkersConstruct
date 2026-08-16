@@ -23,6 +23,7 @@ import slimeknights.tconstruct.shared.TinkerAttributes;
 import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.shared.TinkerMaterials;
+import slimeknights.tconstruct.world.TinkerWorld;
 
 /**
  * Fabric {@code main} entrypoint.
@@ -79,6 +80,8 @@ public class TConstructBootstrap implements ModInitializer {
     TinkerCommons.init();
     TinkerMaterials.init();
     TinkerFluids.init();
+    // world: structures/features registered by class-init inside TinkerWorld's registrations
+    TinkerWorld.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

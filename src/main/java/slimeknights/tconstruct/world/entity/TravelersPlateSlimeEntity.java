@@ -20,7 +20,7 @@ import slimeknights.tconstruct.library.tools.item.IModifiable;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerTools;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.List;
 
@@ -43,11 +43,11 @@ public abstract class TravelersPlateSlimeEntity extends ArmoredSlimeEntity {
     }
     if (this.random.nextFloat() < 0.15F * multiplier) {
       // start by randomly choosing plate or travelers. Starts at a 35% chance of plate but plate becomes more common with difficulty
-      IModifiable helmetItem;
-      if (this.random.nextFloat() < 0.35f * multiplier) {
-        helmetItem = TinkerTools.plateArmor.get(ArmorItem.Type.HELMET);
-      } else {
-        helmetItem = TinkerTools.travelersGear.get(ArmorItem.Type.HELMET);
+      // ContentLookups seam: the helmets live in the tools module; lookups by ID keep this
+      // compiling until it gates in (no armor spawns until then)
+      IModifiable helmetItem = ContentLookups.helmet(this.random.nextFloat() < 0.35f * multiplier ? "plate_helmet" : "travelers_helmet");
+      if (helmetItem == null) {
+        return;
       }
       // next select materials; first is always fixed
       ToolDefinition definition = helmetItem.getToolDefinition();

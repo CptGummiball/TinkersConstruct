@@ -100,8 +100,6 @@ slimeknights/tconstruct/library/modifiers/modules/combat/ProjectileExplosionModu
 slimeknights/tconstruct/library/modifiers/modules/capacity/EnergyAsCapacityModule.java
 
 # --- Content-bound library files: compile once their content module gates in (phase 4) ---
-# world module: the event carries the EnderSlimeEntity that caused the teleport.
-slimeknights/tconstruct/library/events/teleport/EnderSlimeTeleportEvent.java
 # SwappableModifierRecipe.VariantFormatter (recipe/modifiers/adding, full recipe-type tree).
 slimeknights/tconstruct/library/modifiers/modules/display/ModifierVariantNameModule.java
 # ModifierRecipeLookup pulls ModifierSalvage -> ITinkerStationRecipe -> TinkerRecipeTypes.
@@ -141,3 +139,14 @@ slimeknights/tconstruct/shared/block/entity/TableBlockEntity.java
 slimeknights/tconstruct/fluids/FluidClientEvents.java
 # datagen providers (phase 7)
 slimeknights/tconstruct/fluids/data/**
+
+# --- world module: pieces deferred from the phase-4 gate-in ---
+# client renderers/colors (phase 5)
+slimeknights/tconstruct/world/WorldClientEvents.java
+slimeknights/tconstruct/world/client/**
+# datagen providers (phase 7)
+slimeknights/tconstruct/world/data/**
+# event-layer step: LivingVisibility/LivingDrops head handling + wandering trader trades
+# (AncientToolItemListing also needs the tools module's ancient tools)
+slimeknights/tconstruct/world/WorldEvents.java
+slimeknights/tconstruct/world/logic/AncientToolItemListing.java

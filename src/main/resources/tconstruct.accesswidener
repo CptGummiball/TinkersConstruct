@@ -83,3 +83,21 @@ accessible field net/minecraft/world/entity/ai/attributes/AttributeSupplier inst
 accessible method net/minecraft/world/entity/ai/attributes/AttributeSupplier <init> (Ljava/util/Map;)V
 # LivingEntity.jumping — antigravity ladder handling reads the jump input state
 accessible field net/minecraft/world/entity/LivingEntity jumping Z
+# Spawn placement registration (Forge's SpawnPlacementRegisterEvent replacement): register
+# our entities and OR-merge extra predicates onto vanilla slime placement.
+accessible method net/minecraft/world/entity/SpawnPlacements register (Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/SpawnPlacementType;Lnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/entity/SpawnPlacements$SpawnPredicate;)V
+accessible field net/minecraft/world/entity/SpawnPlacements DATA_BY_TYPE Ljava/util/Map;
+accessible class net/minecraft/world/entity/SpawnPlacements$Data
+# Heads: firework star shapes and the skull block entity's valid-blocks set (Forge ATs)
+accessible field net/minecraft/world/item/crafting/FireworkStarRecipe SHAPE_BY_ITEM Ljava/util/Map;
+accessible field net/minecraft/world/level/block/entity/BlockEntityType validBlocks Ljava/util/Set;
+mutable field net/minecraft/world/level/block/entity/BlockEntityType validBlocks Ljava/util/Set;
+# Mangrove propagule shapes reused by the ender slime propagule block
+accessible field net/minecraft/world/level/block/MangrovePropaguleBlock SHAPE_PER_AGE [Lnet/minecraft/world/phys/shapes/VoxelShape;
+# Enderbark roots reuse the mangrove root placement config (Forge AT)
+accessible field net/minecraft/world/level/levelgen/feature/rootplacers/MangroveRootPlacer mangroveRootPlacement Lnet/minecraft/world/level/levelgen/feature/rootplacers/MangroveRootPlacement;
+# Huge fungus internals reused by the slime fungus feature (Forge AT)
+accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature placeStem (Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;Lnet/minecraft/core/BlockPos;IZ)V
+accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature placeHat (Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;Lnet/minecraft/core/BlockPos;IZ)V
+# Spawn placement data record constructor (used by the OR-merge helper)
+accessible method net/minecraft/world/entity/SpawnPlacements$Data <init> (Lnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/entity/SpawnPlacementType;Lnet/minecraft/world/entity/SpawnPlacements$SpawnPredicate;)V

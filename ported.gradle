@@ -135,3 +135,6 @@ slimeknights/tconstruct/tools/modifiers/traits/skull/SelfDestructiveModifier.jav
 slimeknights/tconstruct/fluids/**
 slimeknights/tconstruct/library/recipe/FluidValues.java
 slimeknights/tconstruct/tools/network/FluidDataSerializer.java
+
+# --- Phase 4: world module (slime islands, trees, entities, geodes, heads) ---
+slimeknights/tconstruct/world/**

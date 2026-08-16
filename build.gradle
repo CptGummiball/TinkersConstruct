@@ -88,12 +88,9 @@ sourceSets {
             exclude 'META-INF/mods.toml'
             exclude 'META-INF/accesstransformer.cfg'
             // Datapack-registry entries referencing content whose registration code is not
-            // ported yet (verified by dev-server boot: unbound worldgen values, trim
-            // materials failing on missing ingots). Vanilla treats these as fatal registry
-            // errors. Restore each folder together with its module:
-            //   worldgen/**      -> TinkerWorld / TinkerStructures (phase 4)
+            // ported yet. Vanilla treats these as fatal registry errors. worldgen/** was
+            // restored with the world module (phase 4); trim materials return with tools:
             //   trim_material/** -> TinkerMaterials + tools (phase 4)
-            exclude 'data/tconstruct/worldgen'
             exclude 'data/tconstruct/trim_material'
         }
     }

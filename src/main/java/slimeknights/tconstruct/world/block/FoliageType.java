@@ -22,6 +22,9 @@ public enum FoliageType implements StringRepresentable {
   ENDER(0xa92dff, Tiers.DIAMOND, MapColor.COLOR_PURPLE, false),
   BLOOD(0xb80000, Tiers.WOOD,    MapColor.COLOR_RED, true);
 
+  /** Vanilla codec for 1.21 block codecs */
+  public static final net.minecraft.util.StringRepresentable.EnumCodec<FoliageType> CODEC = net.minecraft.util.StringRepresentable.fromEnum(FoliageType::values);
+
   /** Foliage types fully implemented in game */
   public static final FoliageType[] VISIBLE = {EARTH, SKY, BLOOD, ENDER};
   /** Foliage types using overworld style (grass, wood) */

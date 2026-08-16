@@ -53,6 +53,15 @@ public final class ForgeHooks {
   }
 
   /** Selects the projectile for a weapon, matching Forge's player-aware lookup. */
+  /**
+   * Mirror of Forge's living-fall hook. Returns {distance, damageMultiplier} or null to
+   * cancel the fall damage entirely; the event layer will post a cancellable event here.
+   */
+  @Nullable
+  public static float[] onLivingFall(LivingEntity entity, float distance, float damageMultiplier) {
+    return new float[] {distance, damageMultiplier};
+  }
+
   public static ItemStack getProjectile(LivingEntity entity, ItemStack weapon, ItemStack fallback) {
     // Vanilla's lookup already handles creative arrows and the projectile predicate;
     // Forge's version only added a hook for mods overriding ammo, which on Fabric is done

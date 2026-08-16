@@ -199,4 +199,16 @@ public final class ContentLookups {
     }
     return false;
   }
+
+  /**
+   * Looks up a modifiable helmet item from the tools module by registry name, null while
+   * that module has not been ported yet (armored slimes then spawn without gear).
+   */
+  @javax.annotation.Nullable
+  public static slimeknights.tconstruct.library.tools.item.IModifiable helmet(String name) {
+    return net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(slimeknights.tconstruct.TConstruct.getResource(name))
+      .filter(item -> item instanceof slimeknights.tconstruct.library.tools.item.IModifiable)
+      .map(item -> (slimeknights.tconstruct.library.tools.item.IModifiable) item)
+      .orElse(null);
+  }
 }

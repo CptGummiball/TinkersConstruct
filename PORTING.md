@@ -329,6 +329,44 @@ the bottle items and fluids they referenced now exist. Load-bearing decisions:
   virtuals; `FluidDeferredRegister` gained `invertedFlowing()`; `FluidObject.getCommonTag()`
   exposed. `LiquidBlock` subclasses pass the fluid directly (1.21 constructor); the Forge
   `getFluidTypeHeight` immersion check became a fluid-surface height comparison.
+### Phase 4, third slice: the world module — **DONE, server boots clean (Done 0.891s)**
+
+Slime islands (structures + structure sets), slime trees/fungi (features, tree decorator,
+root placer), congealed/sticky slime blocks, dirt/grass/foliage/wood sets, geodes, heads,
+cobalt ore, and the three slime entities all register and load. Load-bearing decisions:
+
+- **Worldgen datapack restored and migrated**: the phase-3 `processResources` exclude on
+  `data/tconstruct/worldgen` was lifted (that exclude — not a loader bug — was why placed
+  features were invisible at first; found via a broken-JSON probe). The 1.20-era JSONs needed
+  two migrations: the 1.20.5 IntProvider flattening (`{"type":"uniform","value":{...}}` →
+  flat keys; geodes, ender trees, clay island) and `minecraft:grass`→`minecraft:short_grass`.
+  `trim_material` stays excluded until the tools round.
+- **Forge biome modifiers → Fabric BiomeModifications** in `TinkerWorld.init()`: cobalt ore
+  (nether, underground decoration), four geodes (overworld/nether/end selectors incl. the
+  sky-geode ocean/beach/river exclusion and the ender-geode central-island exclusion), and
+  the three mob spawns, mirroring the deleted `forge:biome_modifier` data files.
+- **Spawn placements** register through the AW-opened vanilla `SpawnPlacements.register`;
+  vanilla slime gets the earth-slime-spawn predicate OR-merged onto its existing rules by
+  rebuilding its `SpawnPlacements.Data` record.
+- **1.21 API sweeps**: `TreeGrower` is data-driven (no subclassing) — `SlimeTree` became a
+  factory, the ender 85/15 tall-tree split maps onto the secondary-tree constructor;
+  `FungusBlock` constructor reordered; `SynchedEntityData.Builder`; 4-arg `finalizeSpawn`;
+  `dropCustomDeathLoot(ServerLevel,...)` without the looting parameter (bonus moved into the
+  enchantment framework); vanishing curse check via `EnchantmentEffectComponents
+  .PREVENT_EQUIPMENT_DROP`; ender slime teleport-on-hit moved from the removed
+  `doEnchantDamageEffects` to a health-delta check in `dealDamage`; tree decorator/root
+  placer/structure types take `MapCodec`s; `BushBlock` subclasses implement `codec()`.
+- **Fabric registries replace Forge patches**: composting (`CompostingChanceRegistry`),
+  flammability (`FlammableBlockRegistry`), congealed-slime path type (STICKY_HONEY via
+  `LandPathNodeTypesRegistry`); firework star shapes + skull block entity injection through
+  AW-opened vanilla maps; `hasChunksAt` replaces Forge's `isAreaLoaded`.
+- **Known gaps, tracked**: sticky slime piston rules and the enderman-mask head need
+  event-layer mixins (predicates kept on the blocks); `WorldEvents` (head drops on charged
+  creeper kills, mob-head stealth, wandering trader ancient tools) and
+  `AncientToolItemListing` park for the event layer + tools; travelers/plate helmets on
+  armored slimes resolve through a `ContentLookups` seam once tools lands. The "No data
+  fixer registered" boot lines are standard Fabric noise for modded entities.
+
 - **Misc 1.21**: cauldron interactions return `ItemInteractionResult` and live in
   `map()`-wrapped records; `FluidDataSerializer` is stream-codec based and registers via
   `EntityDataSerializers.registerSerializer`; dispenser bucket behavior on the `BlockSource`
