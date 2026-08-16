@@ -1,5 +1,6 @@
 package slimeknights.mantle.recipe.ingredient;
 
+import net.minecraft.world.item.SpawnEggItem;
 import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonElement;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.common.ForgeSpawnEggItem;
 import slimeknights.mantle.data.loadable.IAmLoadable;
 import slimeknights.mantle.data.loadable.Loadable;
 import slimeknights.mantle.data.loadable.Loadables;
@@ -141,7 +141,7 @@ public abstract class EntityIngredient implements Predicate<EntityType<?>>, IAmL
   public List<ItemStack> getEggs() {
     if (eggs == null) {
       // use getDisplay to guarantee order is the same, just in case
-      eggs = getDisplay().stream().map(type -> new ItemStack(Objects.requireNonNullElse(ForgeSpawnEggItem.fromEntityType(type.type), Items.AIR))).toList();
+      eggs = getDisplay().stream().map(type -> new ItemStack(Objects.requireNonNullElse(SpawnEggItem.byId(type.type), Items.AIR))).toList();
     }
     return eggs;
   }

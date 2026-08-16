@@ -1,112 +1,82 @@
 package slimeknights.mantle.recipe.helper;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import slimeknights.mantle.config.Config;
-import slimeknights.mantle.util.LogicHelper;
-import slimeknights.mantle.util.RegistryHelper;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
- * Utility that helps get the preferred item from a tag based on mod ID.
+ * Picks one preferred entry out of a tag.
+ *
+ * <p>When a recipe outputs "a copper ingot", several mods may supply one. Forge resolved this
+ * with a config-driven mod priority list refreshed on {@code TagsUpdatedEvent}. Fabric has
+ * neither the event nor the config, so preference is decided by a fixed, predictable rule
+ * instead:
+ *
+ * <ol>
+ *   <li>{@code minecraft} — vanilla always wins, so recipes yield the item players expect</li>
+ *   <li>{@code tconstruct} — our own entry next, so Tinkers recipes stay self-consistent</li>
+ *   <li>everything else alphabetically by namespace, which at least makes the choice stable
+ *       across launches rather than dependent on mod load order</li>
+ * </ol>
+ *
+ * <p>Determinism is the point: an unstable pick would silently change recipe outputs between
+ * launches. No caching is done — tags reload on datapack reload, and these lookups happen at
+ * recipe-resolution time rather than per tick.
  */
 public class TagPreference {
-  /** Just an alphabetically late RL to simplify null checks */
-  private static final ResourceLocation DEFAULT_ID = new ResourceLocation("zzzzz:zzzzz"); // simplfies null checks
 
-  /** Cache from any tag key to its value */
-  private static final Map<TagKey<?>, Optional<?>> PREFERENCE_CACHE = new ConcurrentHashMap<>();
-  /** Cache of comparator instances, concurrent as hash map optimizations means the whole compute if absent method is not entirely synchronized */
-  private static final Map<ResourceKey<?>, Comparator<?>> COMPARATOR_CACHE = new ConcurrentHashMap<>();
-  static {
-    COMPARATOR_CACHE.put(Registries.FLUID, FluidComparator.INSTANCE);
-  }
+  private TagPreference() {}
 
-  /** Registers the listener with the event bus */
-  public static void init() {
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, TagsUpdatedEvent.class, e -> PREFERENCE_CACHE.clear());
-  }
+  private static final String VANILLA = "minecraft";
+  private static final String TINKERS = "tconstruct";
 
-  /** Gets the comparator for the given registry */
-  @SuppressWarnings("unchecked")
-  private static <T> Comparator<T> getComparator(Registry<T> registry) {
-    return (Comparator<T>)COMPARATOR_CACHE.computeIfAbsent(registry.key(), k -> new RegistryComparator<>(registry));
-  }
+  private static final Comparator<Holder<?>> PREFERENCE = Comparator
+    .comparingInt((Holder<?> holder) -> {
+      String namespace = holder.unwrapKey()
+        .map(key -> key.location().getNamespace())
+        .orElse("");
+      if (VANILLA.equals(namespace)) {
+        return 0;
+      }
+      return TINKERS.equals(namespace) ? 1 : 2;
+    })
+    .thenComparing(holder -> holder.unwrapKey()
+      .map(key -> key.location())
+      .map(ResourceLocation::toString)
+      .orElse(""));
 
-  /** Gets the preference from a tag without going through the cache, internal logic behind {@link #getPreference(TagKey)} */
-  private static <T> Optional<T> getUncachedPreference(TagKey<T> tag) {
-    Registry<T> registry = RegistryHelper.getRegistry(tag.registry());
+  /** Preferred entry of the given tag, or empty when the tag has no entries. */
+  public static <T> Optional<T> getPreference(TagKey<T> tag) {
+    Registry<T> registry = registryFor(tag);
     if (registry == null) {
       return Optional.empty();
     }
-    // streams have a lovely function to get the minimum element based on a comparator
-    // if the tag is empty, stream is empty so returns empty
-    return RegistryHelper.getTagValueStream(registry, tag).min(getComparator(registry));
+    return registry.getTag(tag)
+      .map(named -> named.stream().toList())
+      .filter(entries -> !entries.isEmpty())
+      .map(entries -> entries.stream().min(PREFERENCE).orElse(entries.get(0)))
+      .map(Holder::value);
   }
 
-  /** Don't create a new lambda instance every time we call {@link #getPreference(TagKey)} */
-  private static final Function<TagKey<?>,Optional<?>> PREFERENCE_LOOKUP = TagPreference::getUncachedPreference;
+  /** All entries of the tag in preference order; useful for recipe viewers showing alternatives. */
+  public static <T> List<T> getEntries(TagKey<T> tag) {
+    Registry<T> registry = registryFor(tag);
+    if (registry == null) {
+      return List.of();
+    }
+    return registry.getTag(tag)
+      .map(named -> named.stream().sorted(PREFERENCE).map(Holder::value).toList())
+      .orElseGet(List::of);
+  }
 
-  /**
-   * Gets the preferred value from a tag based on mod ID
-   * @param tag    Tag to fetch
-   * @return  Preferred value from the tag, or empty optional if the tag is empty
-   */
   @SuppressWarnings("unchecked")
-  public static <T> Optional<T> getPreference(TagKey<T> tag) {
-    // fetch cached value if we have one
-    return (Optional<T>) PREFERENCE_CACHE.computeIfAbsent(tag, PREFERENCE_LOOKUP);
-  }
-
-  /** Logic to compare two registry values */
-  private record RegistryComparator<T>(Registry<T> registry) implements Comparator<T> {
-    @Override
-    public int compare(T a, T b) {
-      // first get registry names, use default ID if null (unlikely)
-      ResourceLocation idA = Objects.requireNonNullElse(registry.getKey(a), DEFAULT_ID);
-      ResourceLocation idB = Objects.requireNonNullElse(registry.getKey(b), DEFAULT_ID);
-      // first compare preferences
-      List<? extends String> entries = Config.TAG_PREFERENCES.get();
-      int size = entries.size();
-      int indexA = LogicHelper.defaultIf(entries.indexOf(idA.getNamespace()), -1, size);
-      int indexB = LogicHelper.defaultIf(entries.indexOf(idB.getNamespace()), -1, size);
-      if (indexA != indexB) {
-        return Integer.compare(indexA, indexB);
-      }
-      // for stability, fallback to registry name compare
-      return idA.compareNamespaced(idB);
-    }
-  }
-
-  /** Special casing comparator to ensure flowing fluids are sorted last after fluid sources. */
-  private enum FluidComparator implements Comparator<Fluid> {
-    INSTANCE;
-
-    /** Base logic after comparing source */
-    private final Comparator<Fluid> preference = new RegistryComparator<>(BuiltInRegistries.FLUID);
-
-    @Override
-    public int compare(Fluid fluid1, Fluid fluid2) {
-      boolean isSource1 = fluid1.isSource(fluid1.defaultFluidState());
-      if (isSource1 != fluid2.isSource(fluid2.defaultFluidState())) {
-        return isSource1 ? -1 : 1;
-      }
-      return preference.compare(fluid1, fluid2);
-    }
+  private static <T> Registry<T> registryFor(TagKey<T> tag) {
+    return (Registry<T>) BuiltInRegistries.REGISTRY.get(tag.registry().location());
   }
 }

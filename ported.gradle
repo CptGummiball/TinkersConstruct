@@ -32,4 +32,7 @@ slimeknights/mantle/registration/**
 # recipe/ is copied in but not yet gated: 93 errors, dominated by Forge's custom
 # ingredient system (AbstractIngredient/IIngredientSerializer), which maps onto
 # Fabric's CustomIngredient API in fabric-recipe-api-v1. Next chunk of work.
+slimeknights/mantle/recipe/IMultiRecipe.java
 slimeknights/mantle/recipe/container/**
+slimeknights/mantle/recipe/ingredient/**
+slimeknights/mantle/recipe/helper/**

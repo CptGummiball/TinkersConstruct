@@ -116,12 +116,23 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       replacement for `registration.deferred`/`adapter` (Forge's DeferredRegister model has
       no Fabric counterpart — Fabric registers eagerly).
 
-      **Next chunk — `mantle.recipe`.** Source is copied in and gated out; 93 errors remain,
-      concentrated in `data` (31, datagen builders), `ingredient` (19) and `crafting` (12).
-      The bulk is Forge's custom ingredient system (`AbstractIngredient`,
-      `IIngredientSerializer`, `StrictNBTIngredient`), which has a direct counterpart in
-      Fabric's `CustomIngredient` API from `fabric-recipe-api-v1` — that mapping is the
-      main design decision to make there. `recipe.cooking` was dropped (zero users).
+      **`mantle.recipe`, partially done.** `ingredient` (`SizedIngredient`, `FluidIngredient`,
+      `EntityIngredient` — 62 of 65 call sites), `helper` (`ItemOutput`, `FluidOutput`,
+      `TagPreference`), `container` and `IMultiRecipe` are in. `recipe.cooking` was dropped
+      (zero users). What is left splits into two independent design tasks:
+
+      1. **Custom ingredients.** `FluidContainerIngredient`, `ItemIngredient` and the two
+         potion ingredients extend Forge's `AbstractIngredient`. Fabric's counterpart is the
+         `CustomIngredient` API in `fabric-recipe-api-v1`: implement `CustomIngredient` +
+         `CustomIngredientSerializer` and expose the result via `toVanilla()`. Low urgency —
+         one TConstruct call site between them.
+      2. **The 1.21 recipe-system rewrite.** `RecipeSerializer` lost
+         `fromJson`/`toNetwork`/`fromNetwork` in favour of `codec()` + `streamCodec()`, and
+         `Recipe<Container>` became `Recipe<RecipeInput>` with `RecipeManager.byType`
+         returning `RecipeHolder`. This affects `LoadableRecipeSerializer` and friends,
+         `RecipeHelper`, `ICommonRecipe` and `ICustomOutputRecipe`. The real decision is how
+         a `Loadable` turns into a `MapCodec` + `StreamCodec` pair; everything else follows.
+         This one blocks phase 3, so it comes first.
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
@@ -150,6 +161,9 @@ Things 1.21 deleted outright, where the replacement was a judgement call:
 | `BlockTags/ItemTags.create(rl)` | `TagKey.create(registry, rl)` | those overloads were Forge additions |
 | `MissingMappingsEvent` | *nothing* | Forge remapped renamed registry entries on world load; Fabric has no such hook, and this build targets a new pack with no Forge-era saves |
 | Forge `FluidType` | `mantle.transfer.fluid.FluidType` | keeps Forge's shape for 47 files and doubles as a Fabric `FluidVariantAttributeHandler`, so temperature and light are visible to other pack mods too |
+| `ForgeSpawnEggItem`, `SpawnEggItem.fromEntityType` | `SpawnEggItem`, `SpawnEggItem.byId` | Forge additions with vanilla equivalents |
+| `FriendlyByteBuf.write/readItem`, `write/readFluidStack` | the respective stream codecs | Forge buffer extensions |
+| Forge tag preference (config + `TagsUpdatedEvent`) | fixed priority: `minecraft` → `tconstruct` → alphabetical | Fabric has neither the event nor the config. Determinism is the point — an unstable pick would silently change recipe outputs between launches. |
 
 ## Build
 
