@@ -18,7 +18,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.common.ForgeHooks;
+import slimeknights.mantle.event.ForgeHooks;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import slimeknights.mantle.event.Event.Result;
 import slimeknights.mantle.transfer.fluid.FluidStack;

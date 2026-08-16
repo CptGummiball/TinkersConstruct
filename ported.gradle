@@ -58,10 +58,10 @@ slimeknights/tconstruct/TConstruct.java
 slimeknights/tconstruct/common/network/TinkerNetwork.java
 slimeknights/tconstruct/common/config/Config.java
 slimeknights/tconstruct/common/config/ConfigurableAction.java
-# --- Core slice: parked at 1360 (from 2987). All six data managers are converted to
-# Fabric reload listeners + join/reload sync. Next roots: ForgeHooks call sites,
-# Loadables.ENCHANTMENT holder migration, broadcastBreakEvent rename, getHitResult
-# sites, LazyOptional/ToolCapabilityProvider remnants in the item classes.
+# --- Core slice: parked at ~1340. ForgeHooks bridged onto Fabric events, crit event
+# inlined, broadcastBreakEvent -> onEquippedItemBroken, enchantment users holder-swept
+# (their usage-site fallout is next). Then: getHitResult sites, LazyOptional remnants,
+# then the cascade should collapse and ToolStack itself is last.
 slimeknights/mantle/client/TooltipKey.java
 slimeknights/mantle/client/SafeClientAccess.java
 slimeknights/mantle/event/**

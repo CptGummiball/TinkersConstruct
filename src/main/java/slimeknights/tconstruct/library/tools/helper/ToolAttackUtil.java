@@ -25,9 +25,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.entity.PartEntity;
-import net.minecraftforge.event.entity.player.CriticalHitEvent;
 import slimeknights.mantle.util.CombatHelper;
 import slimeknights.mantle.util.OffhandCooldownTracker;
 import slimeknights.tconstruct.TConstruct;
@@ -109,16 +107,9 @@ public class ToolAttackUtil {
       && !attacker.isInWater() && !attacker.hasEffect(MobEffects.BLINDNESS)
       && !attacker.isPassenger() && livingTarget != null && !attacker.isSprinting();
 
-    float criticalModifier = isCritical ? 1.5f : 1.0f;
-    if (attackerPlayer != null) {
-      CriticalHitEvent hitResult = ForgeHooks.getCriticalHit(attackerPlayer, target, isCritical, criticalModifier);
-      if (hitResult != null) {
-        criticalModifier = hitResult.getDamageModifier();
-      } else {
-        criticalModifier = 1;
-      }
-    }
-    return criticalModifier;
+    // Forge fired CriticalHitEvent here so mods could veto or scale crits; with no
+    // listeners it echoed the inputs, which is exactly this.
+    return isCritical ? 1.5f : 1.0f;
   }
 
   /**
