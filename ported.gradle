@@ -27,3 +27,4 @@ slimeknights/mantle/data/loadable/**
 slimeknights/mantle/data/registry/**
 slimeknights/mantle/data/predicate/**
 slimeknights/mantle/util/DataLoadedConditionContext.java
+slimeknights/mantle/registration/**

@@ -9,3 +9,7 @@ accessWidener v2 named
 # Entity.wasEyeInWater — read by LivingEntityPredicate.EYES_IN_WATER.
 # Migrated from the Forge AT entry for the same field.
 accessible field net/minecraft/world/entity/Entity wasEyeInWater Z
+
+# WoodType.register — Mantle registers its own wood types for signs/hanging signs.
+# Vanilla made this private in 1.21; Forge exposed it via its own registration hook.
+accessible method net/minecraft/world/level/block/state/properties/WoodType register (Lnet/minecraft/world/level/block/state/properties/WoodType;)Lnet/minecraft/world/level/block/state/properties/WoodType;

@@ -10,3 +10,7 @@
 # Fixing them by casting the buffer would compile and then fail at runtime on any
 # connection that hands over a plain buffer, so they stay out until it is done properly.
 
+
+# Waiting on mantle.recipe (FluidIngredient, FluidOutput), which is the next package.
+slimeknights/mantle/registration/object/FluidObject.java
+slimeknights/mantle/registration/object/FlowingFluidObject.java

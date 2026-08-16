@@ -110,8 +110,10 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
 - [ ] **1c — Remaining shims.** Event bus → Fabric events + mixins, registry helpers
       (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
 - [~] **2 — Mantle-lite.** Ported: `data.loadable` (unblocks 398 dependent files),
-      `data.predicate` (98), `data.registry`, `data.gson`, `util`. Still to do: registration,
-      recipe helpers, fluid + `fluid.transfer`, block/inventory/network, client + book.
+      `data.predicate` (98), `registration.object` (92), `data.registry`, `data.gson`, `util`.
+      Still to do: recipe helpers, fluid + `fluid.transfer`, block/inventory/network,
+      client + book, and a Fabric-native replacement for `registration.deferred`/`adapter`
+      (Forge's DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
@@ -124,7 +126,7 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
 The Forge `accesstransformer.cfg` (294 entries) uses SRG names without field descriptors,
 which AccessWidener requires. Entries are therefore migrated per-module alongside the code
 that needs them rather than in one unverifiable batch. Migrated so far:
-`Entity.wasEyeInWater`.
+`Entity.wasEyeInWater`, `WoodType.register`.
 
 ## Vanilla removals handled
 
@@ -137,6 +139,9 @@ Things 1.21 deleted outright, where the replacement was a judgement call:
 | `Fluid.getFluidType()` | `FluidVariantAttributes` | Forge-only concept |
 | `HolderSet.Named.contents` | `.stream().toList()` | field went private |
 | `hasEffect(MobEffect)` | `hasEffect(Holder<MobEffect>)` | wrapped at the call site |
+| `BlockTags/ItemTags.create(rl)` | `TagKey.create(registry, rl)` | those overloads were Forge additions |
+| `MissingMappingsEvent` | *nothing* | Forge remapped renamed registry entries on world load; Fabric has no such hook, and this build targets a new pack with no Forge-era saves |
+| Forge `FluidType` | `mantle.transfer.fluid.FluidType` | keeps Forge's shape for 47 files and doubles as a Fabric `FluidVariantAttributeHandler`, so temperature and light are visible to other pack mods too |
 
 ## Build
 
