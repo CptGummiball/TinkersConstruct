@@ -181,8 +181,23 @@ event-layer step (explosions, `SlimeBounceHandler`), the energy step,
       `BucketItem`/`LiquidBlock` need their fluid at construction — so the builder now
       stores factories and registers bucket/block *after* the fluids, then wires
       `FluidType.register` for the `of()` lookup and Fabric attribute handlers.
-      Still to do: the rest of `recipe` (custom ingredients), client + book,
-      `registration.adapter` (unused so far).
+      **Custom ingredients — done.** `ItemIngredient`/`PotionIngredient`/
+      `PotionDisplayIngredient`/`FluidContainerIngredient` implement Fabric's
+      `CustomIngredient`; `LoadableIngredientSerializer` is a `CustomIngredientSerializer`
+      over the loadable codec bridges, registered in the bootstrap under the same
+      `mantle:` ids Forge used. The shipped flat `mantle:fluid_container` JSON shape keeps
+      parsing via a custom record field mirroring the 1.20 parser. Factories return
+      vanilla `Ingredient` via `toVanilla()`. Potion matching runs on the
+      `potion_contents` component; `null` replaces the removed empty-potion sentinel.
+
+      **`InvertedFluid` — done.** The feared 1.21 rewrite was unnecessary: the FlowingFluid
+      spread refactor landed in 1.21.2, not 1.21.1, so the inverted overrides compile
+      against the 1.20-shaped internals with three access-widener entries
+      (`getCacheKey`, `canPassThrough`, `isWaterHole`; the last is final in vanilla and
+      needed `extendable`). Unblocks ichor and molten cinderslime for phase 4.
+
+      Still to do: client + book (phase 5), `registration.adapter` (unused so far),
+      datagen helpers (phase 7).
 
       **`network` — done and live.** `NetworkWrapper` is Fabric-native
       (`CustomPacketPayload` + per-packet types derived from channel name + registration

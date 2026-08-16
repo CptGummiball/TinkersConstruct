@@ -1,10 +1,14 @@
 package slimeknights.tconstruct.fabric;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredientSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.network.MantleNetwork;
+import slimeknights.mantle.recipe.ingredient.FluidContainerIngredient;
+import slimeknights.mantle.recipe.ingredient.PotionDisplayIngredient;
+import slimeknights.mantle.recipe.ingredient.PotionIngredient;
 import slimeknights.mantle.transfer.fluid.TransferComponents;
 import slimeknights.tconstruct.library.json.condition.TagDifferencePresentCondition;
 import slimeknights.tconstruct.library.json.condition.TagIntersectionPresentCondition;
@@ -34,6 +38,11 @@ public class TConstructBootstrap implements ModInitializer {
     // Mantle infrastructure: packet channel plus the fluid container transfer loader.
     MantleNetwork.registerPackets();
     FluidContainerTransferManager.INSTANCE.init();
+
+    // Mantle's custom ingredients; Forge registered these through CraftingHelper.
+    CustomIngredientSerializer.register(FluidContainerIngredient.SERIALIZER);
+    CustomIngredientSerializer.register(PotionIngredient.SERIALIZER);
+    CustomIngredientSerializer.register(PotionDisplayIngredient.SERIALIZER);
 
     // Tinkers' own recipe conditions; data files reference them, so they must parse
     // before the first datapack load. Forge registered these through CraftingHelper.

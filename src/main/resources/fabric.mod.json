@@ -24,6 +24,12 @@
     { "config": "tconstruct.client.mixins.json", "environment": "client" }
   ],
   "accessWidener": "tconstruct.accesswidener",
+  "custom": {
+    "cardinal-components": [
+      "tconstruct:persistent_data",
+      "tconstruct:modifiers"
+    ]
+  },
   "depends": {
     "fabricloader": "${loader_range}",
     "minecraft": "${minecraft_range}",

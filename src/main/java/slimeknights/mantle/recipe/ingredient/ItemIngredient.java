@@ -1,12 +1,14 @@
 package slimeknights.mantle.recipe.ingredient;
 
 import com.google.gson.JsonObject;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ItemLike;
-import net.minecraftforge.common.crafting.AbstractIngredient;
 import slimeknights.mantle.data.loadable.Loadable;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.array.ArrayLoadable;
@@ -19,9 +21,16 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-/** Abstract ingredient that matches a list of items or a tag, mirroring the vanilla syntax */
-public abstract class ItemIngredient extends AbstractIngredient {
+/**
+ * Abstract ingredient that matches a list of items or a tag, mirroring the vanilla syntax.
+ *
+ * <p>Port note: on Forge this extended {@code AbstractIngredient}; on Fabric custom matching
+ * lives behind {@link CustomIngredient}, and call sites receive a vanilla ingredient through
+ * {@link #toVanilla()}.
+ */
+public abstract class ItemIngredient implements CustomIngredient {
   /** Field for the item tag */
   protected static final LoadableField<TagKey<Item>,ItemIngredient> TAG_FIELD = new UnsyncedField<>(Loadables.ITEM_TAG.nullableField("tag", i -> i.tag));
 
@@ -29,19 +38,9 @@ public abstract class ItemIngredient extends AbstractIngredient {
   @Nullable
   protected final TagKey<Item> tag;
 
-  /** Constructor letting you supply your own item stream */
-  protected ItemIngredient(List<Item> items, @Nullable TagKey<Item> tag, Stream<? extends Value> values) {
-    super(values);
+  protected ItemIngredient(List<Item> items, @Nullable TagKey<Item> tag) {
     this.items = items;
     this.tag = tag;
-  }
-
-  /** Constructor using default stream of items */
-  protected ItemIngredient(List<Item> items, @Nullable TagKey<Item> tag) {
-    this(items, tag, Stream.concat(
-      items.stream().map(item -> new ItemValue(new ItemStack(item))),
-      Stream.ofNullable(tag).map(TagValue::new))
-    );
   }
 
   /** Maps the list to a list of items */
@@ -51,9 +50,22 @@ public abstract class ItemIngredient extends AbstractIngredient {
 
   @Override
   public boolean test(@Nullable ItemStack stack) {
-    // super is going to do list iteration, but for tag checks it's way easier to just check directly
+    // for tag checks it's way easier to just check directly
     // also ensures we never match empty just because our lists are empty
     return stack != null && (items.contains(stack.getItem()) || tag != null && stack.is(tag));
+  }
+
+  /** Stream of all items matched, expanding the tag */
+  protected Stream<Item> allItems() {
+    Stream<Item> tagItems = tag == null
+      ? Stream.empty()
+      : StreamSupport.stream(BuiltInRegistries.ITEM.getTagOrEmpty(tag).spliterator(), false).map(Holder::value);
+    return Stream.concat(items.stream(), tagItems);
+  }
+
+  @Override
+  public List<ItemStack> getMatchingStacks() {
+    return allItems().map(ItemStack::new).toList();
   }
 
   /** Custom field that syncs the item tag as items to the client */
@@ -82,7 +94,7 @@ public abstract class ItemIngredient extends AbstractIngredient {
     @Override
     public void encode(RegistryFriendlyByteBuf buffer, ItemIngredient parent) {
       // sync both tag and item values to client
-      ITEM_LIST.encode(buffer, Arrays.stream(parent.getItems()).map(ItemStack::getItem).toList());
+      ITEM_LIST.encode(buffer, parent.allItems().toList());
     }
   }
 }

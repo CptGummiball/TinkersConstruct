@@ -69,3 +69,11 @@ accessible field net/minecraft/world/entity/item/ItemEntity pickupDelay I
 # registries write into these same maps).
 accessible field net/minecraft/world/item/AxeItem STRIPPABLES Ljava/util/Map;
 accessible field net/minecraft/world/item/ShovelItem FLATTENABLES Ljava/util/Map;
+# FlowingFluid spread internals used by Mantle's InvertedFluid (upward-flowing fluids);
+# Forge exposed these via AT. Making them accessible also lets the inverted overrides
+# receive vanilla's internal calls, same as on Forge.
+accessible method net/minecraft/world/level/material/FlowingFluid getCacheKey (Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;)S
+accessible method net/minecraft/world/level/material/FlowingFluid canPassThrough (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Z
+accessible method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
+# isWaterHole is final in vanilla; extendable removes final for the inverted override
+extendable method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z

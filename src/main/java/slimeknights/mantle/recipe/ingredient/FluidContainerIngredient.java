@@ -2,70 +2,77 @@ package slimeknights.mantle.recipe.ingredient;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredientSerializer;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.crafting.AbstractIngredient;
-import net.minecraftforge.common.crafting.IIngredientSerializer;
-import slimeknights.mantle.transfer.fluid.FluidStack;
-import slimeknights.mantle.transfer.fluid.FluidType;
-import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
-import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.Mantle;
+import slimeknights.mantle.data.loadable.common.IngredientLoadable;
+import slimeknights.mantle.data.loadable.field.RecordField;
+import slimeknights.mantle.data.loadable.record.RecordLoadable;
+import slimeknights.mantle.recipe.helper.LoadableIngredientSerializer;
 import slimeknights.mantle.registration.object.FluidObject;
-import slimeknights.mantle.util.JsonHelper;
+import slimeknights.mantle.transfer.TransferUtil;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.IFluidHandlerItem;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
+import slimeknights.mantle.util.typed.TypedMap;
 
 import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /** Ingredient that matches a container of fluid */
 @SuppressWarnings("unused")  // API
-public class FluidContainerIngredient extends AbstractIngredient {
+public class FluidContainerIngredient implements CustomIngredient {
   public static final ResourceLocation ID = Mantle.getResource("fluid_container");
-  public static final Serializer SERIALIZER = new Serializer();
+  public static final LoadableIngredientSerializer<FluidContainerIngredient> SERIALIZER = new LoadableIngredientSerializer<>(ID, RecordLoadable.create(
+    FluidField.INSTANCE,
+    IngredientLoadable.ALLOW_EMPTY.nullableField("display", i -> i.display),
+    FluidContainerIngredient::new));
 
   /** Ingredient to use for matching */
   private final FluidIngredient fluidIngredient;
   /** Internal ingredient to display the ingredient recipe viewers */
   @Nullable
   private final Ingredient display;
-  private ItemStack[] displayStacks;
+  private List<ItemStack> displayStacks;
   protected FluidContainerIngredient(FluidIngredient fluidIngredient, @Nullable Ingredient display) {
-    super(Stream.of());
     this.fluidIngredient = fluidIngredient;
     this.display = display;
   }
 
-  /** Creates an instance from a fluid ingredient with a display container */
-  public static FluidContainerIngredient fromIngredient(FluidIngredient ingredient, Ingredient display) {
-    return new FluidContainerIngredient(ingredient, display);
+  /** Creates an instance from a fluid ingredient with a display container, as a vanilla-usable ingredient */
+  public static Ingredient fromIngredient(FluidIngredient ingredient, Ingredient display) {
+    return new FluidContainerIngredient(ingredient, display).toVanilla();
   }
 
   /** Creates an instance from a fluid ingredient with no display, not recommended */
-  public static FluidContainerIngredient fromIngredient(FluidIngredient ingredient) {
-    return new FluidContainerIngredient(ingredient, null);
+  public static Ingredient fromIngredient(FluidIngredient ingredient) {
+    return new FluidContainerIngredient(ingredient, null).toVanilla();
   }
 
-  /** Creates an instance from a fluid ingredient with a display container */
-  public static FluidContainerIngredient fromFluid(FluidObject<?> fluid) {
+  /** Creates an instance from a fluid object with its bucket as the display container */
+  public static Ingredient fromFluid(FluidObject<?> fluid) {
     return fromIngredient(fluid.ingredient(FluidStack.BUCKET_VOLUME), Ingredient.of(fluid));
   }
 
   @Override
   public boolean test(@Nullable ItemStack stack) {
     // first, must have a fluid capability
-    return stack != null && !stack.isEmpty() && stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).resolve().flatMap(cap -> {
+    return stack != null && !stack.isEmpty() && TransferUtil.getFluidHandlerItem(stack).flatMap(cap -> {
       // second, must contain enough fluid
       if (cap.getTanks() == 1) {
         FluidStack contained = cap.getFluidInTank(0);
         if (!contained.isEmpty() && fluidIngredient.getAmount(contained.getFluid()) == contained.getAmount() && fluidIngredient.test(contained.getFluid())) {
           // so far so good, from this point on we are forced to make copies as we need to try draining, so copy and fetch the copy's cap
           ItemStack copy = ItemHandlerHelper.copyStackWithSize(stack, 1);
-          return copy.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).resolve();
+          return TransferUtil.getFluidHandlerItem(copy);
         }
       }
       return Optional.empty();
@@ -74,99 +81,78 @@ public class FluidContainerIngredient extends AbstractIngredient {
       Fluid fluid = cap.getFluidInTank(0).getFluid();
       int amount = fluidIngredient.getAmount(fluid);
       FluidStack drained = cap.drain(amount, FluidAction.EXECUTE);
-      // we need an exact match, and we need the resulting container item to be the same as the item stack's container item
-      return drained.getFluid() == fluid && drained.getAmount() == amount && ItemStack.matches(stack.getCraftingRemainingItem(), cap.getContainer());
+      // we need an exact match, and we need the resulting container item to be the same as the item stack's remainder
+      ItemStack container = cap instanceof IFluidHandlerItem item ? item.getContainer() : ItemStack.EMPTY;
+      return drained.getFluid() == fluid && drained.getAmount() == amount && ItemStack.matches(stack.getRecipeRemainder(), container);
     }).isPresent();
   }
 
   @Override
-  public ItemStack[] getItems() {
+  public List<ItemStack> getMatchingStacks() {
     if (displayStacks == null) {
       // no container? unfortunately hard to display this recipe so show nothing
       if (display == null) {
-        displayStacks = new ItemStack[0];
+        displayStacks = List.of();
       } else {
-        displayStacks = display.getItems();
+        displayStacks = List.of(display.getItems());
       }
     }
     return displayStacks;
   }
 
   @Override
-  public JsonElement toJson() {
-    JsonElement element = fluidIngredient.serialize();
-    JsonObject json;
-    if (element.isJsonObject()) {
-      json = element.getAsJsonObject();
-    } else {
-      json = new JsonObject();
-      json.add("fluid", element);
-    }
-    json.addProperty("type", ID.toString());
-    if (display != null) {
-      json.add("display", display.toJson());
-    }
-    return json;
+  public boolean requiresTesting() {
+    return true;
   }
 
   @Override
-  protected void invalidate() {
-    super.invalidate();
-    this.displayStacks = null;
-  }
-
-  @Override
-  public boolean isSimple() {
-    return false;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return false;
-  }
-
-  @Override
-  public IIngredientSerializer<? extends Ingredient> getSerializer() {
+  public CustomIngredientSerializer<?> getSerializer() {
     return SERIALIZER;
   }
 
-  /** Serializer logic */
-  private static class Serializer implements IIngredientSerializer<FluidContainerIngredient> {
+  /** Serializes to JSON for datagen */
+  public JsonElement toJson() {
+    return SERIALIZER.serialize(this);
+  }
+
+  /**
+   * Field reading the fluid ingredient in the 1.20 format: the fluid ingredient's keys sit
+   * flat on the ingredient object (the shape the shipped data files use), with a nested
+   * {@code fluid} object as the alternative for ingredient forms that don't serialize to an
+   * object.
+   */
+  private enum FluidField implements RecordField<FluidIngredient,FluidContainerIngredient> {
+    INSTANCE;
+
     @Override
-    public FluidContainerIngredient parse(JsonObject json) {
-      FluidIngredient fluidIngredient;
+    public FluidIngredient get(JsonObject json, TypedMap context) {
       // if we have fluid and its not a primitive, then its nested
       if (json.has("fluid") && !json.get("fluid").isJsonPrimitive()) {
-        fluidIngredient = FluidIngredient.LOADABLE.getIfPresent(json, "fluid");
-      } else {
-        fluidIngredient = FluidIngredient.LOADABLE.convert(json, "fluid");
+        return FluidIngredient.LOADABLE.getIfPresent(json, "fluid");
       }
-      Ingredient display = null;
-      if (json.has("display")) {
-        display = Ingredient.fromJson(JsonHelper.getElement(json, "display"));
-      }
-      return new FluidContainerIngredient(fluidIngredient, display);
+      return FluidIngredient.LOADABLE.convert(json, "fluid");
     }
 
     @Override
-    public FluidContainerIngredient parse(RegistryFriendlyByteBuf buffer) {
-      FluidIngredient fluidIngredient = FluidIngredient.LOADABLE.decode(buffer);
-      Ingredient display = null;
-      if (buffer.readBoolean()) {
-        display = Ingredient.fromNetwork(buffer);
+    public void serialize(FluidContainerIngredient parent, JsonObject json) {
+      JsonElement element = FluidIngredient.LOADABLE.serialize(parent.fluidIngredient);
+      if (element.isJsonObject()) {
+        for (Map.Entry<String,JsonElement> entry : element.getAsJsonObject().entrySet()) {
+          json.add(entry.getKey(), entry.getValue());
+        }
+      } else {
+        json.add("fluid", element);
       }
-      return new FluidContainerIngredient(fluidIngredient, display);
     }
 
     @Override
-    public void write(RegistryFriendlyByteBuf buffer, FluidContainerIngredient ingredient) {
-      FluidIngredient.LOADABLE.encode(buffer, ingredient.fluidIngredient);
-      if (ingredient.display != null) {
-        buffer.writeBoolean(true);
-        ingredient.display.toNetwork(buffer);
-      } else {
-        buffer.writeBoolean(false);
-      }
+    public FluidIngredient decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
+      return FluidIngredient.LOADABLE.decode(buffer);
+    }
+
+    @Override
+    public void encode(RegistryFriendlyByteBuf buffer, FluidContainerIngredient parent) {
+      FluidIngredient.LOADABLE.encode(buffer, parent.fluidIngredient);
     }
   }
 }

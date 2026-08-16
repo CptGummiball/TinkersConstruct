@@ -12,19 +12,7 @@
 
 
 
-# --- mantle.recipe stragglers, each blocked on a different piece of real work ---
-
-# Extends Forge's AbstractIngredient. Needs Fabric's CustomIngredient API
-# (fabric-recipe-api-v1): implement CustomIngredient + CustomIngredientSerializer and
-# expose it through toVanilla(). Only 1 TConstruct call site, so it is not urgent.
-slimeknights/mantle/recipe/ingredient/FluidContainerIngredient.java
-# Base class of the two potion ingredients above; also extends AbstractIngredient.
-# Zero TConstruct call sites of its own.
-slimeknights/mantle/recipe/ingredient/ItemIngredient.java
-slimeknights/mantle/recipe/ingredient/PotionIngredient.java
-slimeknights/mantle/recipe/ingredient/PotionDisplayIngredient.java
-slimeknights/mantle/recipe/helper/LoadableIngredientSerializer.java
-
+# --- mantle.recipe stragglers ---
 
 # 1.21 deleted net.minecraft.data.recipes.FinishedRecipe; datagen now writes through
 # RecipeOutput. Belongs with the datagen phase, not here.
@@ -50,11 +38,9 @@ slimeknights/mantle/fluid/tooltip/FluidTooltipHandler.java
 slimeknights/mantle/fluid/tooltip/FluidUnit.java
 slimeknights/mantle/fluid/tooltip/FluidUnitList.java
 
-# InvertedFluid copies FlowingFluid's private spread machinery from 1.20.1 and inverts it.
-# 1.21 refactored those internals -- getCacheKey and canPassThrough no longer exist, so this
-# is a rewrite against the new base class, not a patch. Needed before phase 4: ichor and
-# molten cinderslime are upward-flowing core fluids (negative density).
-slimeknights/mantle/fluid/InvertedFluid.java
+# InvertedFluid note: the big FlowingFluid spread refactor landed in 1.21.2, not 1.21.1 —
+# the 1.20-shaped internals (getCacheKey, canPassThrough, the slope caches) still exist
+# here, so the inverted overrides compile against 1.21.1 with only access widening.
 
 # Waits on OffhandCooldownTracker (phase-3 tool logic: events + TinkerData capability).
 # mantle.util.OffhandCooldownTracker itself is not copied in yet.
