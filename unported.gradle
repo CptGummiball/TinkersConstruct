@@ -40,9 +40,6 @@ slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
 slimeknights/mantle/fluid/texture/ClientTextureFluidType.java
 slimeknights/mantle/fluid/texture/FluidTextureCameraProvider.java
 slimeknights/mantle/fluid/texture/FluidTextureManager.java
-# TextureFluidType/InvertedFluidType only exist to carry client render extensions.
-slimeknights/mantle/fluid/TextureFluidType.java
-slimeknights/mantle/fluid/InvertedFluidType.java
 # Datagen providers, phase 7.
 slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
 slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
@@ -64,3 +61,13 @@ slimeknights/mantle/fluid/InvertedFluid.java
 
 # Retextured-block system: carries Forge ModelData, belongs to the client model phase.
 slimeknights/mantle/block/entity/DefaultRetexturedBlockEntity.java
+
+# --- mantle.item stragglers, zero TConstruct users each ---
+# Forge item-capability provider pattern; Fabric equivalent is FluidStorage.ITEM
+# registration on the items that want it, done where those items register.
+slimeknights/mantle/item/ConstantFluidContainerWrapper.java
+slimeknights/mantle/item/ContainerFoodItem.java
+# Lectern book interaction, needs the book module (phase 5) and its packets.
+slimeknights/mantle/item/LecternBookItem.java
+slimeknights/mantle/item/AbstractBookItem.java
+slimeknights/mantle/item/ILecternBookItem.java

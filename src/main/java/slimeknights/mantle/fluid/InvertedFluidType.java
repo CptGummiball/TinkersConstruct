@@ -1,19 +1,14 @@
 package slimeknights.mantle.fluid;
 
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import slimeknights.mantle.transfer.fluid.FluidType;
-import slimeknights.mantle.fluid.texture.ClientInvertedFluidType;
 
-import java.util.function.Consumer;
+/**
+ * Fluid type adding an extra flipped texture for the in-world block, for upward-flowing
+ * fluids. Client rendering registers in phase 5; see {@link TextureFluidType}.
+ */
+public class InvertedFluidType extends TextureFluidType {
 
-/** Fluid type adding an extra flipped texture for the in world block */
-public class InvertedFluidType extends FluidType {
   public InvertedFluidType(Properties properties) {
     super(properties);
-  }
-
-  @Override
-  public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
-    consumer.accept(new ClientInvertedFluidType(this));
   }
 }

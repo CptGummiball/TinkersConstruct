@@ -125,10 +125,16 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       `recipe.container`, **`fluid` + `fluid.transfer`** (transfer helper, container
       transfers with Fabric-native reload listener, `FluidBuilder`, `ForgeFlowingFluid`
       shim, `FabricFluidHandlerItem`, `FluidType.of()` lookup, `MantleTags`,
-      `TranslationHelper`), and both fluid registration objects. Done since: **`block` + `inventory`** (see the smoke-test section below). Still to do:
-      the rest of `recipe` (custom ingredients), client + book, and a
-      Fabric-native replacement for `registration.deferred`/`adapter` (Forge's
-      DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
+      `TranslationHelper`), and both fluid registration objects. Done since: **`block` + `inventory`**, **`item`**, and **`registration.deferred`
+      rebuilt Fabric-native** — same API, eager semantics. `SynchronizedDeferredRegister`
+      registers immediately and returns filled `RegistryObject`s, which removes the
+      empty-holder failure mode entirely. The fluid builder was the tricky case: Forge
+      registered bucket/block against `DelayedSupplier`s resolved later, but vanilla's
+      `BucketItem`/`LiquidBlock` need their fluid at construction — so the builder now
+      stores factories and registers bucket/block *after* the fluids, then wires
+      `FluidType.register` for the `of()` lookup and Fabric attribute handlers.
+      Still to do: the rest of `recipe` (custom ingredients), client + book,
+      `registration.adapter` (unused so far).
 
       **`network` — done and live.** `NetworkWrapper` is Fabric-native
       (`CustomPacketPayload` + per-packet types derived from channel name + registration
