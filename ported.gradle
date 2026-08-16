@@ -56,3 +56,7 @@ slimeknights/tconstruct/library/recipe/melting/IMeltingContainer.java
 slimeknights/tconstruct/world/TinkerHeadType.java
 slimeknights/tconstruct/TConstruct.java
 slimeknights/tconstruct/common/network/TinkerNetwork.java
+slimeknights/tconstruct/common/config/Config.java
+slimeknights/tconstruct/common/config/ConfigurableAction.java
+# materials/modifiers/tools.nbt are one tightly-coupled core slice (the ToolStack ->
+# DataComponents heart); they gate in together in a dedicated pass.
