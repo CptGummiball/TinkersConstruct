@@ -109,3 +109,12 @@ slimeknights/tconstruct/tools/TinkerToolActions.java
 slimeknights/tconstruct/common/TinkerDamageTypes.java
 slimeknights/tconstruct/library/recipe/RecipeResult.java
 slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java
+
+# THE LOMBOK KILLERS, found by bisection: classes extending/implementing types that
+# became RECORDS in 1.21. Lombok's handlers throw on them and abort generation for every
+# file after them in the batch -- two files produced ~1200 phantom errors between them.
+# ToolStackItemPredicate: extends ItemPredicate (record) -> redesign as ItemSubPredicate.
+# DummyArmorMaterial: implements ArmorMaterial (record) -> becomes a Holder<ArmorMaterial>
+# registration at bootstrap.
+slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
+slimeknights/tconstruct/library/tools/item/armor/DummyArmorMaterial.java
