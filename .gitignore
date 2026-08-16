@@ -56,3 +56,6 @@ options.txt
 /ops.json
 /whitelist.json
 src/generated/resources/.cache/*
+
+# Modpack reference copy (large binary, read-only input for the port)
+*.mrpack

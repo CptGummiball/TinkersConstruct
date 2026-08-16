@@ -1,0 +1,7 @@
+accessWidener v2 named
+# Tinkers' Construct — Fabric access widener
+#
+# Converted from the Forge accesstransformer.cfg. AccessWidener requires field
+# descriptors that the AT format does not carry, so entries are migrated
+# alongside the module that needs them rather than in one unverifiable batch.
+# See PORTING.md for the remaining AT entries still to migrate.

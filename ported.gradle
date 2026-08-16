@@ -1,0 +1,14 @@
+# Port gate — packages handed to javac.
+#
+# Append a line when a module finishes porting. Everything not listed here is
+# still Forge/1.20.1 source and is skipped, so the build stays green and each
+# module is verifiable on its own.
+#
+# Progress is tracked in PORTING.md.
+
+# --- Fabric bootstrap + Forge-compat shim layer ---
+slimeknights/tconstruct/fabric/**
+
+# --- Mantle-lite (ported subset of the Mantle library, same package so the
+#     955 TConstruct files that import it need no import changes) ---
+slimeknights/mantle/**
