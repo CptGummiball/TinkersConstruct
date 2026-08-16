@@ -3,9 +3,12 @@ package slimeknights.mantle.event.entity.living;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.level.ServerLevelAccessor;
 import slimeknights.mantle.event.Cancelable;
 import slimeknights.mantle.event.Event;
+
+import javax.annotation.Nullable;
 
 /**
  * Mirror of Forge's {@code MobSpawnEvent} family — only {@link FinalizeSpawn}, the one
@@ -32,12 +35,15 @@ public class MobSpawnEvent extends Event {
     private final ServerLevelAccessor level;
     private final DifficultyInstance difficulty;
     private final MobSpawnType spawnType;
+    @Nullable
+    private final SpawnGroupData spawnData;
 
-    public FinalizeSpawn(Mob mob, ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType) {
+    public FinalizeSpawn(Mob mob, ServerLevelAccessor level, DifficultyInstance difficulty, MobSpawnType spawnType, @Nullable SpawnGroupData spawnData) {
       super(mob);
       this.level = level;
       this.difficulty = difficulty;
       this.spawnType = spawnType;
+      this.spawnData = spawnData;
     }
 
     public ServerLevelAccessor getLevel() {
@@ -50,6 +56,12 @@ public class MobSpawnEvent extends Event {
 
     public MobSpawnType getSpawnType() {
       return spawnType;
+    }
+
+    /** Spawn group data; 1.21 dropped Forge's extra spawn tag, so this is the whole re-finalize payload. */
+    @Nullable
+    public SpawnGroupData getSpawnData() {
+      return spawnData;
     }
   }
 }

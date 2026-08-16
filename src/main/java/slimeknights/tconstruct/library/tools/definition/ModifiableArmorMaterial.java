@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.library.tools.definition;
 
+import net.minecraft.core.Holder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -16,7 +17,7 @@ public class ModifiableArmorMaterial extends DummyArmorMaterial {
   /** Array of slot index to tool definition for the slot */
   private final ToolDefinition[] armorDefinitions;
 
-  private ModifiableArmorMaterial(ResourceLocation id, SoundEvent equipSound, ToolDefinition... armorDefinitions) {
+  private ModifiableArmorMaterial(ResourceLocation id, Holder<SoundEvent> equipSound, ToolDefinition... armorDefinitions) {
     super(id, equipSound);
     if (armorDefinitions.length != 4) {
       throw new IllegalArgumentException("Must have an armor definition for each slot");
@@ -25,7 +26,7 @@ public class ModifiableArmorMaterial extends DummyArmorMaterial {
   }
 
   /** Creates a modifiable armor material, creates tool definition for the selected slots */
-  public static ModifiableArmorMaterial create(ResourceLocation id, SoundEvent equipSound, ArmorItem.Type... slots) {
+  public static ModifiableArmorMaterial create(ResourceLocation id, Holder<SoundEvent> equipSound, ArmorItem.Type... slots) {
     ToolDefinition[] definitions = new ToolDefinition[4];
     for (ArmorItem.Type slot : slots) {
       definitions[slot.ordinal()] = ToolDefinition.create(id.withSuffix("_" + slot.getName()));
@@ -34,7 +35,7 @@ public class ModifiableArmorMaterial extends DummyArmorMaterial {
   }
 
   /** Creates a modifiable armor material, creates tool definition for all four armor slots */
-  public static ModifiableArmorMaterial create(ResourceLocation id, SoundEvent equipSound) {
+  public static ModifiableArmorMaterial create(ResourceLocation id, Holder<SoundEvent> equipSound) {
     return create(id, equipSound, ArmorItem.Type.values());
   }
 

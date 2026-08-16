@@ -8,7 +8,7 @@ import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.hook.interaction.InteractionSource;
 import slimeknights.tconstruct.library.module.HookProvider;
 import slimeknights.tconstruct.library.module.ModuleHook;
-import slimeknights.tconstruct.library.recipe.worktable.ModifierSetWorktableRecipe;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.tools.definition.module.ToolHooks;
 import slimeknights.tconstruct.library.tools.definition.module.ToolModule;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
@@ -34,7 +34,7 @@ public enum DualOptionInteraction implements InteractionToolModule, ToolModule {
 
   @Override
   public boolean canInteract(IToolStackView tool, ModifierId modifier, InteractionSource source) {
-    return (source == InteractionSource.RIGHT_CLICK) != ModifierSetWorktableRecipe.isInSet(tool.getPersistentData(), KEY, modifier);
+    return (source == InteractionSource.RIGHT_CLICK) != ContentLookups.isInWorktableSet(tool.getPersistentData(), KEY, modifier);
   }
 
   @Override

@@ -3,12 +3,12 @@ package slimeknights.tconstruct.library.modifiers.hook.armor;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataKeys;
 import slimeknights.tconstruct.library.tools.context.EquipmentContext;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
-import slimeknights.tconstruct.shared.TinkerAttributes;
 
 import java.util.Collection;
 
@@ -39,18 +39,20 @@ public interface ProtectionModifierHook {
   @SuppressWarnings("removal")
   @Deprecated(forRemoval = true)
   static float getProtectionCap(TinkerDataCapability.Holder capability) {
-    return Math.min(20 + capability.resolve().map(data -> data.get(TinkerDataKeys.PROTECTION_CAP)).orElse(0f), 25 * 0.95f);
+    Float bonus = capability.get(TinkerDataKeys.PROTECTION_CAP);
+    return Math.min(20 + (bonus != null ? bonus : 0f), 25 * 0.95f);
   }
 
   /** Gets the maximum protection amount on the given entity */
   @SuppressWarnings("removal")
   static double getProtectionCap(LivingEntity living, TinkerDataCapability.Holder capability) {
-    return Math.min(living.getAttributeValue(TinkerAttributes.PROTECTION_CAP.get()) * 25f + capability.resolve().map(data -> data.get(TinkerDataKeys.PROTECTION_CAP)).orElse(0f), 25 * 0.95f);
+    Float bonus = capability.get(TinkerDataKeys.PROTECTION_CAP);
+    return Math.min(ContentLookups.getProtectionCap(living) * 25f + (bonus != null ? bonus : 0f), 25 * 0.95f);
   }
 
   /** Gets the maximum protection amount on the given entity */
   static double getProtectionCap(LivingEntity living) {
-    return getProtectionCap(living, living.getCapability(TinkerDataCapability.CAPABILITY));
+    return getProtectionCap(living, TinkerDataCapability.getData(living));
   }
 
   /** Merger that combines all values */

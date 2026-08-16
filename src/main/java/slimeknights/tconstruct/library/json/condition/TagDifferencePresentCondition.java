@@ -7,8 +7,8 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition;
-import net.minecraftforge.common.crafting.conditions.IConditionSerializer;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.TConstruct;
 
@@ -18,9 +18,14 @@ import java.util.List;
 
 /** @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#difference(TagKey, TagKey)} */
 @Deprecated(forRemoval = true)
-public class TagDifferencePresentCondition<T> implements ICondition {
+public class TagDifferencePresentCondition<T> implements ICondition, ConditionHelper.Writable {
   private static final ResourceLocation NAME = TConstruct.getResource("tag_difference_present");
   public static final Serializer SERIALIZER = new Serializer();
+
+  /** Registers this condition type with the shim condition parser */
+  public static void register() {
+    ConditionHelper.register(NAME, SERIALIZER::read);
+  }
 
   private final TagKey<T> base;
   private final List<TagKey<T>> subtracted;
@@ -51,6 +56,11 @@ public class TagDifferencePresentCondition<T> implements ICondition {
   }
 
   @Override
+  public void write(JsonObject json) {
+    SERIALIZER.write(json, this);
+  }
+
+  @Override
   public boolean test(IContext context) {
     // get the base tag
     Collection<Holder<T>> base = context.getTag(this.base);
@@ -78,8 +88,8 @@ public class TagDifferencePresentCondition<T> implements ICondition {
     return false;
   }
 
-  private static class Serializer implements IConditionSerializer<TagDifferencePresentCondition<?>> {
-    @Override
+  /** Serializer, shaped like Forge's IConditionSerializer minus the interface (the shim parser takes a factory) */
+  public static class Serializer {
     public void write(JsonObject json, TagDifferencePresentCondition<?> value) {
       json.addProperty("registry", value.base.registry().location().toString());
       json.addProperty("base", value.base.location().toString());
@@ -97,14 +107,11 @@ public class TagDifferencePresentCondition<T> implements ICondition {
         JsonHelper.parseList(json, "subtracted", (e, s) -> TagKey.create(registry, JsonHelper.convertToResourceLocation(e, s))));
     }
 
-    @Override
     public TagDifferencePresentCondition<?> read(JsonObject json) {
       return readGeneric(json);
     }
 
-    @Override
-    public ResourceLocation getID()
-    {
+    public ResourceLocation getID() {
       return NAME;
     }
   }

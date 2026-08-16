@@ -58,12 +58,24 @@ slimeknights/tconstruct/TConstruct.java
 slimeknights/tconstruct/common/network/TinkerNetwork.java
 slimeknights/tconstruct/common/config/Config.java
 slimeknights/tconstruct/common/config/ConfigurableAction.java
-# --- Core slice: BREAKTHROUGH -- 126 REAL errors, zero Lombok failures, when gated in.
-# Bisection found two files whose 1.21-record inheritance crashed Lombok's handlers and
-# aborted generation for everything after them in the batch (~1200 phantom errors):
-# ToolStackItemPredicate and DummyArmorMaterial, now in unported.gradle with redesign
-# notes. Remaining 126 spread over ~50 files at 1-5 each: genuine single-site fixes,
-# then ToolStack last.
+# --- The core slice: COMPLETE — materials, modifiers, tools, json, ToolStack all compile ---
+slimeknights/tconstruct/library/exception/**
+slimeknights/tconstruct/library/json/**
+slimeknights/tconstruct/library/module/**
+slimeknights/tconstruct/library/materials/**
+slimeknights/tconstruct/library/modifiers/**
+slimeknights/tconstruct/library/tools/**
+slimeknights/tconstruct/common/TinkerTags.java
+slimeknights/tconstruct/common/Sounds.java
+slimeknights/tconstruct/library/recipe/partbuilder/Pattern.java
+slimeknights/tconstruct/world/block/CrystalBlock.java
+slimeknights/tconstruct/world/block/CrystalClusterBlock.java
+slimeknights/tconstruct/world/block/BuddingCrystalBlock.java
+slimeknights/tconstruct/tools/stats/**
+slimeknights/tconstruct/library/recipe/TagPredicate.java
+slimeknights/tconstruct/tools/modules/ArmorModuleBuilder.java
+slimeknights/mantle/util/CombatHelper.java
+slimeknights/mantle/client/ResourceColorManager.java
 slimeknights/mantle/client/TooltipKey.java
 slimeknights/mantle/client/SafeClientAccess.java
 slimeknights/mantle/event/**
@@ -77,3 +89,24 @@ slimeknights/mantle/item/TierSortingRegistry.java
 slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java
 slimeknights/tconstruct/library/tools/capability/TinkerDataCapability.java
 slimeknights/mantle/data/listener/**
+# --- Gated in while clearing the slice's cross-references ---
+slimeknights/mantle/util/OffhandCooldownTracker.java
+slimeknights/mantle/recipe/data/ItemNameOutput.java
+slimeknights/tconstruct/common/recipe/RecipeCacheInvalidator.java
+slimeknights/tconstruct/common/network/SyncPersistentDataPacket.java
+slimeknights/tconstruct/library/events/**
+# Static recipe caches used by predicates and modules; the recipe classes that fill them
+# gate in with phase 4 (MaterialRecipe is in already, carrying three ContentLookups seams).
+slimeknights/tconstruct/library/recipe/melting/MeltingRecipeLookup.java
+slimeknights/tconstruct/library/recipe/casting/CastingRecipeLookup.java
+slimeknights/tconstruct/library/recipe/material/MaterialRecipe.java
+slimeknights/tconstruct/library/recipe/material/MaterialRecipeCache.java
+slimeknights/tconstruct/library/recipe/material/IMaterialValue.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialCastingLookup.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialFluidRecipe.java
+slimeknights/tconstruct/library/recipe/casting/ICastingContainer.java
+slimeknights/tconstruct/tools/network/PushBlockRowPacket.java
+# Library-clean content constants/modules pulled in by slice files.
+slimeknights/tconstruct/tools/data/ModifierIds.java
+slimeknights/tconstruct/tools/modules/OvergrowthModule.java
+slimeknights/tconstruct/tools/modules/armor/CounterModule.java

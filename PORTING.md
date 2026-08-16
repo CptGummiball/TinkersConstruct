@@ -120,41 +120,53 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       condition layer reading the existing `forge:`-namespaced blocks.
 - [ ] **1c — Remaining shims.** Event bus → Fabric events + mixins, registry helpers
       (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
-### Core-slice status (phase 3)
+### Core-slice status (phase 3): **COMPLETE — full build green (compile + remap + jar)**
 
-The slice went from 2987 to **1526 errors** with the capability layer done:
+The slice went 2987 → 0. The library heart (materials, modifiers, json, tools, ToolStack)
+compiles and remaps. Load-bearing decisions made on the way down:
 
-- **`TinkerDataCapability`** — runtime-only armor data; now a weak map keyed by entity
-  identity (equivalent contract: entries die with the entity, equipment events refill new
-  instances). No attachment machinery needed.
-- **`PersistentDataCapability`** — now a Cardinal Components entity component with
-  `RespawnCopyStrategy.ALWAYS_COPY` (survives death, like the Forge clone handler) and
-  explicit join sync. `TinkerComponents` is the CCA entrypoint; CCA base+entity resolve
-  from Ladysnake's maven.
+- **`TinkerDataCapability`** — weak map keyed by entity identity (runtime-only data).
+- **`PersistentDataCapability` / `EntityModifierCapability`** — Cardinal Components entity
+  components (`TinkerComponents` registers both for `Entity.class`; persistent data uses
+  `RespawnCopyStrategy.ALWAYS_COPY` + explicit join sync; entity modifiers serialize
+  nothing while empty, write access stays gated by `supportCapability`).
+- **ToolStack write-through**: `TagCompat.getTag` copies out of `minecraft:custom_data`,
+  so `ToolStack.from(stack)` binds the stack and every nbt-mutating setter (plus the
+  `WriteThroughToolData` persistent-data view) flushes via `writeBack()` →
+  `TagCompat.setTag`. `TagCompat.getOrCreateTag` re-anchors a fresh owned tag on every
+  call, which keeps the 12 loose `getOrCreateTag().put…` sites live-mutating (the fresh
+  `CustomData` instance also keeps vanilla change-detection snapshots valid).
+- **`ContentLookups` seam** (`fabric` package): library reads of content-module singletons
+  (fishing hook + indestructible entity types, enderference/bleeding effects,
+  PROTECTION_CAP attribute, overslime/overworked ids, material/data recipe types and
+  serializers, part builder stack, material block entity type, worktable modifier-set
+  reader) are lazy by-ID registry lookups — semantically what `RegistryObject` was.
+  Phase 4 may revert call sites to the content statics; both read the same entry.
+- **`ContainerRecipeInput`**: a type cannot implement both `Container` and `RecipeInput`
+  (one named signature maps to two intermediary names — an unfixable remap conflict, found
+  by `remapJar`). Containers stay `Container`; `ICommonRecipe<C extends IRecipeContainer>`
+  implements `Recipe<ContainerRecipeInput<C>>` and delegates to the 1.20-shaped
+  `matches(C, Level)`.
+- **Item hook surface**: Forge-only `IForgeItem` methods on `ModifiableItem` /
+  `ModifiableLauncherItem` remain as plain Tinkers-called API (no `@Override`);
+  `FabricItem` supplies `allowComponentsUpdateAnimation` / `allowContinuingBlockBreaking`.
+  Syncing the vanilla damage component for tools is a phase-4 item-settings task.
+- **1.21 sweeps landed**: attribute modifiers keyed by `ResourceLocation`
+  (AttributeModule + melee/max-armor variants), enchantment hooks on
+  `Holder<Enchantment>` with component reads/writes, `ModifierManager` resolves
+  enchantment ids lazily against the server registry (datapack registry in 1.21) and
+  expands tag mappings on resolve, the harvest-enchant swap runs on the `ENCHANTMENTS`
+  component, `ToolActionTransforms` replaces Forge's `getToolModifiedState` (vanilla maps;
+  tilling rules mirrored, modded tillables noted as a compat gap), `OffhandCooldownTracker`
+  + `SwingArmPacket` ported, `BlockSideHitListener` on `AttackBlockCallback` (break-XP
+  bridge waits on the event layer), `LootingLevelEvent`/`LivingEvent`/`Event.HasResult`
+  shims added, `DummyArmorMaterial` registers a zeroed `Holder<ArmorMaterial>`.
 
-**The load-bearing ToolStack decision is made**: all tool data lives as one CompoundTag
-inside `minecraft:custom_data`, exactly as it lived in the stack tag on 1.20 — see
-`TagCompat`'s javadoc for the full rationale (one component keeps ~2000 lines of
-ToolStack/modifier-NBT logic and every `tic_*` NBT path valid; vanilla interop flows
-through the item overrides which read ToolStack).
-
-**Mutation review list (runtime-correctness, not compile)**: `getOrCreateTag()` on 1.20
-returned the live tag; `CustomData` copies. These 12 swept call sites must be checked to
-write back through `TagCompat.setTag` during the ToolStack pass:
-`ToolBuildHandler:103,193 · ToolDamageUtil:33 · ToolHarvestLogic:236 · TooltipUtil:112 ·
-MaterialIdNBT:122 · IMaterialItem:38 · ToolBuildingRecipe:312 · IDisplayModifierRecipe:146 ·
-PartSwapCastingRecipe:242 · ToolCastingRecipe:236 · InfinityModule:69`
-
-Remaining error mass is mapped, in working order for the next pass:
-
-1. `Modifiable*Item` classes (55/48/42/25/21 errors) — the Forge `IForgeItem` hook surface
-   (attribute modifiers, canPerformAction, swing/interaction hooks) needs its Fabric
-   answer per hook: FabricItem where it exists, Tinkers' own call paths otherwise.
-2. `TooltipUtil`/`ToolAttackUtil`/`ToolHarvestLogic` — helpers sitting on those hooks.
-3. `ModifierManager`/`MaterialRegistry` — reload listeners + sync events, same pattern as
-   `FluidContainerTransferManager`.
-4. **`ToolStack` (22) — the NBT→components heart, deliberately last** once its callers
-   compile.
+Still parked in `unported.gradle`, each with its reason: content-bound loot files and
+ranged/armor items (phase 4), the tool fluid-capability step (`MobEquipment`), the
+event-layer step (explosions, `SlimeBounceHandler`), the energy step,
+`ToolStackItemPredicate` (ItemSubPredicate redesign), and commands
+(`MaterialRegistry.getTagSource`).
 
 - [~] **2 — Mantle-lite.** Ported: `data.loadable` (unblocks 398 dependent files),
       `data.predicate` (98), `registration.object` (92), `data.registry`, `data.gson`, `util`.

@@ -122,8 +122,9 @@ public enum StatLoadable implements Loadable<Stat<?>> {
   /** Encodes the value to the registry using the type generics */
   private <T> void encodeGeneric(RegistryFriendlyByteBuf buffer, Stat<T> value) {
     StatType<T> type = value.getType();
-    buffer.writeId(BuiltInRegistries.STAT_TYPE, type);
-    buffer.writeId(type.getRegistry(), value.getValue());
+    // 1.21 removed writeId; raw registry ids mirror decodeRegistry above
+    buffer.writeVarInt(BuiltInRegistries.STAT_TYPE.getId(type));
+    buffer.writeVarInt(type.getRegistry().getId(value.getValue()));
   }
 
 
@@ -163,11 +164,11 @@ public enum StatLoadable implements Loadable<Stat<?>> {
       name = ((EntityType<?>) value).getDescription();
     // other useful registries - some mod might be using them
     } else if (registry == BuiltInRegistries.FLUID) {
-      name = ((Fluid) value).getFluidType().getDescription();
+      name = slimeknights.mantle.transfer.fluid.FluidType.of((Fluid) value).getDescription();
     } else if (registry == BuiltInRegistries.MOB_EFFECT) {
       name = ((MobEffect) value).getDisplayName();
-    } else if (registry == BuiltInRegistries.ENCHANTMENT) {
-      name = Component.translatable(((Enchantment) value).getDescriptionId());
+    // enchantment stats are unreachable in 1.21: the registry is per-world (datapack), so a
+    // static stat registry cannot reference it; such stats fall through to the raw key
     } else {
       // if it's not one of the above types we do not know how to translate it, so use the raw key
       name = Component.literal(getKey(stat));

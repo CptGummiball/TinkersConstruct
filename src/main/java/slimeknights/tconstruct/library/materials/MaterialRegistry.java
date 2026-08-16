@@ -4,7 +4,6 @@ import com.google.common.annotations.VisibleForTesting;
 import net.minecraft.server.level.ServerPlayer;
 import slimeknights.mantle.event.MinecraftForge;
 import org.jetbrains.annotations.ApiStatus.Internal;
-import slimeknights.mantle.command.argument.TagSource;
 import slimeknights.mantle.network.packet.ISimplePacket;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
@@ -19,7 +18,6 @@ import slimeknights.tconstruct.library.materials.stats.MaterialStatsManager;
 import slimeknights.tconstruct.library.materials.stats.UpdateMaterialStatsPacket;
 import slimeknights.tconstruct.library.materials.traits.MaterialTraitsManager;
 import slimeknights.tconstruct.library.materials.traits.UpdateMaterialTraitsPacket;
-import slimeknights.tconstruct.shared.command.argument.MaterialTagSource;
 import slimeknights.tconstruct.tools.stats.GripMaterialStats;
 import slimeknights.tconstruct.tools.stats.HandleMaterialStats;
 import slimeknights.tconstruct.tools.stats.HeadMaterialStats;
@@ -30,6 +28,7 @@ import slimeknights.tconstruct.tools.stats.SkullStats;
 import slimeknights.tconstruct.tools.stats.SlimeStats;
 import slimeknights.tconstruct.tools.stats.StatlessMaterialStats;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -202,10 +201,8 @@ public final class MaterialRegistry {
     return INSTANCE.registry.getVisibleMaterials();
   }
 
-  /** Gets the tag source for materials for use in commands. Generally better to use methods from {@link IMaterialRegistry} for addons for the sake of tests */
-  public static TagSource<IMaterial> getTagSource() {
-    return new MaterialTagSource(INSTANCE.materialManager);
-  }
+  // getTagSource() (mantle TagSource + MaterialTagSource) is cut until the command layer
+  // ports; it existed solely for /tconstruct material tag commands.
 
 
   /* Stats */
@@ -255,7 +252,7 @@ public final class MaterialRegistry {
 
     // on a dedicated server, the client is running a separate game instance, this is where we send packets, plus fully loaded should already be true
     // this event is not fired when connecting to a server
-    if (player.connection.connection.isMemoryConnection()) {
+    if (player.getServer() != null && player.getServer().isSingleplayerOwner(player.getGameProfile())) {
       // if the packet is being sent to ourself, skip sending, prevents recreating all material instances in the registry a second time on dedicated servers
       // note it will still send the packet if another client connects in LAN
       fullyLoaded = true;

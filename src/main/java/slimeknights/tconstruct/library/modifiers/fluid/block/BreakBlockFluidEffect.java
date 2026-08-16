@@ -145,9 +145,9 @@ public record BreakBlockFluidEffect(float hardness, Map<Holder<Enchantment>,Inte
     } else {
       translationKey += ".enchanted";
       Component enchantments = enchantments().entrySet().stream().<Component>map(entry -> {
-        Enchantment enchantment = entry.getKey();
-        MutableComponent component = Component.translatable(enchantment.getDescriptionId());
-        if (enchantment.getMaxLevel() != 1) {
+        Holder<Enchantment> enchantment = entry.getKey();
+        MutableComponent component = enchantment.value().description().copy();
+        if (enchantment.value().getMaxLevel() != 1) {
           component.append(CommonComponents.SPACE).append(Component.translatable("enchantment.level." + entry.getValue()));
         }
         return component;

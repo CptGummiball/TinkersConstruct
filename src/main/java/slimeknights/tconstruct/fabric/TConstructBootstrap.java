@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.network.MantleNetwork;
 import slimeknights.mantle.transfer.fluid.TransferComponents;
+import slimeknights.tconstruct.library.json.condition.TagDifferencePresentCondition;
+import slimeknights.tconstruct.library.json.condition.TagIntersectionPresentCondition;
 
 /**
  * Fabric {@code main} entrypoint.
@@ -32,6 +34,11 @@ public class TConstructBootstrap implements ModInitializer {
     // Mantle infrastructure: packet channel plus the fluid container transfer loader.
     MantleNetwork.registerPackets();
     FluidContainerTransferManager.INSTANCE.init();
+
+    // Tinkers' own recipe conditions; data files reference them, so they must parse
+    // before the first datapack load. Forge registered these through CraftingHelper.
+    TagDifferencePresentCondition.register();
+    TagIntersectionPresentCondition.register();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

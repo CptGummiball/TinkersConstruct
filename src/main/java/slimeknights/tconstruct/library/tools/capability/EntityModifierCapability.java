@@ -2,30 +2,30 @@ package slimeknights.tconstruct.library.tools.capability;
 
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.ListTag;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import slimeknights.mantle.event.MinecraftForge;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilitySerializable;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import slimeknights.mantle.event.EventPriority;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.ladysnake.cca.api.v3.component.Component;
+import org.ladysnake.cca.api.v3.component.ComponentKey;
+import org.ladysnake.cca.api.v3.component.ComponentRegistry;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-/** Capability to allow an entity to store modifiers, used on projectiles fired from modifiable items */
+/**
+ * Capability to allow an entity to store modifiers, used on projectiles fired from modifiable items.
+ *
+ * <p>Port note: Forge attached a serializable provider to entities matching the registered
+ * predicates. On Fabric this is a Cardinal Components entity component attached to every
+ * entity (see {@code TinkerComponents}); it serializes nothing while empty, so the blanket
+ * attach is free. The predicate list keeps its role of gating which entities Tinkers
+ * <i>writes</i> modifiers to.
+ */
 public class EntityModifierCapability {
   /** Default instance to use with orElse */
   public static final EntityModifiers EMPTY = new EntityModifiers() {
@@ -50,17 +50,19 @@ public class EntityModifierCapability {
 
   /** Capability ID */
   private static final ResourceLocation ID = TConstruct.getResource("modifiers");
-  /** Capability type */
-  public static final Capability<EntityModifiers> CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {});
+  /** Component key; the CAPABILITY name is kept so call sites port with an import rewrite. */
+  public static final ComponentKey<ModifiersComponent> CAPABILITY =
+    ComponentRegistry.getOrCreate(ID, ModifiersComponent.class);
 
   /** Gets the capability for the entity or an empty instance if missing */
   public static EntityModifiers getCapability(Entity entity) {
-    return entity.getCapability(CAPABILITY).orElse(EMPTY);
+    ModifiersComponent component = CAPABILITY.getNullable(entity);
+    return component != null ? component : EMPTY;
   }
 
   /** Gets the data or an empty instance if missing */
   public static ModifierNBT getOrEmpty(Entity entity) {
-    return entity.getCapability(CAPABILITY).orElse(EMPTY).getModifiers();
+    return getCapability(entity).getModifiers();
   }
 
   /** Checks if the given entity supports this capability */
@@ -78,52 +80,26 @@ public class EntityModifierCapability {
     ENTITY_PREDICATES.add(predicate);
   }
 
-  /** Registers this capability with relevant busses*/
-  public static void register() {
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, RegisterCapabilitiesEvent.class, event -> event.register(ModifierNBT.class));
-    MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, EntityModifierCapability::attachCapability);
-  }
+  /** No event wiring needed on Fabric; the component attaches in {@code TinkerComponents}. */
+  public static void register() {}
 
-  /** Event listener to attach the capability */
-  private static void attachCapability(AttachCapabilitiesEvent<Entity> event) {
-    if (supportCapability(event.getObject())) {
-      Provider provider = new Provider();
-      event.addCapability(ID, provider);
-      event.addListener(provider);
-    }
-  }
+  /** Cardinal component holding the modifier list. */
+  public static class ModifiersComponent implements Component, EntityModifiers {
+    private static final String KEY_MODIFIERS = "modifiers";
 
-  /** Capability provider instance */
-  private static class Provider implements ICapabilitySerializable<ListTag>, Runnable, EntityModifiers {
     @Getter @Setter
     private ModifierNBT modifiers = ModifierNBT.EMPTY;
-    private LazyOptional<EntityModifiers> capability;
-    private Provider() {
-      this.capability = LazyOptional.of(() -> this);
-    }
 
-    @Nonnull
     @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
-      return CAPABILITY.orEmpty(cap, capability);
+    public void readFromNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
+      this.modifiers = ModifierNBT.readFromNBT(tag.getList(KEY_MODIFIERS, Tag.TAG_COMPOUND));
     }
 
     @Override
-    public void run() {
-      // called when capabilities invalidate, create a new cap just in case they are revived later
-      capability.invalidate();
-      capability = LazyOptional.of(() -> this);
-    }
-
-    @Override
-    public ListTag serializeNBT() {
-      return modifiers.serializeToNBT();
-    }
-
-    @Override
-    public void deserializeNBT(ListTag nbt) {
-      modifiers = ModifierNBT.readFromNBT(nbt);
-      run();
+    public void writeToNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
+      if (!modifiers.isEmpty()) {
+        tag.put(KEY_MODIFIERS, modifiers.serializeToNBT());
+      }
     }
   }
 

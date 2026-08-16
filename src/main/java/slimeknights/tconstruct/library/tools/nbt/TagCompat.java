@@ -37,15 +37,19 @@ public final class TagCompat {
     return stack.has(DataComponents.CUSTOM_DATA);
   }
 
-  /** Reads the legacy tag, creating and attaching an empty one when absent. */
+  /**
+   * Reads the legacy tag, creating and attaching an empty one when absent.
+   *
+   * <p>Mutation contract, matching 1.20's live tag: the returned instance is anchored as a
+   * <i>fresh</i> component on the stack, so mutating it mutates the stack. Because the
+   * component instance is new, snapshots vanilla took earlier (change detection, copies)
+   * still hold the previous instance and correctly observe a change.
+   */
   public static CompoundTag getOrCreateTag(ItemStack stack) {
     CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-    if (data == null) {
-      CompoundTag tag = new CompoundTag();
-      stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-      return tag;
-    }
-    return data.copyTag();
+    CompoundTag tag = data == null ? new CompoundTag() : data.copyTag();
+    stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+    return tag;
   }
 
   /** Writes the tag back; null clears it. CustomData is immutable, so mutations must end here. */

@@ -76,8 +76,31 @@ public class CombatHelper {
     return modifiers;
   }
 
+  /** Collects the attribute modifiers a stack applies in the given slot for one attribute; 1.21 moved this into the attribute_modifiers component. */
+  public static Collection<AttributeModifier> getStackModifiers(ItemStack stack, EquipmentSlot slot, Holder<Attribute> attribute) {
+    if (stack.isEmpty()) {
+      return List.of();
+    }
+    List<AttributeModifier> found = new java.util.ArrayList<>();
+    stack.forEachModifier(slot, (attributeHolder, modifier) -> {
+      if (attributeHolder.equals(attribute)) {
+        found.add(modifier);
+      }
+    });
+    return found;
+  }
+
+  /** Collects every attribute modifier a stack applies in the given slot, keyed by attribute */
+  public static com.google.common.collect.Multimap<Holder<Attribute>, AttributeModifier> getAllStackModifiers(ItemStack stack, EquipmentSlot slot) {
+    com.google.common.collect.ImmutableMultimap.Builder<Holder<Attribute>, AttributeModifier> builder = com.google.common.collect.ImmutableMultimap.builder();
+    if (!stack.isEmpty()) {
+      stack.forEachModifier(slot, builder::put);
+    }
+    return builder.build();
+  }
+
   /** Gets the attribute for the offhand by subtracting mainhand attributes and adding in offhand stack attributes. */
-  public static float getOffhandAttribute(ItemStack stack, LivingEntity entity, Attribute attribute) {
+  public static float getOffhandAttribute(ItemStack stack, LivingEntity entity, Holder<Attribute> attribute) {
     AttributeInstance instance = entity.getAttribute(attribute);
     if (instance == null) {
       return (float) entity.getAttributeBaseValue(attribute);
@@ -85,11 +108,8 @@ public class CombatHelper {
 
     // fetch attributes for both relevant stacks
     ItemStack mainStack = getMainhandAttributeStack(entity);
-    Collection<AttributeModifier> mainModifiers = List.of();
-    if (!mainStack.isEmpty()) {
-      mainModifiers = mainStack.getAttributeModifiers(EquipmentSlot.MAINHAND).get(attribute);
-    }
-    Collection<AttributeModifier> offhandModifiers = stack.getAttributeModifiers(EquipmentSlot.MAINHAND).get(attribute);
+    Collection<AttributeModifier> mainModifiers = getStackModifiers(mainStack, EquipmentSlot.MAINHAND, attribute);
+    Collection<AttributeModifier> offhandModifiers = getStackModifiers(stack, EquipmentSlot.MAINHAND, attribute);
 
     // if no modifier changed, can save some work by just using the cached value
     if (mainModifiers.isEmpty() && offhandModifiers.isEmpty()) {
@@ -100,34 +120,34 @@ public class CombatHelper {
     Map<Operation, Set<AttributeModifier>> modifiers = copyModifiers(instance);
     // remove all mainhand modifiers
     for (AttributeModifier modifier : mainModifiers) {
-      modifiers.get(modifier.getOperation()).remove(modifier);
+      modifiers.get(modifier.operation()).remove(modifier);
     }
     // add in all offhand modifiers
     for (AttributeModifier modifier : offhandModifiers) {
       // while there should be no duplicates due to mainhand modifiers above,
-      // this will remove duplicates due to AttributeModifier equals only checking UUID
-      modifiers.get(modifier.getOperation()).add(modifier);
+      // this will remove duplicates due to matching modifier ids
+      modifiers.get(modifier.operation()).add(modifier);
     }
     // compute the value
     return (float) computeAttribute(attribute, instance.getBaseValue(), modifiers);
   }
 
   /** Computes the value for the given attribute. Copied from {@link AttributeInstance#calculateValue} */
-  public static double computeAttribute(Attribute attribute, double base, Map<Operation,Set<AttributeModifier>> modifiers) {
+  public static double computeAttribute(Holder<Attribute> attribute, double base, Map<Operation,Set<AttributeModifier>> modifiers) {
     // addition modifiers
-    for (AttributeModifier modifier : modifiers.get(Operation.ADDITION)) {
-      base += modifier.getAmount();
+    for (AttributeModifier modifier : modifiers.get(Operation.ADD_VALUE)) {
+      base += modifier.amount();
     }
     // multiply base
     double value = base;
-    for (AttributeModifier modifier : modifiers.get(Operation.MULTIPLY_BASE)) {
-      value += base * modifier.getAmount();
+    for (AttributeModifier modifier : modifiers.get(Operation.ADD_MULTIPLIED_BASE)) {
+      value += base * modifier.amount();
     }
     // multiply total
-    for (AttributeModifier modifier : modifiers.get(Operation.MULTIPLY_TOTAL)) {
-      value *= 1.0 + modifier.getAmount();
+    for (AttributeModifier modifier : modifiers.get(Operation.ADD_MULTIPLIED_TOTAL)) {
+      value *= 1.0 + modifier.amount();
     }
-    return attribute.sanitizeValue(value);
+    return attribute.value().sanitizeValue(value);
   }
   // The attack()/isAttackable simulation family is cut for now: it posts Forge combat
   // events (CriticalHitEvent, knockback/sweep hooks) and returns with the event-layer

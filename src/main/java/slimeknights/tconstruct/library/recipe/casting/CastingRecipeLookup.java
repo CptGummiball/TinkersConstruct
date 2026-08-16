@@ -54,7 +54,7 @@ public class CastingRecipeLookup {
 
   /** Marks the given item output as castable */
   public static void registerCastable(ItemOutput output) {
-    TagKey<Item> tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(output);
+    TagKey<Item> tag = output.getTag();
     if (tag != null) {
       registerCastable(tag);
     // item name output fails here, but that only happens at datagen so just ignore that

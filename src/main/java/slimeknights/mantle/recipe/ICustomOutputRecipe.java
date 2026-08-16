@@ -2,13 +2,14 @@ package slimeknights.mantle.recipe;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeInput;
+import slimeknights.mantle.recipe.container.ContainerRecipeInput;
+import slimeknights.mantle.recipe.container.IRecipeContainer;
 
 /**
  * Recipe that has an output other than an {@link ItemStack} — melting, casting, modifiers.
  * @param <C>  Inventory type
  */
-public interface ICustomOutputRecipe<C extends RecipeInput> extends ICommonRecipe<C> {
+public interface ICustomOutputRecipe<C extends IRecipeContainer> extends ICommonRecipe<C> {
 
   /** @deprecated Item stack output not supported */
   @Override
@@ -20,7 +21,7 @@ public interface ICustomOutputRecipe<C extends RecipeInput> extends ICommonRecip
   /** @deprecated Item stack output not supported */
   @Override
   @Deprecated
-  default ItemStack assemble(C input, HolderLookup.Provider registries) {
+  default ItemStack assemble(ContainerRecipeInput<C> input, HolderLookup.Provider registries) {
     return ItemStack.EMPTY;
   }
 }

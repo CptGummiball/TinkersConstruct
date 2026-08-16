@@ -27,9 +27,9 @@ public record RemoveEffectFluidEffect(MobEffect effect) implements FluidEffect<F
     LivingEntity living = context.getLivingTarget();
     if (living != null && level.isFull()) {
       if (action.simulate()) {
-        return living.hasEffect(effect) ? 1 : 0;
+        return living.hasEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect)) ? 1 : 0;
       }
-      return living.removeEffect(effect) ? 1 : 0;
+      return living.removeEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect)) ? 1 : 0;
     }
     return 0;
   }

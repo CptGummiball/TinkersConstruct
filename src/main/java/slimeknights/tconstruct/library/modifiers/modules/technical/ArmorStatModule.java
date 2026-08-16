@@ -149,7 +149,11 @@ public record ArmorStatModule(TinkerDataKey<Float> key, LevelingValue amount, bo
    * @return  Level from the key
    */
   public static float getStat(Entity living, TinkerDataKey<Float> key) {
-    return living.getCapability(TinkerDataCapability.CAPABILITY).resolve().map(data -> data.get(key)).orElse(0f);
+    if (living instanceof net.minecraft.world.entity.LivingEntity livingEntity) {
+      Float value = TinkerDataCapability.getData(livingEntity).get(key);
+      return value != null ? value : 0f;
+    }
+    return 0f;
   }
 
 

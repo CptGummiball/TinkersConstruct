@@ -41,7 +41,6 @@ public class MaterialBlock extends Block implements EntityBlock {
     }
   }
 
-  @Override
   public ItemStack getCloneItemStack(BlockGetter level, BlockPos pos, BlockState state) {
     ItemStack stack = new ItemStack(state.getBlock());
     if (level.getBlockEntity(pos) instanceof MaterialBlockEntity be) {

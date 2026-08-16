@@ -32,7 +32,7 @@ import slimeknights.tconstruct.library.tools.item.ranged.ModifiableLauncherItem;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
-import slimeknights.tconstruct.tools.TinkerTools;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -179,6 +179,14 @@ public final class ModifierUtil {
   }
 
   /** Checks if a tool can perform the given action */
+  /** Stack-level action check; Forge asked the stack directly, on Fabric modifiable tools answer and vanilla rods are the fallback */
+  private static boolean canCastFishingRod(ItemStack stack) {
+    if (stack.is(TinkerTags.Items.MODIFIABLE)) {
+      return canPerformAction(ToolStack.from(stack), ToolActions.FISHING_ROD_CAST);
+    }
+    return stack.getItem() instanceof net.minecraft.world.item.FishingRodItem;
+  }
+
   public static boolean canPerformAction(IToolStackView tool, ToolAction action) {
     if (!tool.isBroken()) {
       // can the tool do this action inherently?
@@ -244,13 +252,13 @@ public final class ModifierUtil {
    */
   @Nullable
   public static InteractionHand updateFishingRod(Projectile projectile, int damage, boolean applyCooldown, ModifierId cause) {
-    if (projectile.getType() == TinkerTools.fishingHook.get() && projectile.getOwner() instanceof LivingEntity living) {
+    if (ContentLookups.isFishingHook(projectile) && projectile.getOwner() instanceof LivingEntity living) {
       ItemStack stack = living.getMainHandItem();
       InteractionHand hand = InteractionHand.MAIN_HAND;
       // must be able to cast
-      if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+      if (!canCastFishingRod(stack)) {
         stack = living.getOffhandItem();
-        if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+        if (!canCastFishingRod(stack)) {
           return null;
         }
         hand = InteractionHand.OFF_HAND;

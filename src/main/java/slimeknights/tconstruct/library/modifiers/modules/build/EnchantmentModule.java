@@ -21,7 +21,6 @@ import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.data.predicate.IJsonPredicate;
 import slimeknights.mantle.data.predicate.block.BlockPredicate;
 import slimeknights.mantle.data.predicate.entity.LivingEntityPredicate;
-import slimeknights.mantle.util.LogicHelper;
 import slimeknights.tconstruct.library.json.LevelingInt;
 import slimeknights.tconstruct.library.json.TinkerLoadables;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
@@ -164,14 +163,14 @@ public interface EnchantmentModule extends ModifierModule, LevelingIntModule, Co
 
     @Override
     public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, Holder<Enchantment> enchantment, int level) {
-      if (enchantment == this.enchantment() && condition().matches(tool, modifier)) {
+      if (enchantment.equals(this.enchantment()) && condition().matches(tool, modifier)) {
         level += getLevel(modifier);
       }
       return level;
     }
 
     @Override
-    public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Enchantment,Integer> map) {
+    public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Holder<Enchantment>,Integer> map) {
       if (condition().matches(tool, modifier)) {
         EnchantmentModifierHook.addEnchantment(map, this.enchantment(), getLevel(modifier));
       }
@@ -212,13 +211,27 @@ public interface EnchantmentModule extends ModifierModule, LevelingIntModule, Co
       return LOADER;
     }
 
+    /** Checks if the enchantment applies in the given slot; 1.21 moved slots into the enchantment definition */
+    private static boolean matchesSlot(Holder<Enchantment> enchantment, EquipmentSlot slot) {
+      for (net.minecraft.world.entity.EquipmentSlotGroup group : enchantment.value().definition().slots()) {
+        if (group.test(slot)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     @Override
     public float getProtectionModifier(IToolStackView tool, ModifierEntry modifier, EquipmentContext context, EquipmentSlot slotType, DamageSource source, float modifierValue) {
       if (condition().matches(tool, modifier)) {
         int subtractLevel = getLevel(modifier);
         Holder<Enchantment> enchantment = enchantment();
-        if (subtractLevel > 0 && LogicHelper.isInList(enchantment.slots, slotType) && !source.is(DamageTypeTags.BYPASSES_ENCHANTMENTS)) {
-          modifierValue -= enchantment.getDamageProtection(subtractLevel, source);
+        if (subtractLevel > 0 && matchesSlot(enchantment, slotType) && !source.is(DamageTypeTags.BYPASSES_ENCHANTMENTS)
+            && context.getLevel() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+          // 1.21 evaluates enchantment protection through data-driven effects
+          org.apache.commons.lang3.mutable.MutableFloat protection = new org.apache.commons.lang3.mutable.MutableFloat();
+          enchantment.value().modifyDamageProtection(serverLevel, subtractLevel, context.getEntity().getItemBySlot(slotType), context.getEntity(), source, protection);
+          modifierValue -= protection.floatValue();
         }
       }
       return modifierValue;
@@ -258,14 +271,14 @@ public interface EnchantmentModule extends ModifierModule, LevelingIntModule, Co
 
     @Override
     public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, Holder<Enchantment> enchantment, int level) {
-      if (enchantment == this.enchantment() && tool.getPersistentData().getBoolean(conditionFlag)) {
+      if (enchantment.equals(this.enchantment()) && tool.getPersistentData().getBoolean(conditionFlag)) {
         level += getLevel(modifier);
       }
       return level;
     }
 
     @Override
-    public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Enchantment,Integer> map) {
+    public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Holder<Enchantment>,Integer> map) {
       if (tool.getPersistentData().getBoolean(conditionFlag)) {
         EnchantmentModifierHook.addEnchantment(map, this.enchantment(), getLevel(modifier));
       }
@@ -301,7 +314,7 @@ public interface EnchantmentModule extends ModifierModule, LevelingIntModule, Co
     }
 
     @Override
-    public void updateHarvestEnchantments(IToolStackView tool, ModifierEntry modifier, ToolHarvestContext context, EquipmentContext equipment, EquipmentSlot slot, Map<Enchantment,Integer> map) {
+    public void updateHarvestEnchantments(IToolStackView tool, ModifierEntry modifier, ToolHarvestContext context, EquipmentContext equipment, EquipmentSlot slot, Map<Holder<Enchantment>,Integer> map) {
       if (slots.contains(slot) && condition.matches(tool, modifier) && block.matches(context.getState()) && holder.matches(context.getLiving())) {
         EnchantmentModifierHook.addEnchantment(map, enchantment, getLevel(modifier));
       }

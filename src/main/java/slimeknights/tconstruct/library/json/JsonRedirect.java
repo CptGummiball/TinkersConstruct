@@ -3,7 +3,8 @@ package slimeknights.tconstruct.library.json;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.crafting.CraftingHelper;
+import net.minecraft.util.GsonHelper;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition;
 import slimeknights.mantle.util.JsonHelper;
 
@@ -22,7 +23,7 @@ public class JsonRedirect {
     JsonObject json = new JsonObject();
     json.addProperty("id", id.toString());
     if (condition != null) {
-      json.add("condition", CraftingHelper.serialize(condition));
+      json.add("condition", ConditionHelper.serialize(condition));
     }
     return json;
   }
@@ -32,7 +33,7 @@ public class JsonRedirect {
     ResourceLocation id = JsonHelper.getResourceLocation(json, "id");
     ICondition condition = null;
     if (json.has("condition")) {
-      condition = CraftingHelper.getCondition(json);
+      condition = ConditionHelper.getCondition(GsonHelper.getAsJsonObject(json, "condition"));
     }
     return new JsonRedirect(id, condition);
   }

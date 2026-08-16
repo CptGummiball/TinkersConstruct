@@ -91,7 +91,7 @@ public record ToolActionWalkerTransformModule(ToolAction action, SoundEvent soun
       context.setOffsetPos(mutable);
       // transform the block
       BlockState original = world.getBlockState(mutable);
-      BlockState transformed = original.getToolModifiedState(context, action, false);
+      BlockState transformed = slimeknights.mantle.item.ToolActionTransforms.getToolModifiedState(original, context, action, false);
       if (transformed != null) {
         world.setBlock(mutable, transformed, Block.UPDATE_ALL_IMMEDIATE);
         world.destroyBlock(target, true);

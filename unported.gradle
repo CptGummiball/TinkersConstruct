@@ -81,8 +81,6 @@ slimeknights/tconstruct/common/registration/FluidDeferredRegisterExtension.java
 slimeknights/tconstruct/common/registration/ItemDeferredRegisterExtension.java
 
 # --- library/utils: blocked on the Fabric event layer (a dedicated later step) ---
-# LeftClickBlock -> AttackBlockCallback plus block-break events.
-slimeknights/tconstruct/library/utils/BlockSideHitListener.java
 # LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
 slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
 # ForgeEventFactory explosion hooks; belongs with the event layer.
@@ -96,25 +94,47 @@ slimeknights/tconstruct/library/tools/capability/fluid/**
 slimeknights/tconstruct/library/tools/capability/inventory/**
 slimeknights/tconstruct/library/tools/capability/ToolEnergyCapability.java
 slimeknights/tconstruct/library/tools/capability/ToolCapabilityProvider.java
-slimeknights/tconstruct/library/tools/capability/BlockItemProviderCapability.java
-slimeknights/tconstruct/library/tools/capability/EntityModifierCapability.java
-# CCA initializer references PersistentDataCapability/ModDataNBT from the core slice;
-# gates in together with it.
-# Slice-bound (see ported.gradle):
-slimeknights/tconstruct/common/registration/GeodeItemObject.java
-slimeknights/tconstruct/library/utils/TeleportHelper.java
-slimeknights/tconstruct/library/utils/HarvestTiers.java
-slimeknights/tconstruct/fabric/TinkerComponents.java
-slimeknights/tconstruct/tools/TinkerToolActions.java
-slimeknights/tconstruct/common/TinkerDamageTypes.java
-slimeknights/tconstruct/library/recipe/RecipeResult.java
-slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java
 
-# THE LOMBOK KILLERS, found by bisection: classes extending/implementing types that
-# became RECORDS in 1.21. Lombok's handlers throw on them and abort generation for every
-# file after them in the batch -- two files produced ~1200 phantom errors between them.
-# ToolStackItemPredicate: extends ItemPredicate (record) -> redesign as ItemSubPredicate.
-# DummyArmorMaterial: implements ArmorMaterial (record) -> becomes a Holder<ArmorMaterial>
-# registration at bootstrap.
+# THE LOMBOK KILLER still standing (DummyArmorMaterial, its twin, is redesigned onto a
+# registered Holder<ArmorMaterial>): extends ItemPredicate, a RECORD in 1.21. Lombok's
+# handlers throw on it and abort generation for every later file in the batch. Redesign
+# as an ItemSubPredicate; zero in-slice references, so it waits for the advancement pass.
 slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
-slimeknights/tconstruct/library/tools/item/armor/DummyArmorMaterial.java
+
+# --- Content-bound loot extensions: their getType() reads TinkerCommons/TinkerTools
+# loot-type statics, and 1.21 replaced the GSON loot Serializer classes with MapCodecs.
+# Both fixes land together when the shared/tools content modules gate in (phase 4).
+slimeknights/tconstruct/library/json/loot/AddToolDataFunction.java
+slimeknights/tconstruct/library/json/loot/HasLootContextSetCondition.java
+slimeknights/tconstruct/library/json/loot/TagPreferenceLootEntry.java
+slimeknights/tconstruct/library/json/loot/ToolPartLootEntry.java
+slimeknights/tconstruct/library/json/condition/TagNotEmptyCondition.java
+
+# --- Waiting on the tool fluid capability step (ToolTankHelper) ---
+slimeknights/tconstruct/library/json/loot/equipment/MobEquipment.java
+slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
+
+# --- Waiting on the event-layer step ---
+# Both construct CustomExplosion (utils, also event-layer); ProjectileExplosionModule
+# additionally needs gadgets' EFLNExplosion.
+slimeknights/tconstruct/library/modifiers/fluid/general/ExplosionFluidEffect.java
+slimeknights/tconstruct/library/modifiers/modules/combat/ProjectileExplosionModule.java
+
+# --- Waiting on the energy step (Team Reborn Energy compat) ---
+slimeknights/tconstruct/library/modifiers/modules/capacity/EnergyAsCapacityModule.java
+
+# --- Content-bound library files: compile once their content module gates in (phase 4) ---
+# world module: the event carries the EnderSlimeEntity that caused the teleport.
+slimeknights/tconstruct/library/events/teleport/EnderSlimeTeleportEvent.java
+# SwappableModifierRecipe.VariantFormatter (recipe/modifiers/adding, full recipe-type tree).
+slimeknights/tconstruct/library/modifiers/modules/display/ModifierVariantNameModule.java
+# ModifierRecipeLookup pulls ModifierSalvage -> ITinkerStationRecipe -> TinkerRecipeTypes.
+slimeknights/tconstruct/library/json/predicate/modifier/SlotTypeModifierPredicate.java
+# tools module entities (ModifiableArrow, ThrownShuriken, ThrownTool) + EntityModifierCapability.
+slimeknights/tconstruct/library/tools/item/ModifiableArrowItem.java
+slimeknights/tconstruct/library/tools/item/ModifiableShurikenItem.java
+slimeknights/tconstruct/library/tools/item/ranged/ModifiableBowItem.java
+slimeknights/tconstruct/library/tools/item/ranged/ModifiableCrossbowItem.java
+# armor items: ToolInventoryCapability (capability step) + client armor model dispatch (phase 5).
+slimeknights/tconstruct/library/tools/item/armor/ModifiableArmorItem.java
+slimeknights/tconstruct/library/tools/item/armor/MultilayerArmorItem.java

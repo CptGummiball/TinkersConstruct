@@ -13,7 +13,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import slimeknights.mantle.event.MinecraftForge;
-import net.minecraftforge.common.crafting.CraftingHelper;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
 import slimeknights.mantle.event.entity.living.MobSpawnEvent.FinalizeSpawn;
 import slimeknights.mantle.event.EventPriority;
@@ -54,7 +54,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener implem
   @Internal
   public static void init() {
     net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(INSTANCE);
-    INSTANCE.conditionContext = slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE;
+    INSTANCE.context = slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE;
     MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, FinalizeSpawn.class, INSTANCE::finalizeSpawn);
   }
 
@@ -71,7 +71,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener implem
       try {
         JsonObject json = GsonHelper.convertToJsonObject(entry.getValue(), key.toString());
         // skip if conditions fail
-        if (!CraftingHelper.processConditions(json, "conditions", context)) {
+        if (!ConditionHelper.processConditions(json, "conditions", context)) {
           continue;
         }
         // parse the object
@@ -122,12 +122,7 @@ public class MobEquipmentManager extends SimpleJsonResourceReloadListener implem
 
 
   /* Events */
-
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(AddReloadListenerEvent event) {
-    event.addListener(this);
-    context = event.getConditionContext();
-  }
+  // Forge's AddReloadListenerEvent hookup is replaced by the Fabric registration in init().
 
   /** Handler for the finalize spawn event */
   private void finalizeSpawn(FinalizeSpawn event) {

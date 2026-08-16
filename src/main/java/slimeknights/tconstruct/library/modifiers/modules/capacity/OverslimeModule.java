@@ -13,7 +13,7 @@ import slimeknights.tconstruct.library.tools.stat.FloatToolStat;
 import slimeknights.tconstruct.library.tools.stat.ModifierStatsBuilder;
 import slimeknights.tconstruct.library.tools.stat.ToolStatId;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class OverslimeModule extends CapacityBarHook.PersistentDataCapacityBar {
   };
 
   private OverslimeModule() {
-    super(TinkerModifiers.overslime.getId());
+    super(ContentLookups.OVERSLIME);
   }
 
   @Override
@@ -68,7 +68,7 @@ public class OverslimeModule extends CapacityBarHook.PersistentDataCapacityBar {
 
   /** Gets the boost to apply from overworked */
   public static int getOverworkedBonus(IToolStackView tool) {
-    return (1 + tool.getModifierLevel(TinkerModifiers.overworked.getId()));
+    return (1 + tool.getModifierLevel(ContentLookups.OVERWORKED));
   }
 
   @Override

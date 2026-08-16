@@ -143,7 +143,7 @@ public record PlaceBlockFluidEffect(@Nullable Block block, @Nullable SoundEvent 
       if (blockItem.place(placeContext).consumesAction()) {
         if (player instanceof ServerPlayer serverPlayer) {
           BlockState placed = world.getBlockState(clicked);
-          SoundType soundType = placed.getSoundType(world, clicked, player);
+          SoundType soundType = placed.getSoundType();
           serverPlayer.connection.send(new ClientboundSoundPacket(
             BuiltInRegistries.SOUND_EVENT.wrapAsHolder(Objects.requireNonNullElse(sound, soundType.getPlaceSound())),
             SoundSource.BLOCKS, clicked.getX(), clicked.getY(), clicked.getZ(), (soundType.getVolume() + 1.0F) / 2.0F, soundType.getPitch() * 0.8F, TConstruct.RANDOM.nextLong()));
@@ -202,7 +202,7 @@ public record PlaceBlockFluidEffect(@Nullable Block block, @Nullable SoundEvent 
       // resulting events
       LivingEntity placer = context.getEntity(); // possible that living is nonnull when player is null
       world.gameEvent(GameEvent.BLOCK_PLACE, clicked, GameEvent.Context.of(placer, placed));
-      SoundType sound = placed.getSoundType(world, clicked, placer);
+      SoundType sound = placed.getSoundType();
       world.playSound(null, clicked, Objects.requireNonNullElse(this.sound, sound.getPlaceSound()), SoundSource.BLOCKS, (sound.getVolume() + 1.0F) / 2.0F, sound.getPitch() * 0.8F);
 
       // stack might be empty if we failed to find an item form; only matters in null block form anyways

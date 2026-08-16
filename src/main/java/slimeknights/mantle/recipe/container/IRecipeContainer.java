@@ -7,8 +7,13 @@ import net.minecraft.world.item.ItemStack;
 /**
  * {@link Container} extension for a recipe that only needs read access.
  * Used to control which slots an recipe gets and to prevent the need to implement IInventory to get the recipe.
+ *
+ * <p>1.21 runs recipe matching on {@code RecipeInput}; containers reach it through
+ * {@link ContainerRecipeInput} — implementing both interfaces here is impossible, see that
+ * record's notes.
  */
 public interface IRecipeContainer extends Container {
+
   /* Unsupported operations */
 
   /** @deprecated unsupported method */

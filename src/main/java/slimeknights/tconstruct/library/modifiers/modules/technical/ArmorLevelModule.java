@@ -104,7 +104,7 @@ public record ArmorLevelModule(TinkerDataKey<Integer> key, boolean allowBroken, 
    * @return  Level from the key
    */
   public static int getLevel(LivingEntity living, TinkerDataKey<Integer> key) {
-    return getLevel(living.getCapability(TinkerDataCapability.CAPABILITY), key);
+    return getLevel(TinkerDataCapability.getData(living), key);
   }
 
   /**
@@ -113,8 +113,7 @@ public record ArmorLevelModule(TinkerDataKey<Integer> key, boolean allowBroken, 
    * @param key    Key to get
    * @return  Level from the key
    */
-  public static int getLevel(TinkerDataCapability.Holder cap, TinkerDataKey<Integer> key) {
-    TinkerDataCapability.Holder data = LogicHelper.orElseNull(cap);
+  public static int getLevel(TinkerDataCapability.Holder data, TinkerDataKey<Integer> key) {
     return data != null ? data.get(key, 0) : 0;
   }
 }

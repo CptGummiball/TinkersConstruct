@@ -3,6 +3,7 @@ package slimeknights.mantle.util;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 public class LogicHelper {
   private LogicHelper() {}
@@ -34,6 +35,15 @@ public class LogicHelper {
       return defaultValue;
     }
     return list.get(index);
+  }
+
+  /**
+   * Unwraps an optional to its value or null. On Forge this took a {@code LazyOptional};
+   * capability results are plain {@link Optional}s on this port.
+   */
+  @Nullable
+  public static <T> T orElseNull(Optional<T> optional) {
+    return optional.orElse(null);
   }
 
   /** Quick helper to search an array for a given value by reference equality, uses {@link Object#equals(Object)} for comparisons. */

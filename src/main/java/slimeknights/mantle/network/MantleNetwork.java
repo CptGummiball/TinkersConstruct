@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferPacket;
+import slimeknights.mantle.network.packet.SwingArmPacket;
 
 /** Mantle's own network channel. */
 public class MantleNetwork {
@@ -15,11 +16,11 @@ public class MantleNetwork {
    * Registers packets into this network.
    *
    * <p>Reduced from the Forge original: the five lectern/book packets belong to the book
-   * module (phase 5 client work) and register there once it is ported. SwingArmPacket waits
-   * on OffhandCooldownTracker, which is phase-3 tool logic.
+   * module (phase 5 client work) and register there once it is ported.
    */
   public static void registerPackets() {
     INSTANCE.registerPacket(FluidContainerTransferPacket.class, FluidContainerTransferPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    INSTANCE.registerPacket(SwingArmPacket.class, SwingArmPacket::new, NetworkDirection.PLAY_TO_CLIENT);
 
     // Forge synced container items on OnDatapackSyncEvent; the Fabric counterpart is the
     // join event. Datapack reloads resync automatically because the reload listener runs

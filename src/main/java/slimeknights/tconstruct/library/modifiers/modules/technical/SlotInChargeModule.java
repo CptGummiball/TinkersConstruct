@@ -17,7 +17,6 @@ import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.Tin
 import slimeknights.tconstruct.library.tools.context.EquipmentChangeContext;
 import slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
-import slimeknights.tconstruct.tools.logic.InteractionHandler;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -27,6 +26,8 @@ import java.util.function.Function;
 public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagKey<Item> heldTag) implements HookProvider, EquipmentChangeModifierHook {
   private static final List<ModuleHook<?>> DEFAULT_HOOKS = HookProvider.<SlotInChargeModule>defaultHooks(ModifierHooks.EQUIPMENT_CHANGE);
   private static final Function<TinkerDataKey<?>,SlotInCharge> CONSTRUCTOR = key -> new SlotInCharge();
+  /** Both hand slots, mirroring InteractionHandler.HAND_SLOTS until the event layer ports that class */
+  private static final EquipmentSlot[] HAND_SLOTS = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
   public SlotInChargeModule(TinkerDataKey<SlotInCharge> key) {
     this(key, TinkerTags.Items.HELD);
@@ -65,8 +66,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
   }
 
   /** Checks if the given slot is in charge */
-  public static boolean isInCharge(TinkerDataCapability.Holder capability, TinkerDataKey<SlotInCharge> key, EquipmentSlot slot) {
-    TinkerDataCapability.Holder data = LogicHelper.orElseNull(capability);
+  public static boolean isInCharge(TinkerDataCapability.Holder data, TinkerDataKey<SlotInCharge> key, EquipmentSlot slot) {
     if (data != null) {
       SlotInCharge inCharge = data.get(key);
       return inCharge != null && inCharge.inCharge == slot;
@@ -75,8 +75,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
   }
 
   /** Gets the total level if the passed slot is in charge. */
-  public static int getLevel(TinkerDataCapability.Holder capability, TinkerDataKey<SlotInCharge> key, EquipmentSlot slot) {
-    TinkerDataCapability.Holder data = LogicHelper.orElseNull(capability);
+  public static int getLevel(TinkerDataCapability.Holder data, TinkerDataKey<SlotInCharge> key, EquipmentSlot slot) {
     if (data != null) {
       SlotInCharge inCharge = data.get(key);
       return inCharge != null && inCharge.inCharge == slot ? inCharge.totalLevel : 0;
@@ -118,8 +117,8 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
           return;
         }
       }
-      // if none, find a hand slot
-      for (EquipmentSlot hand : InteractionHandler.HAND_SLOTS) {
+      // if none, find a hand slot (InteractionHandler.HAND_SLOTS inlined; that class waits on the event layer)
+      for (EquipmentSlot hand : HAND_SLOTS) {
         if (levels[hand.getFilterFlag()] > 0) {
           inCharge = hand;
           return;

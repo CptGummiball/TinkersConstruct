@@ -77,6 +77,11 @@ public class TierSortingRegistry {
   }
 
   /** True when the first tier mines at least as well as the second. */
+  /** Forge's state overload: on 1.21 correctness is expressed through the tier's incorrect-blocks tag */
+  public static boolean isCorrectTierForDrops(Tier tier, net.minecraft.world.level.block.state.BlockState state) {
+    return !state.is(tier.getIncorrectBlocksForDrops());
+  }
+
   public static boolean isCorrectTierForDrops(Tier tier, Tier required) {
     return SORTED.indexOf(tier) >= SORTED.indexOf(required);
   }

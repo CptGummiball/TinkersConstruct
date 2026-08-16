@@ -45,3 +45,27 @@ accessible method net/minecraft/world/item/context/UseOnContext getHitResult ()L
 # ClientboundBlockEntityDataPacket constructor — Util.createBEPacket builds sync packets
 # with custom tag payloads; vanilla only exposes the create() factory.
 accessible method net/minecraft/network/protocol/game/ClientboundBlockEntityDataPacket <init> (Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/nbt/CompoundTag;)V
+# LivingEntity.getCurrentSwingDuration — OffhandCooldownTracker.swingHand replicates the
+# swing without the vanilla cooldown reset; Forge exposed this via AT in Mantle.
+accessible method net/minecraft/world/entity/LivingEntity getCurrentSwingDuration ()I
+# Combat + tool logic internals that Forge exposed via AT:
+# getLastHandItem — offhand attribute computation reads the authoritative last stack
+accessible method net/minecraft/world/entity/LivingEntity getLastHandItem (Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;
+# lastHurt — ToolAttackUtil restores the pre-attack damage for extra attacks
+accessible field net/minecraft/world/entity/LivingEntity lastHurt F
+# spawnItemParticles — EdibleModule shows eat particles for tool foods
+accessible method net/minecraft/world/entity/LivingEntity spawnItemParticles (Lnet/minecraft/world/item/ItemStack;I)V
+# getModifiersOrEmpty — CombatHelper copies per-operation modifier sets
+accessible method net/minecraft/world/entity/ai/attributes/AttributeInstance getModifiersOrEmpty (Lnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)Ljava/util/Collection;
+# Biome.getTemperature — temperature-scaled mining/armor variables
+accessible method net/minecraft/world/level/biome/Biome getTemperature (Lnet/minecraft/core/BlockPos;)F
+# Block.popExperience — AOE harvest drops XP like vanilla block breaking
+accessible method net/minecraft/world/level/block/Block popExperience (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;I)V
+# ItemEntity internals for the indestructible drop entity (Forge had a lifespan field)
+accessible field net/minecraft/world/entity/item/ItemEntity age I
+mutable field net/minecraft/world/entity/item/ItemEntity age I
+accessible field net/minecraft/world/entity/item/ItemEntity pickupDelay I
+# Vanilla transform maps backing the tool-action transform shim (Fabric API's content
+# registries write into these same maps).
+accessible field net/minecraft/world/item/AxeItem STRIPPABLES Ljava/util/Map;
+accessible field net/minecraft/world/item/ShovelItem FLATTENABLES Ljava/util/Map;

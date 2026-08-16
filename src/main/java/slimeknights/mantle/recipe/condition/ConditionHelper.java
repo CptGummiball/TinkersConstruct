@@ -112,7 +112,7 @@ public final class ConditionHelper {
   }
 
   /** Conditions that carry data need to write it back out for datagen. */
-  private interface Writable {
+  public interface Writable {
     void write(JsonObject json);
   }
 

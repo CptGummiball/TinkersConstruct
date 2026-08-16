@@ -16,7 +16,7 @@ import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
-import slimeknights.tconstruct.tools.TinkerTools;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -49,7 +49,7 @@ public class ToolDamageUtil {
    * For normal tool usages, see {@link ToolStack#getStats()} with {@link ToolStats#DURABILITY}.
    */
   public static int getFakeMaxDamage(ItemStack stack) {
-    if (!stack.getItem().isDamageableItem()) {
+    if (!stack.isDamageableItem()) {
       return 0;
     }
     ToolStack tool = ToolStack.from(stack);
@@ -247,7 +247,7 @@ public class ToolDamageUtil {
    * @return True if the tool broke.
    */
   public static boolean damageLauncher(IToolStackView tool, int amount, LivingEntity entity, Projectile projectile, ModifierId modifier) {
-    if (projectile.getType() != TinkerTools.fishingHook.get()) {
+    if (!ContentLookups.isFishingHook(projectile)) {
       return ToolDamageUtil.damageAnimated(tool, amount, entity, entity.getUsedItemHand(), modifier);
     }
     return false;
@@ -257,7 +257,7 @@ public class ToolDamageUtil {
   public static <T extends LivingEntity> void handleDamageItem(ItemStack stack, int amount, T damager, Consumer<T> onBroken) {
     // We basically emulate Itemstack.damageItem here. We always return 0 to skip the handling in ItemStack.
     // If we don't tools ignore our damage logic
-    if (stack.getItem().isDamageableItem() && ToolDamageUtil.damage(ToolStack.from(stack), amount, damager, stack)) {
+    if (stack.isDamageableItem() && ToolDamageUtil.damage(ToolStack.from(stack), amount, damager, stack)) {
       onBroken.accept(damager);
     }
   }

@@ -3,23 +3,24 @@ package slimeknights.tconstruct.common.network;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.network.NetworkEvent.Context;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability;
+import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability.PersistentDataComponent;
 
 /** Packet to sync player persistent data to the client */
 @RequiredArgsConstructor
 public class SyncPersistentDataPacket implements IThreadsafePacket {
   private final CompoundTag data;
 
-  public SyncPersistentDataPacket(FriendlyByteBuf buffer) {
+  public SyncPersistentDataPacket(RegistryFriendlyByteBuf buffer) {
     data = buffer.readNbt();
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeNbt(data);
   }
 
@@ -33,7 +34,10 @@ public class SyncPersistentDataPacket implements IThreadsafePacket {
     private static void handle(SyncPersistentDataPacket packet) {
       Player player = Minecraft.getInstance().player;
       if (player != null) {
-        player.getCapability(PersistentDataCapability.CAPABILITY).ifPresent(data -> data.copyFrom(packet.data));
+        PersistentDataComponent component = PersistentDataCapability.CAPABILITY.getNullable(player);
+        if (component != null) {
+          component.getData().copyFrom(packet.data);
+        }
       }
     }
   }

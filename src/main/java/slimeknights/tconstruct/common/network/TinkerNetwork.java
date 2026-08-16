@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.PlayerList;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.LevelAccessor;
+import slimeknights.mantle.network.NetworkDirection;
 import slimeknights.mantle.network.NetworkWrapper;
 import slimeknights.tconstruct.TConstruct;
 
@@ -50,6 +51,7 @@ public class TinkerNetwork extends NetworkWrapper {
 
     // Packets register with their owning module's bootstrap as each module is ported:
     // shared/gadgets/tables/tools/modifiers/smeltery. See the class javadoc.
+    instance.registerPacket(SyncPersistentDataPacket.class, SyncPersistentDataPacket::new, NetworkDirection.PLAY_TO_CLIENT);
   }
 
   /**

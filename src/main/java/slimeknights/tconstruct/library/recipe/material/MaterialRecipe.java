@@ -8,7 +8,7 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.items.ItemHandlerHelper;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -19,8 +19,7 @@ import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariant;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
-import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.tables.TinkerTables;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.Arrays;
 import java.util.List;
@@ -86,17 +85,17 @@ public class MaterialRecipe implements ICustomOutputRecipe<ISingleStackContainer
 
   @Override
   public RecipeType<?> getType() {
-    return TinkerRecipeTypes.MATERIAL.get();
+    return ContentLookups.materialRecipeType();
   }
 
   @Override
   public ItemStack getToastSymbol() {
-    return new ItemStack(TinkerTables.partBuilder);
+    return ContentLookups.partBuilderStack();
   }
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerTables.materialRecipeSerializer.get();
+    return ContentLookups.materialRecipeSerializer();
   }
 
   @Override

@@ -66,7 +66,7 @@ public abstract class LayoutIcon {
     switch (type) {
       case EMPTY: return EMPTY;
       case ITEM: {
-        ItemStack stack = buffer.readItem();
+        ItemStack stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
         return new ItemStackIcon(stack);
       }
       case PATTERN: {
@@ -100,7 +100,7 @@ public abstract class LayoutIcon {
     @Override
     public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.ITEM);
-      buffer.writeItem(stack);
+      ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, stack);
     }
 
     @Override
@@ -160,7 +160,7 @@ public abstract class LayoutIcon {
         return new PatternIcon(pattern);
       }
       if (object.has("item")) {
-        ItemStack stack = ConditionHelper.getItemStack(object, true);
+        ItemStack stack = net.minecraft.world.item.ItemStack.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, object).getOrThrow(com.google.gson.JsonSyntaxException::new);
         return new ItemStackIcon(stack);
       }
       // not sure why this would be needed, but might as well
