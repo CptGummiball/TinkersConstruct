@@ -25,3 +25,5 @@ slimeknights/mantle/data/JsonCodec.java
 slimeknights/mantle/data/gson/**
 slimeknights/mantle/data/loadable/**
 slimeknights/mantle/data/registry/**
+slimeknights/mantle/data/predicate/**
+slimeknights/mantle/util/DataLoadedConditionContext.java

@@ -5,3 +5,7 @@ accessWidener v2 named
 # descriptors that the AT format does not carry, so entries are migrated
 # alongside the module that needs them rather than in one unverifiable batch.
 # See PORTING.md for the remaining AT entries still to migrate.
+
+# Entity.wasEyeInWater — read by LivingEntityPredicate.EYES_IN_WATER.
+# Migrated from the Forge AT entry for the same field.
+accessible field net/minecraft/world/entity/Entity wasEyeInWater Z

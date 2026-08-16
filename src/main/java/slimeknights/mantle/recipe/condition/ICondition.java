@@ -1,5 +1,6 @@
 package slimeknights.mantle.recipe.condition;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -40,11 +41,6 @@ public interface ICondition {
 
     default <T> Collection<Holder<T>> getTag(TagKey<T> key) {
       return getAllTags(key.registry()).getOrDefault(key.location(), Set.of());
-    }
-
-    /** Minimal holder view, so the context does not depend on a live registry. */
-    interface Holder<T> {
-      T value();
     }
   }
 }
