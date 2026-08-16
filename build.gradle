@@ -58,11 +58,19 @@ def readGate = { File f ->
     return patterns.isEmpty() ? ['.unported-placeholder/**'] : patterns
 }
 
+def readList = { File f ->
+    if (!f.exists()) return []
+    f.readLines().collect { it.replaceAll('#.*', '').trim() }.findAll { !it.isEmpty() }
+}
+
 def portedPatterns = readGate(file('ported.gradle'))
 def portedTestPatterns = readGate(file('ported-tests.gradle'))
+// Individual files inside an otherwise-ported package that are still blocked.
+def blockedPatterns = readList(file('unported.gradle'))
 if (project.hasProperty('port.all')) {
     portedPatterns = ['**']
     portedTestPatterns = ['**']
+    blockedPatterns = []
 }
 
 sourceSets {
@@ -70,6 +78,7 @@ sourceSets {
         java {
             srcDirs = ['src/main/java']
             include portedPatterns
+            exclude blockedPatterns
         }
         resources {
             srcDirs = ['src/main/resources', 'src/generated/resources']
@@ -114,8 +123,9 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
 
-    // JSR-305 annotations: Forge supplied these transitively, Fabric does not.
+    // Annotations Forge supplied transitively but Fabric does not.
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'com.google.errorprone:error_prone_annotations:2.28.0'
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

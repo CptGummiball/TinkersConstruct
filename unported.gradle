@@ -1,0 +1,14 @@
+# Files inside an otherwise-ported package that are still blocked.
+#
+# Both entries below are blocked on the same open decision, recorded in PORTING.md
+# under "Buffer type decision": 1.21 requires RegistryFriendlyByteBuf for anything
+# that serialises registry contents, but the Loadable interface passes a plain
+# FriendlyByteBuf. Ingredients and item stacks are the first types that actually
+# need the registry-aware buffer, so they cannot be finished until the framework's
+# encode/decode signatures are widened.
+#
+# Fixing them by casting the buffer would compile and then fail at runtime on any
+# connection that hands over a plain buffer, so they stay out until it is done properly.
+
+slimeknights/mantle/data/loadable/common/IngredientLoadable.java
+slimeknights/mantle/data/loadable/common/ItemStackLoadable.java

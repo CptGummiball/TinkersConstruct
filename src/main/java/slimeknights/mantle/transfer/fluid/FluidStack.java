@@ -41,6 +41,9 @@ public class FluidStack {
   /** Droplets per millibucket. Fabric uses 81000 droplets/bucket, Forge 1000 mB/bucket. */
   public static final int DROPLETS_PER_MB = 81;
 
+  /** A bucket in millibuckets, replacing Forge's {@code FluidType.BUCKET_VOLUME}. */
+  public static final int BUCKET_VOLUME = 1000;
+
   public static final FluidStack EMPTY = new FluidStack(Fluids.EMPTY, 0, null);
 
   public static final Codec<FluidStack> CODEC = RecordCodecBuilder.create(inst -> inst.group(

@@ -6,9 +6,22 @@
 #
 # Progress is tracked in PORTING.md.
 
-# --- Fabric bootstrap + Forge-compat shim layer ---
+# --- Fabric bootstrap ---
 slimeknights/tconstruct/fabric/**
 
-# --- Mantle-lite (ported subset of the Mantle library, same package so the
-#     955 TConstruct files that import it need no import changes) ---
-slimeknights/mantle/**
+# --- Forge-compat shims ---
+slimeknights/mantle/transfer/**
+slimeknights/mantle/item/ToolAction.java
+slimeknights/mantle/item/ToolActions.java
+slimeknights/mantle/recipe/condition/**
+
+# --- Mantle-lite: ported subpackage by subpackage ---
+slimeknights/mantle/Mantle.java
+slimeknights/mantle/util/typed/**
+slimeknights/mantle/util/JsonHelper.java
+slimeknights/mantle/util/RegistryHelper.java
+slimeknights/mantle/registration/object/IdAwareObject.java
+slimeknights/mantle/data/JsonCodec.java
+slimeknights/mantle/data/gson/**
+slimeknights/mantle/data/loadable/**
+slimeknights/mantle/data/registry/**
