@@ -239,7 +239,7 @@ public class PartSwapCastingRecipe extends AbstractMaterialCastingRecipe impleme
                   results.add(withMaterial(tool, output).copy());
                   // mark input as display so tooltip does not show useless stats
                   ItemStack input = withMaterial(tool, MaterialVariant.of(ToolBuildHandler.getRenderMaterial(0)));
-                  input.getOrCreateTag().putBoolean(TooltipUtil.KEY_DISPLAY, true);
+                  slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(input).putBoolean(TooltipUtil.KEY_DISPLAY, true);
                   inputs.add(input);
                 }
               }

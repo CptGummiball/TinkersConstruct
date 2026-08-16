@@ -233,7 +233,7 @@ public class ToolHarvestLogic {
 
       this.switchItemsInHands(player);
       // remember, off is in the mainhand now
-      CompoundNBT tag = off.getOrCreateTag();
+      CompoundNBT tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(off);
       tag.putLong(TAG_SWITCHED_HAND_HAX, player.getEntityWorld().getGameTime());
       off.setTag(tag);
     }*/

@@ -132,6 +132,19 @@ The slice went from 2987 to **1526 errors** with the capability layer done:
   explicit join sync. `TinkerComponents` is the CCA entrypoint; CCA base+entity resolve
   from Ladysnake's maven.
 
+**The load-bearing ToolStack decision is made**: all tool data lives as one CompoundTag
+inside `minecraft:custom_data`, exactly as it lived in the stack tag on 1.20 — see
+`TagCompat`'s javadoc for the full rationale (one component keeps ~2000 lines of
+ToolStack/modifier-NBT logic and every `tic_*` NBT path valid; vanilla interop flows
+through the item overrides which read ToolStack).
+
+**Mutation review list (runtime-correctness, not compile)**: `getOrCreateTag()` on 1.20
+returned the live tag; `CustomData` copies. These 12 swept call sites must be checked to
+write back through `TagCompat.setTag` during the ToolStack pass:
+`ToolBuildHandler:103,193 · ToolDamageUtil:33 · ToolHarvestLogic:236 · TooltipUtil:112 ·
+MaterialIdNBT:122 · IMaterialItem:38 · ToolBuildingRecipe:312 · IDisplayModifierRecipe:146 ·
+PartSwapCastingRecipe:242 · ToolCastingRecipe:236 · InfinityModule:69`
+
 Remaining error mass is mapped, in working order for the next pass:
 
 1. `Modifiable*Item` classes (55/48/42/25/21 errors) — the Forge `IForgeItem` hook surface

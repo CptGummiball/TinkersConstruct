@@ -275,7 +275,7 @@ public abstract class ModifiableLauncherItem extends ProjectileWeaponItem implem
 
   @Override
   public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt == null || slot.getType() != Type.HAND) {
       return ImmutableMultimap.of();
     }

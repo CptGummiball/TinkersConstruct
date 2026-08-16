@@ -30,9 +30,9 @@ public record PotionCloudFluidEffect(float scale, TagPredicate predicate) implem
 
   @Override
   public float apply(FluidStack fluid, EffectLevel level, FluidEffectContext.Block context, FluidAction action) {
-    CompoundTag tag = fluid.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid);
     if (predicate.test(tag) && context.isOffsetReplaceable()) {
-      Potion potion = PotionUtils.getPotion(fluid.getTag());
+      Potion potion = PotionUtils.getPotion(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid));
       List<MobEffectInstance> effects = potion.getEffects();
       if (!effects.isEmpty()) {
         float scale = level.value();

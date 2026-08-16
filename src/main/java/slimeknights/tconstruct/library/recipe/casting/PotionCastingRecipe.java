@@ -118,7 +118,7 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<Display
         .map(potion -> {
           ItemStack result = PotionUtils.setPotion(new ItemStack(this.result), potion);
           return new DisplayCastingRecipe(getId(), getType(), bottles, fluid.getFluids().stream()
-                                                              .map(fluid -> new FluidStack(fluid.getFluid(), fluid.getAmount(), result.getTag()))
+                                                              .map(fluid -> new FluidStack(fluid.getFluid(), fluid.getAmount(), slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(result)))
                                                               .toList(),
                                           result, coolingTime, true);
         }).toList();

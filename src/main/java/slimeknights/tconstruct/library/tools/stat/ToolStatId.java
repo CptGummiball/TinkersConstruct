@@ -24,8 +24,8 @@ public class ToolStatId extends ResourceId {
     super(value);
   }
 
-  private ToolStatId(String namespace, String path, @Nullable Dummy pDummy) {
-    super(namespace, path, pDummy);
+  private ToolStatId(String namespace, String path, @Nullable Object legacyDummy) {
+    this(namespace, path);
   }
 
   /** {@return Tool stat ID, or null if invalid} */

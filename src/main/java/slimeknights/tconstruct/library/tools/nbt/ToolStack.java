@@ -150,7 +150,7 @@ public class ToolStack implements IToolStackView {
     ToolDefinition definition = item instanceof IModifiable mod
                                 ? mod.getToolDefinition()
                                 : ToolDefinition.EMPTY;
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt == null) {
       nbt = new CompoundTag();
       if (!copyNbt) {
@@ -245,7 +245,7 @@ public class ToolStack implements IToolStackView {
   /** Updates the tool stack instance to match the given item stack */
   @Internal
   public void refreshTag(ItemStack stack) {
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (tag == null) {
       tag = new CompoundTag();
       stack.setTag(tag);
@@ -326,7 +326,7 @@ public class ToolStack implements IToolStackView {
   public boolean isSameStack(ItemStack stack) {
     // tool stacks share NBT with their stack instance unless copied so changes are mirrored
     // item check allows empty as empty stacks change their item to air. This won't false positive with ItemStack#EMPTY as the NBT won't match.
-    return nbt == stack.getTag() && (stack.isEmpty() || stack.getItem() == item);
+    return nbt == slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack) && (stack.isEmpty() || stack.getItem() == item);
   }
 
 
@@ -786,7 +786,7 @@ public class ToolStack implements IToolStackView {
    * @return  True if initialized
    */
   public static boolean isInitialized(ItemStack stack) {
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     return tag != null && isInitialized(tag);
   }
 
@@ -819,7 +819,7 @@ public class ToolStack implements IToolStackView {
     if (!toolDefinition.isDataLoaded()) {
       return;
     }
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     // already initialized? nothing to do
     if (tag != null && isInitialized(tag)) {
       return;

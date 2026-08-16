@@ -107,7 +107,7 @@ public abstract class LayoutIcon {
     public JsonObject toJson() {
       JsonObject json = new JsonObject();
       json.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-      CompoundTag tag = stack.getTag();
+      CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
       if (tag != null) {
         json.addProperty("nbt", tag.toString());
       }

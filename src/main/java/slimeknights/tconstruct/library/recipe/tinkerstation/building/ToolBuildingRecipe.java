@@ -309,7 +309,7 @@ public class ToolBuildingRecipe implements ITinkerStationRecipe {
           } else {
             // not a full list? mark it for display with just the materials on the end
             result = new MaterialIdNBT(list).updateStack(new ItemStack(output, outputCount));
-            result.getOrCreateTag().putBoolean(TooltipUtil.KEY_DISPLAY, true);
+            slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(result).putBoolean(TooltipUtil.KEY_DISPLAY, true);
           }
         }
       }

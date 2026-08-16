@@ -825,7 +825,7 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
       if (ammoKey != null && persistentData.contains(ammoKey, Tag.TAG_COMPOUND)) {
         ammo = ItemStack.of(persistentData.getCompound(ammoKey));
         builder.add(ammo.getItem());
-        CompoundTag tag = ammo.getTag();
+        CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(ammo);
         if (tag != null) {
           builder.add(tag);
         }

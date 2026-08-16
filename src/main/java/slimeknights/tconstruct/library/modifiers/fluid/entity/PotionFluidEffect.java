@@ -32,8 +32,8 @@ public record PotionFluidEffect(float scale, TagPredicate predicate) implements 
   public float apply(FluidStack fluid, EffectLevel level, FluidEffectContext.Entity context, FluidAction action) {
     LivingEntity target = context.getLivingTarget();
     // must match the tag predicate
-    if (target != null && predicate.test(fluid.getTag())) {
-      List<MobEffectInstance> effects = PotionUtils.getPotion(fluid.getTag()).getEffects();
+    if (target != null && predicate.test(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid))) {
+      List<MobEffectInstance> effects = PotionUtils.getPotion(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid)).getEffects();
       if (!effects.isEmpty()) {
         LivingEntity attacker = context.getEntity();
         Entity directSource = context.getDirectSource();

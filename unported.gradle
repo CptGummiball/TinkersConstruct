@@ -102,7 +102,11 @@ slimeknights/tconstruct/library/tools/capability/BlockItemProviderCapability.jav
 slimeknights/tconstruct/library/tools/capability/EntityModifierCapability.java
 # CCA initializer references PersistentDataCapability/ModDataNBT from the core slice;
 # gates in together with it.
-# Re-park with the slice (see ported.gradle):
+# Slice-bound (see ported.gradle):
 slimeknights/tconstruct/common/registration/GeodeItemObject.java
 slimeknights/tconstruct/library/utils/TeleportHelper.java
 slimeknights/tconstruct/fabric/TinkerComponents.java
+slimeknights/tconstruct/tools/TinkerToolActions.java
+slimeknights/tconstruct/common/TinkerDamageTypes.java
+slimeknights/tconstruct/library/recipe/RecipeResult.java
+slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java

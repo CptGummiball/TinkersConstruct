@@ -212,7 +212,7 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
       @Nullable
       @Override
       public BakedModel resolve(BakedModel originalModel, ItemStack stack, @Nullable ClientLevel world, @Nullable LivingEntity entity, int pSeed) {
-        if (stack.isEmpty() || !stack.hasTag()) {
+        if (stack.isEmpty() || !slimeknights.tconstruct.library.tools.nbt.TagCompat.hasTag(stack)) {
           return originalModel;
         }
 

@@ -31,12 +31,9 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 import slimeknights.mantle.item.ToolAction;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.tconstruct.common.TinkerTags;
-import slimeknights.tconstruct.library.client.item.ModifiableItemClientExtension;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
 import slimeknights.tconstruct.library.modifiers.hook.behavior.AttributesModifierHook;
@@ -50,7 +47,6 @@ import slimeknights.tconstruct.library.modifiers.hook.interaction.SlotStackModif
 import slimeknights.tconstruct.library.modifiers.hook.interaction.UsingToolModifierHook;
 import slimeknights.tconstruct.library.modifiers.modules.build.RarityModule;
 import slimeknights.tconstruct.library.tools.IndestructibleItemEntity;
-import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinition;
 import slimeknights.tconstruct.library.tools.definition.module.display.ToolNameHook;
 import slimeknights.tconstruct.library.tools.definition.module.mining.IsEffectiveToolHook;
@@ -147,16 +143,9 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   /* Loading */
 
-  @Nullable
-  @Override
-  public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
-    return new ToolCapabilityProvider(stack);
-  }
-
-  @Override
-  public void verifyTagAfterLoad(CompoundTag nbt) {
-    ToolStack.verifyTag(this, nbt, getToolDefinition());
-  }
+  // Forge attach points removed: item capabilities (fluid/inventory on tools) register
+  // through the Fabric storage APIs in the capability step, and verifyTagAfterLoad's
+  // load-time fixup moves into ToolStack's component handling.
 
   @Override
   public void onCraftedBy(ItemStack stack, Level worldIn, Player playerIn) {
@@ -270,7 +259,7 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   @Override
   public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt == null || slot.getType() != Type.HAND) {
       return ImmutableMultimap.of();
     }
@@ -518,10 +507,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return toolForRendering;
   }
 
-  @Override
-  public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-    consumer.accept(ModifiableItemClientExtension.INSTANCE);
-  }
+  // initializeClient (Forge client extensions: custom BEWLR renderer hooks) returns with
+  // the client module in phase 5 via Fabric's rendering APIs.
 
 
   /* Misc */

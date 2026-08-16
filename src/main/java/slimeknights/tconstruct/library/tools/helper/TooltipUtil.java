@@ -69,9 +69,9 @@ public class TooltipUtil {
   /** Function to show all attributes in the tooltip */
   public static final BiPredicate<Attribute, Operation> SHOW_ALL_ATTRIBUTES = (att, op) -> true;
   /** Function to show all attributes in the tooltip */
-  public static final BiPredicate<Attribute, Operation> SHOW_MELEE_ATTRIBUTES = (att, op) -> op != Operation.ADDITION || (att != Attributes.ATTACK_DAMAGE && att != Attributes.ATTACK_SPEED && att != Attributes.ARMOR && att != Attributes.ARMOR_TOUGHNESS && att != Attributes.KNOCKBACK_RESISTANCE);
+  public static final BiPredicate<Attribute, Operation> SHOW_MELEE_ATTRIBUTES = (att, op) -> op != Operation.ADD_VALUE || (att != Attributes.ATTACK_DAMAGE && att != Attributes.ATTACK_SPEED && att != Attributes.ARMOR && att != Attributes.ARMOR_TOUGHNESS && att != Attributes.KNOCKBACK_RESISTANCE);
   /** Function to show all attributes in the tooltip */
-  public static final BiPredicate<Attribute, Operation> SHOW_ARMOR_ATTRIBUTES = (att, op) -> op != Operation.ADDITION || (att != Attributes.ARMOR && att != Attributes.ARMOR_TOUGHNESS && att != Attributes.KNOCKBACK_RESISTANCE);
+  public static final BiPredicate<Attribute, Operation> SHOW_ARMOR_ATTRIBUTES = (att, op) -> op != Operation.ADD_VALUE || (att != Attributes.ARMOR && att != Attributes.ARMOR_TOUGHNESS && att != Attributes.KNOCKBACK_RESISTANCE);
 
   /** Flags used when not holding control or shift */
   private static final int DEFAULT_HIDE_FLAGS = TooltipPart.ENCHANTMENTS.getMask();
@@ -97,26 +97,26 @@ public class TooltipUtil {
    * @return  True if marked display
    */
   public static boolean isDisplay(ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     return nbt != null && nbt.getBoolean(KEY_DISPLAY);
   }
 
   /** Sets the tool name in a way that will not be italic */
   public static void setDisplayName(ItemStack tool, String name) {
     if (name.isEmpty()) {
-      CompoundTag tag = tool.getTag();
+      CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(tool);
       if (tag != null) {
         tag.remove(KEY_NAME);
       }
     } else {
-      tool.getOrCreateTag().putString(KEY_NAME, name);
+      slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(tool).putString(KEY_NAME, name);
       tool.resetHoverName();
     }
   }
 
   /** Gets the display name from the given tool */
   public static String getDisplayName(ItemStack tool) {
-    CompoundTag tag = tool.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(tool);
     if (tag != null) {
       return tag.getString(KEY_NAME);
     }
@@ -170,7 +170,7 @@ public class TooltipUtil {
     } else if (!ToolStack.isInitialized(stack)) {
       tooltip.add(UNINITIALIZED);
       if (definition.hasMaterials()) {
-        CompoundTag nbt = stack.getTag();
+        CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
         if (nbt == null || !nbt.contains(ToolStack.TAG_MATERIALS, Tag.TAG_LIST)) {
           tooltip.add(RANDOM_MATERIALS);
         }
@@ -216,7 +216,7 @@ public class TooltipUtil {
       }
     }
     if (!stack.isEmpty()) {
-      CompoundTag tag = stack.getTag();
+      CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
       if (tag != null && tag.contains("Enchantments", Tag.TAG_LIST)) {
         ListTag enchantments = tag.getList("Enchantments", Tag.TAG_COMPOUND);
         for (int i = 0; i < enchantments.size(); ++i) {
@@ -464,7 +464,7 @@ public class TooltipUtil {
     }
     // some numbers display a bit different
     double displayValue = amount;
-    if (operation == Operation.ADDITION) {
+    if (operation == Operation.ADD_VALUE) {
       // vanilla multiplies knockback resist by 10 for some odd reason
       if (attribute.equals(Attributes.KNOCKBACK_RESISTANCE)) {
         displayValue *= 10;

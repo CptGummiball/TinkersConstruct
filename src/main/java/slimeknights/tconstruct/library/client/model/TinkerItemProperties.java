@@ -33,7 +33,7 @@ public class TinkerItemProperties {
   private static final ResourceLocation AMMO_ID = TConstruct.getResource("ammo");
   /** Int declaring ammo type */
   private static final ItemPropertyFunction AMMO = (stack, level, entity, seed) -> {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt != null) {
       CompoundTag persistentData = nbt.getCompound(ToolStack.TAG_PERSISTENT_MOD_DATA);
       if (!persistentData.isEmpty()) {

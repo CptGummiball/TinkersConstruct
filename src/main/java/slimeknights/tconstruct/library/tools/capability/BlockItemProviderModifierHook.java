@@ -65,7 +65,7 @@ public interface BlockItemProviderModifierHook {
                     return;
                 }
             }
-            TConstruct.LOG.warn("Could not find a modifier to consume {} from after providing it from ToolBlockItemProviderHook. This is likely causing a duplication glitch! Stack nbt: {}", BuiltInRegistries.ITEM.getKey(backingStack.getItem()), backingStack.getTag());
+            TConstruct.LOG.warn("Could not find a modifier to consume {} from after providing it from ToolBlockItemProviderHook. This is likely causing a duplication glitch! Stack nbt: {}", BuiltInRegistries.ITEM.getKey(backingStack.getItem()), slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(backingStack));
         }
     }
 

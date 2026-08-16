@@ -49,7 +49,7 @@ public class MaterialItem extends Item implements IMaterialItem {
 
   @Override
   public MaterialVariantId getMaterial(ItemStack stack) {
-    return getMaterialId(stack.getTag());
+    return getMaterialId(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack));
   }
 
   @Nullable

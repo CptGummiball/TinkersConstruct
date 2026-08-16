@@ -19,9 +19,6 @@ import java.util.Random;
  * datagen entrypoint, and there are no Forge-era worlds to migrate. What remains here is what
  * the other 1900 files actually reference — the mod id and the static helpers.
  *
- * <p>{@code createKey}/{@code ComputableDataKey} return with the TinkerData port (the Forge
- * entity capability that backs modifier markers); tracked in PORTING.md.
- *
  * @author mDiyo
  */
 public class TConstruct {
@@ -37,6 +34,16 @@ public class TConstruct {
    */
   public static ResourceLocation getResource(String name) {
     return ResourceLocation.fromNamespaceAndPath(MOD_ID, name);
+  }
+
+  /** Gets a data key for the entity data map, mainly used for modifier markers */
+  public static <T> slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey<T> createKey(String name) {
+    return slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey.of(getResource(name));
+  }
+
+  /** Gets a computable data key for the entity data map */
+  public static <T> slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey<T> createKey(String name, java.util.function.Supplier<T> constructor) {
+    return slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey.of(getResource(name), constructor);
   }
 
   /**

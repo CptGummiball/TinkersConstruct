@@ -66,7 +66,7 @@ public class TankModifierModel implements ModifierModel {
     ToolTankHelper helper = tankHelper();
     FluidStack fluid = helper.getFluid(tool);
     if (!fluid.isEmpty()) {
-      return new CacheKey(fluid.getFluid(), fluid.getTag(), fluid.getAmount() + tolerance < helper.getCapacity(tool));
+      return new CacheKey(fluid.getFluid(), slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid), fluid.getAmount() + tolerance < helper.getCapacity(tool));
     }
     return null;
   }

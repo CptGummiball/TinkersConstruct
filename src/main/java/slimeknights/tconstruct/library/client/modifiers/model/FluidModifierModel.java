@@ -59,7 +59,7 @@ public record FluidModifierModel(Material small, @Nullable Material large, ToolT
   public Object getCacheKey(IToolStackView tool, ModifierEntry modifier) {
     FluidStack fluid = tankHelper().getFluid(tool);
     if (!fluid.isEmpty()) {
-      return new CacheKey(fluid.getFluid(), fluid.getTag());
+      return new CacheKey(fluid.getFluid(), slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(fluid));
     }
     return null;
   }

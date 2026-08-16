@@ -103,7 +103,7 @@ public interface HarvestEnchantmentsModifierHook {
    * @param originalTag  Original list of enchantments. If empty, will remove the tag
    */
   static void restoreEnchantments(ItemStack stack, ListTag originalTag) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt != null) {
       if (originalTag.isEmpty()) {
         nbt.remove(TAG_ENCHANTMENTS);

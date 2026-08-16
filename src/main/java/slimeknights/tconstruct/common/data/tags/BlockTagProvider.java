@@ -445,7 +445,7 @@ public class BlockTagProvider extends BlockTagsProvider {
     // slime
     tagBlocks(MINEABLE_WITH_SHOVEL, TinkerWorld.congealedSlime, TinkerWorld.slimeDirt, TinkerWorld.vanillaSlimeGrass, TinkerWorld.earthSlimeGrass, TinkerWorld.skySlimeGrass, TinkerWorld.enderSlimeGrass, TinkerWorld.ichorSlimeGrass);
     // harvest tiers on shovel blocks
-    TinkerWorld.slimeDirt.forEach((type, block) -> this.tag(Objects.requireNonNull(type.getHarvestTier().getTag())).add(block));
+    TinkerWorld.slimeDirt.forEach((type, block) -> this.tag(Objects.requireNonNull(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(type.getHarvestTier()))).add(block));
     for (DirtType dirt : DirtType.values()) {
       for (FoliageType grass : FoliageType.values()) {
         Tiers dirtTier = dirt.getHarvestTier();
@@ -457,7 +457,7 @@ public class BlockTagProvider extends BlockTagsProvider {
         } else {
           tier = dirtTier.getLevel() > grassTier.getLevel() ? dirtTier : grassTier;
         }
-        this.tag(Objects.requireNonNull(tier.getTag())).add(TinkerWorld.slimeGrass.get(dirt).get(grass));
+        this.tag(Objects.requireNonNull(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(tier))).add(TinkerWorld.slimeGrass.get(dirt).get(grass));
       }
     }
 

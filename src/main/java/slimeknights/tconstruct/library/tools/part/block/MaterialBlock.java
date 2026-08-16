@@ -33,7 +33,7 @@ public class MaterialBlock extends Block implements EntityBlock {
 
   @Override
   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-    if (stack.hasTag()) {
+    if (slimeknights.tconstruct.library.tools.nbt.TagCompat.hasTag(stack)) {
       MaterialVariantId material = IMaterialItem.getMaterialFromStack(stack);
       if (material != IMaterial.UNKNOWN_ID && level.getBlockEntity(pos) instanceof MaterialBlockEntity be) {
         be.setMaterial(material);
