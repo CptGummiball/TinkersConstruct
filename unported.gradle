@@ -43,8 +43,6 @@ slimeknights/mantle/fluid/texture/FluidTextureManager.java
 # TextureFluidType/InvertedFluidType only exist to carry client render extensions.
 slimeknights/mantle/fluid/TextureFluidType.java
 slimeknights/mantle/fluid/InvertedFluidType.java
-# Needs mantle.network (IThreadsafePacket), which is the next module.
-slimeknights/mantle/fluid/transfer/FluidContainerTransferPacket.java
 # Datagen providers, phase 7.
 slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
 slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
@@ -60,3 +58,6 @@ slimeknights/mantle/fluid/tooltip/FluidUnitList.java
 # is a rewrite against the new base class, not a patch. Needed before phase 4: ichor and
 # molten cinderslime are upward-flowing core fluids (negative density).
 slimeknights/mantle/fluid/InvertedFluid.java
+
+# Waits on OffhandCooldownTracker (phase-3 tool logic: events + TinkerData capability).
+# mantle.util.OffhandCooldownTracker itself is not copied in yet.

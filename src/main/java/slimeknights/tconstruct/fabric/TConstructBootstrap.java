@@ -3,6 +3,8 @@ package slimeknights.tconstruct.fabric;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
+import slimeknights.mantle.network.MantleNetwork;
 import slimeknights.mantle.transfer.fluid.TransferComponents;
 
 /**
@@ -26,6 +28,10 @@ public class TConstructBootstrap implements ModInitializer {
     // Must run before any FluidStack is built: fluid stacks carry their legacy NBT tag
     // through this component type.
     TransferComponents.register();
+
+    // Mantle infrastructure: packet channel plus the fluid container transfer loader.
+    MantleNetwork.registerPackets();
+    FluidContainerTransferManager.INSTANCE.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

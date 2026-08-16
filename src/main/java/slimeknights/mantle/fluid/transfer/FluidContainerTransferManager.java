@@ -66,8 +66,8 @@ public class FluidContainerTransferManager extends SimpleJsonResourceReloadListe
     super(GSON, FOLDER);
   }
 
-  /** Lazily initializes the set of container items */
-  protected Set<Item> getContainerItems() {
+  /** Lazily initializes the set of container items. Public: the join-sync in MantleNetwork reads it. */
+  public Set<Item> getContainerItems() {
     if (this.containerItems == null) {
       List<Item> builder = new ArrayList<>();
       Consumer<Item> consumer = builder::add;

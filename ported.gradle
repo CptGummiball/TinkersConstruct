@@ -41,3 +41,4 @@ slimeknights/mantle/recipe/helper/**
 slimeknights/mantle/fluid/**
 slimeknights/mantle/datagen/MantleTags.java
 slimeknights/mantle/util/TranslationHelper.java
+slimeknights/mantle/network/**

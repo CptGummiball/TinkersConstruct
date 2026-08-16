@@ -130,6 +130,18 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       Fabric-native replacement for `registration.deferred`/`adapter` (Forge's
       DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
 
+      **`network` — done and live.** `NetworkWrapper` is Fabric-native
+      (`CustomPacketPayload` + per-packet types derived from channel name + registration
+      index, which is deterministic for the same reason Forge's numeric ids were) behind
+      the Forge-shaped registration/sending API. `NetworkEvent.Context` survives as a shim
+      so the 26 handler call sites port by import rewrite; Fabric play handlers already run
+      on the game thread, so `enqueueWork` executes immediately and `IThreadsafePacket`
+      semantics hold. S2C receivers collect during common init and register from the client
+      entrypoint (`NetworkWrapperClient`), since `ClientPlayNetworking` does not exist on a
+      dedicated server. The container-item sync moved from `OnDatapackSyncEvent` to the
+      Fabric join event. The five lectern/book packets register with the book module
+      (phase 5); `SwingArmPacket` waits on `OffhandCooldownTracker` (phase-3 tool logic).
+
       **`mantle.recipe`, partially done.** `ingredient` (`SizedIngredient`, `FluidIngredient`,
       `EntityIngredient` — 62 of 65 call sites), `helper` (`ItemOutput`, `FluidOutput`,
       `TagPreference`), `container` and `IMultiRecipe` are in. `recipe.cooking` was dropped
