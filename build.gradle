@@ -168,6 +168,8 @@ tasks.withType(JavaCompile).configureEach {
     options.release = Integer.parseInt(java_version)
     // The port is large; do not let warning volume hide real errors.
     options.compilerArgs << '-Xlint:-deprecation' << '-Xlint:-unchecked'
+    // The port fixes errors in category batches; the default 100-error cap hides the tail.
+    options.compilerArgs << '-Xmaxerrs' << '3000'
 }
 
 jar {

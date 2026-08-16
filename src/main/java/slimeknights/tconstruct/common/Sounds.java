@@ -5,10 +5,6 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.block.SoundType;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegisterEvent;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.registration.GeodeItemObject.BudSize;
 
@@ -17,7 +13,6 @@ import java.util.Locale;
 import java.util.Map;
 
 /** All sounds registered by Tinkers, should be used instead of vanilla events when subtitles need to be distinguished */
-@Mod.EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public enum Sounds {
   // blocks
   SAW("little_saw"),
@@ -88,12 +83,10 @@ public enum Sounds {
     sound = createEvent(name().toLowerCase(Locale.US));
   }
 
-  @SubscribeEvent
-  public static void registerSounds(RegisterEvent event) {
-    if (event.getRegistryKey() == Registries.SOUND_EVENT) {
-      for (Sounds sound : values()) {
-        ForgeRegistries.SOUND_EVENTS.register(sound.sound.getLocation(), sound.getSound());
-      }
+  /** Registers all sounds; called from the mod bootstrap (Forge did this via RegisterEvent). */
+  public static void registerSounds() {
+    for (Sounds sound : values()) {
+      net.minecraft.core.Registry.register(net.minecraft.core.registries.BuiltInRegistries.SOUND_EVENT, sound.sound.getLocation(), sound.getSound());
     }
   }
 

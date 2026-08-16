@@ -13,10 +13,10 @@ import io.netty.handler.codec.DecoderException;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.crafting.CraftingHelper;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.library.recipe.partbuilder.Pattern;
 
@@ -36,7 +36,7 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.EMPTY);
     }
 
@@ -61,7 +61,7 @@ public abstract class LayoutIcon {
   public abstract <T> T getValue(Class<T> clazz);
 
   /** Reads the button icon from the buffer */
-  public static LayoutIcon read(FriendlyByteBuf buffer) {
+  public static LayoutIcon read(RegistryFriendlyByteBuf buffer) {
     Type type = buffer.readEnum(Type.class);
     switch (type) {
       case EMPTY: return EMPTY;
@@ -78,7 +78,7 @@ public abstract class LayoutIcon {
   }
 
   /** Writes this to the packet buffer */
-  public abstract void write(FriendlyByteBuf buffer);
+  public abstract void write(RegistryFriendlyByteBuf buffer);
 
   /** Writes this object to json */
   public abstract JsonObject toJson();
@@ -98,7 +98,7 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.ITEM);
       buffer.writeItem(stack);
     }
@@ -130,7 +130,7 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.PATTERN);
       buffer.writeResourceLocation(pattern);
     }
@@ -160,7 +160,7 @@ public abstract class LayoutIcon {
         return new PatternIcon(pattern);
       }
       if (object.has("item")) {
-        ItemStack stack = CraftingHelper.getItemStack(object, true);
+        ItemStack stack = ConditionHelper.getItemStack(object, true);
         return new ItemStackIcon(stack);
       }
       // not sure why this would be needed, but might as well

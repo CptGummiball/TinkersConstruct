@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.library.modifiers.fluid.entity;
 
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.tconstruct.library.events.teleport.FluidEffectTeleportEvent;
 import slimeknights.tconstruct.library.json.LevelingInt;

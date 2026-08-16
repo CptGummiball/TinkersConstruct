@@ -87,9 +87,15 @@ slimeknights/tconstruct/common/registration/ItemDeferredRegisterExtension.java
 slimeknights/tconstruct/library/utils/BlockSideHitListener.java
 # LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
 slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
-# Fires Forge's EntityTeleportEvent; belongs with the event layer.
-slimeknights/tconstruct/library/utils/TeleportHelper.java
 # Forge's TierSortingRegistry is gone; harvest-tier ordering needs its own 1.21 answer.
 slimeknights/tconstruct/library/utils/HarvestTiers.java
 # ForgeEventFactory explosion hooks; belongs with the event layer.
 slimeknights/tconstruct/library/utils/CustomExplosion.java
+
+# --- Core-slice deferrals ---
+# Forge capability system (entity data, tool fluid/energy caps). Ports onto Cardinal
+# Components (ships in GummiCraft) as its own step; tools/nbt does not reference it.
+slimeknights/tconstruct/library/tools/capability/**
+# Converted but slice-bound: TeleportHelper -> Sounds -> GeodeItemObject.BudSize chain
+# lands with the core slice.
+slimeknights/tconstruct/library/utils/TeleportHelper.java
