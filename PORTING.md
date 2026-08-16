@@ -111,9 +111,17 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
 - [~] **2 — Mantle-lite.** Ported: `data.loadable` (unblocks 398 dependent files),
       `data.predicate` (98), `registration.object` (92), `data.registry`, `data.gson`, `util`.
-      Still to do: recipe helpers, fluid + `fluid.transfer`, block/inventory/network,
-      client + book, and a Fabric-native replacement for `registration.deferred`/`adapter`
-      (Forge's DeferredRegister model has no Fabric counterpart — Fabric registers eagerly).
+      `recipe.container`. Still to do: the rest of `recipe` (see below), fluid +
+      `fluid.transfer`, block/inventory/network, client + book, and a Fabric-native
+      replacement for `registration.deferred`/`adapter` (Forge's DeferredRegister model has
+      no Fabric counterpart — Fabric registers eagerly).
+
+      **Next chunk — `mantle.recipe`.** Source is copied in and gated out; 93 errors remain,
+      concentrated in `data` (31, datagen builders), `ingredient` (19) and `crafting` (12).
+      The bulk is Forge's custom ingredient system (`AbstractIngredient`,
+      `IIngredientSerializer`, `StrictNBTIngredient`), which has a direct counterpart in
+      Fabric's `CustomIngredient` API from `fabric-recipe-api-v1` — that mapping is the
+      main design decision to make there. `recipe.cooking` was dropped (zero users).
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.

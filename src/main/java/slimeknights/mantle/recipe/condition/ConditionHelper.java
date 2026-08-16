@@ -59,7 +59,7 @@ public final class ConditionHelper {
     return list;
   }
 
-  /** Alias matching Forge's {@code CraftingHelper.getCondition} name. */
+  /** Alias matching Forge's {@code ConditionHelper.getCondition} name. */
   public static ICondition getCondition(JsonObject json) {
     return deserialize(json);
   }
@@ -105,7 +105,6 @@ public final class ConditionHelper {
   public static JsonObject serialize(ICondition condition) {
     JsonObject json = new JsonObject();
     json.addProperty("type", condition.getID().toString());
-    condition.getClass();
     if (condition instanceof Writable writable) {
       writable.write(json);
     }

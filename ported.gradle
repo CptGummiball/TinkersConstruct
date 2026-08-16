@@ -13,7 +13,8 @@ slimeknights/tconstruct/fabric/**
 slimeknights/mantle/transfer/**
 slimeknights/mantle/item/ToolAction.java
 slimeknights/mantle/item/ToolActions.java
-slimeknights/mantle/recipe/condition/**
+slimeknights/mantle/recipe/condition/ICondition.java
+slimeknights/mantle/recipe/condition/ConditionHelper.java
 
 # --- Mantle-lite: ported subpackage by subpackage ---
 slimeknights/mantle/Mantle.java
@@ -28,3 +29,7 @@ slimeknights/mantle/data/registry/**
 slimeknights/mantle/data/predicate/**
 slimeknights/mantle/util/DataLoadedConditionContext.java
 slimeknights/mantle/registration/**
+# recipe/ is copied in but not yet gated: 93 errors, dominated by Forge's custom
+# ingredient system (AbstractIngredient/IIngredientSerializer), which maps onto
+# Fabric's CustomIngredient API in fabric-recipe-api-v1. Next chunk of work.
+slimeknights/mantle/recipe/container/**
