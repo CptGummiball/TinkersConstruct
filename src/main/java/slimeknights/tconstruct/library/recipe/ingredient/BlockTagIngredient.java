@@ -1,43 +1,43 @@
 package slimeknights.tconstruct.library.recipe.ingredient;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparators;
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.RequiredArgsConstructor;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredientSerializer;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.common.crafting.AbstractIngredient;
-import net.minecraftforge.common.crafting.IIngredientSerializer;
 import slimeknights.mantle.data.loadable.Loadables;
+import slimeknights.mantle.data.loadable.record.RecordLoadable;
+import slimeknights.mantle.recipe.helper.LoadableIngredientSerializer;
 import slimeknights.mantle.util.RegistryHelper;
 import slimeknights.tconstruct.TConstruct;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /** Item ingredient matching items with a block form in the given tag */
 @RequiredArgsConstructor
-public class BlockTagIngredient extends AbstractIngredient {
+public class BlockTagIngredient implements CustomIngredient {
+  public static final LoadableIngredientSerializer<BlockTagIngredient> SERIALIZER = new LoadableIngredientSerializer<>(
+    TConstruct.getResource("block_tag"),
+    RecordLoadable.create(Loadables.BLOCK_TAG.requiredField("tag", i -> i.tag), BlockTagIngredient::new));
+
   private final TagKey<Block> tag;
   @Nullable
   private Set<Item> matchingItems;
   @Nullable
-  private ItemStack[] items;
-  @Nullable
-  private IntList stackingIds;
+  private List<ItemStack> items;
+
+  public static BlockTagIngredient of(TagKey<Block> tag) {
+    return new BlockTagIngredient(tag);
+  }
 
   @Override
   public boolean test(@Nullable ItemStack stack) {
@@ -45,21 +45,15 @@ public class BlockTagIngredient extends AbstractIngredient {
   }
 
   @Override
-  public boolean isSimple() {
+  public boolean requiresTesting() {
+    // matches purely on the item, but the item set is derived from a block tag, which the
+    // vanilla stack list cannot express once tags reload; keep testing so reloads stay honest
     return true;
-  }
-
-  @Override
-  protected void invalidate() {
-    this.matchingItems = null;
-    this.items = null;
-    this.stackingIds = null;
   }
 
   /** Gets the ordered matching items set */
   private Set<Item> getMatchingItems() {
-    if (matchingItems == null || checkInvalidation()) {
-      markValid();
+    if (matchingItems == null) {
       matchingItems = RegistryHelper.getTagValueStream(BuiltInRegistries.BLOCK, tag)
                                     .map(Block::asItem)
                                     .filter(item -> item != Items.AIR)
@@ -69,62 +63,20 @@ public class BlockTagIngredient extends AbstractIngredient {
   }
 
   @Override
-  public ItemStack[] getItems() {
-    if (items == null || checkInvalidation()) {
-      markValid();
-      items = getMatchingItems().stream().map(ItemStack::new).toArray(ItemStack[]::new);
+  public List<ItemStack> getMatchingStacks() {
+    if (items == null) {
+      items = getMatchingItems().stream().map(ItemStack::new).toList();
     }
     return items;
   }
 
   @Override
-  public IntList getStackingIds() {
-    if (stackingIds == null || checkInvalidation()) {
-      markValid();
-      Set<Item> items = getMatchingItems();
-      stackingIds = new IntArrayList(items.size());
-      for (Item item : items) {
-        stackingIds.add(BuiltInRegistries.ITEM.getId(item));
-      }
-      stackingIds.sort(IntComparators.NATURAL_COMPARATOR);
-    }
-    return stackingIds;
+  public CustomIngredientSerializer<?> getSerializer() {
+    return SERIALIZER;
   }
 
-  @Override
-  public IIngredientSerializer<? extends Ingredient> getSerializer() {
-    return Serializer.INSTANCE;
-  }
-
-  @Override
+  /** Serializes to JSON for datagen */
   public JsonElement toJson() {
-    JsonObject json = new JsonObject();
-    json.addProperty("type", Serializer.ID.toString());
-    json.add("tag", Loadables.BLOCK_TAG.serialize(tag));
-    return json;
-  }
-
-  /** Serializer instance */
-  public enum Serializer implements IIngredientSerializer<Ingredient> {
-    INSTANCE;
-
-    public static final ResourceLocation ID = TConstruct.getResource("block_tag");
-
-    @Override
-    public Ingredient parse(JsonObject json) {
-      return new BlockTagIngredient(Loadables.BLOCK_TAG.getIfPresent(json, "tag"));
-    }
-
-    @Override
-    public void write(FriendlyByteBuf buffer, Ingredient ingredient) {
-      // just write the item list, will become a vanilla ingredient client side
-      buffer.writeCollection(Arrays.asList(ingredient.getItems()), FriendlyByteBuf::writeItem);
-    }
-
-    @Override
-    public Ingredient parse(FriendlyByteBuf buffer) {
-      int size = buffer.readVarInt();
-      return Ingredient.fromValues(Stream.generate(() -> new Ingredient.ItemValue(buffer.readItem())).limit(size));
-    }
+    return SERIALIZER.serialize(this);
   }
 }

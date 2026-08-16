@@ -77,3 +77,9 @@ accessible method net/minecraft/world/level/material/FlowingFluid canPassThrough
 accessible method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
 # isWaterHole is final in vanilla; extendable removes final for the inverted override
 extendable method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
+# AttributeSupplier internals: the DefaultAttributes mixin rebuilds suppliers with Tinkers'
+# custom attributes merged in (replaces Forge's EntityAttributeModificationEvent).
+accessible field net/minecraft/world/entity/ai/attributes/AttributeSupplier instances Ljava/util/Map;
+accessible method net/minecraft/world/entity/ai/attributes/AttributeSupplier <init> (Ljava/util/Map;)V
+# LivingEntity.jumping — antigravity ladder handling reads the jump input state
+accessible field net/minecraft/world/entity/LivingEntity jumping Z

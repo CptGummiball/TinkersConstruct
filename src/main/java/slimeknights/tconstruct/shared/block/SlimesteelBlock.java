@@ -10,19 +10,12 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.Vec3;
 
+// Fabric note: Forge's isSlimeBlock/canStickTo piston-stickiness extensions have no Fabric
+// equivalent without a piston mixin; slimesteel blocks are not piston-sticky until the event
+// layer adds one. The bounce behavior below is vanilla API and fully functional.
 public class SlimesteelBlock extends Block {
   public SlimesteelBlock(Properties properties) {
     super(properties);
-  }
-
-  @Override
-  public boolean isSlimeBlock(BlockState state) {
-    return true;
-  }
-
-  @Override
-  public boolean canStickTo(BlockState state, BlockState other) {
-    return other.isSlimeBlock();
   }
 
   @Override
@@ -48,7 +41,7 @@ public class SlimesteelBlock extends Block {
   }
 
   @Override
-  public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
+  protected boolean isPathfindable(BlockState state, PathComputationType type) {
     return false;
   }
 }

@@ -1,5 +1,7 @@
 package slimeknights.mantle.registration.deferred;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -10,7 +12,7 @@ import slimeknights.mantle.registration.object.EnumObject;
 import java.util.Locale;
 import java.util.function.Supplier;
 
-/** Helper for registering potions */
+/** Helper for registering potions. 1.21: effect instances are built from {@link Holder}s. */
 @SuppressWarnings("unused")  // API
 public class PotionDeferredRegister extends DeferredRegisterWrapper<Potion> {
   public PotionDeferredRegister(String modID) {
@@ -22,14 +24,14 @@ public class PotionDeferredRegister extends DeferredRegisterWrapper<Potion> {
     return register.register(name, potion);
   }
 
-  /** Registers a group of potions with the same effect */
-  public Builder registerTypes(String name, Supplier<? extends MobEffect> effect, int duration, int amplifier) {
+  /** Registers a group of potions with the same effect, from a holder supplier (vanilla constants) */
+  public Builder registerTypes(String name, Supplier<Holder<MobEffect>> effect, int duration, int amplifier) {
     return new Builder(name, effect, duration, amplifier);
   }
 
   /** Registers a group of potions with the same effect */
   public Builder registerTypes(RegistryObject<? extends MobEffect> effect, int duration, int amplifier) {
-    return new Builder(effect.getId().getPath(), effect, duration, amplifier);
+    return new Builder(effect.getId().getPath(), () -> BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect.get()), duration, amplifier);
   }
 
   /** Registers a group of potions with the same effect starting at level 1 and a duration of 3 minutes */
@@ -48,11 +50,11 @@ public class PotionDeferredRegister extends DeferredRegisterWrapper<Potion> {
   public class Builder {
     private final EnumObject.Builder<PotionType,Potion> builder;
     private final String name;
-    private final Supplier<? extends MobEffect> effect;
+    private final Supplier<Holder<MobEffect>> effect;
     private final int duration;
     private final int amplifier;
 
-    private Builder(String name, Supplier<? extends MobEffect> effect, int duration, int amplifier) {
+    private Builder(String name, Supplier<Holder<MobEffect>> effect, int duration, int amplifier) {
       this.builder = new EnumObject.Builder<>(PotionType.class);
       this.name = name;
       this.effect = effect;
@@ -63,8 +65,8 @@ public class PotionDeferredRegister extends DeferredRegisterWrapper<Potion> {
 
     /** Adds the given potion type */
     private Builder with(PotionType type, int duration, int amplifier) {
-      String prefix = type == PotionType.NORMAL ? "" : type.toString().toLowerCase(Locale.ROOT);
-      builder.put(type, register(prefix + '_' + name, () -> new Potion(modID + "." + name, new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect.get()), duration, amplifier))));
+      String prefix = type == PotionType.NORMAL ? "" : type.toString().toLowerCase(Locale.ROOT) + "_";
+      builder.put(type, register(prefix + name, () -> new Potion(modID + "." + name, new MobEffectInstance(effect.get(), duration, amplifier))));
       return this;
     }
 

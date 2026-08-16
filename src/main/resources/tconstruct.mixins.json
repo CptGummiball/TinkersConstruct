@@ -3,6 +3,8 @@
   "minVersion": "0.8",
   "package": "slimeknights.tconstruct.fabric.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "DefaultAttributesMixin"
+  ],
   "injectors": { "defaultRequire": 1 }
 }

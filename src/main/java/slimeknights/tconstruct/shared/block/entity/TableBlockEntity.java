@@ -54,8 +54,8 @@ public abstract class TableBlockEntity extends InventoryBlockEntity {
   }
 
   @Override
-  public CompoundTag getUpdateTag() {
-    CompoundTag nbt = super.getUpdateTag();
+  public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+    CompoundTag nbt = super.getUpdateTag(registries);
     // inventory is already in main NBT, include it in update tag
     writeInventoryToNBT(nbt);
     return nbt;

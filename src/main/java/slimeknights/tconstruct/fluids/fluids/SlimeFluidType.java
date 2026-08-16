@@ -1,12 +1,8 @@
 package slimeknights.tconstruct.fluids.fluids;
 
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import slimeknights.mantle.fluid.TextureFluidType;
-import slimeknights.mantle.fluid.texture.ClientInvertedFluidType;
 import slimeknights.tconstruct.common.TinkerTags;
-
-import java.util.function.Consumer;
 
 /** Fluid Type that does not affect slimes */
 public class SlimeFluidType extends TextureFluidType {
@@ -19,14 +15,16 @@ public class SlimeFluidType extends TextureFluidType {
     return !entity.getType().is(TinkerTags.EntityTypes.SLIMES);
   }
 
+  /**
+   * Marker subtype for fluids that flow upwards (molten ichor/cinderslime).
+   *
+   * <p>Forge attached {@code ClientInvertedFluidType} here through {@code initializeClient} to
+   * flip the flowing texture; on Fabric the equivalent is a {@code FluidRenderHandler}
+   * registered in the client phase, keyed off this type.
+   */
   public static class Inverted extends SlimeFluidType {
     public Inverted(Properties properties) {
       super(properties);
-    }
-
-    @Override
-    public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
-      consumer.accept(new ClientInvertedFluidType(this));
     }
   }
 }

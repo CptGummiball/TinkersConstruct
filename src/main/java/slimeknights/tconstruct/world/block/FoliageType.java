@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.world.block;
 
 import lombok.Getter;
-import net.minecraft.tags.BlockTags;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Tiers;
@@ -50,7 +50,7 @@ public enum FoliageType implements StringRepresentable {
     this.mapColor = mapColor;
     this.nether = nether;
     // tags
-    grassBlockTag = BlockTags.create(TConstruct.getResource((nether ? "slimy_nylium/" : "slimy_grass/") + this.getSerializedName()));
+    grassBlockTag = TagKey.create(Registries.BLOCK, TConstruct.getResource((nether ? "slimy_nylium/" : "slimy_grass/") + this.getSerializedName()));
   }
 
   private SlimeType slimeType;

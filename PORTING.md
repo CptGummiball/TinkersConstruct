@@ -231,9 +231,74 @@ event-layer step (explosions, `SlimeBounceHandler`), the energy step,
          now takes a `Supplier<T>` (2 call sites), `LoggingRecipeSerializer.fromNetworkSafe`
          lost its id parameter (3), and `RecipeHelper.getJEIRecipes` takes a
          `RecipeHolder` stream.
-- [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
+- [x] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
-- [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
+- [~] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
+
+### Phase 4, first slice: the shared module — **DONE, server boots clean (Done 0.534s)**
+
+`TinkerCommons`, `TinkerMaterials`, `TinkerEffects`, `TinkerAttributes`, `TinkerFood` and
+their block/item/effect/inventory/particle packages register eagerly from the bootstrap
+(order: attributes → effects → commons → materials, mirroring Forge's bus order).
+Load-bearing decisions:
+
+- **First mixin of the port**: `DefaultAttributesMixin` wraps `DefaultAttributes.getSupplier`
+  and merges Tinkers' attributes into every living entity's supplier
+  (`TinkerAttributeInjector`, cached per supplier; player-only attributes keyed off
+  `EntityType.PLAYER`). Replaces Forge's `EntityAttributeModificationEvent` and is
+  order-independent for entities other mods register later. AW opens
+  `AttributeSupplier.instances` + its constructor.
+- **`TinkerAttributes` hands out `Holder<Attribute>`** (1.21 attribute APIs are
+  holder-typed); `AttributeDeferredRegister` returns canonical registry holders.
+  New `tconstruct:generic.swim_speed` replaces `forge:swim_speed` (no vanilla equivalent;
+  travel hook lands with the event layer). The other Forge attributes mapped to vanilla:
+  `block_reach`→`player.block_interaction_range`, `entity_reach`→`player.entity_interaction_range`,
+  `entity_gravity`→`generic.gravity`, `step_height_addition`→`generic.step_height` —
+  the 9 generated modifier JSONs using them were updated in place (datagen re-emits in phase 7).
+- **1.21 `MobEffect` API**: `shouldApplyEffectTickThisTick`, boolean `applyEffectTick`,
+  holder-keyed `addAttributeModifier` with `tconstruct:effect.*` ResourceLocation ids,
+  `TinkerEffect.holder()` caches the registry holder. The curative-items API is gone:
+  `NoMilkEffect` is a marker (`isCuredByMilk()`), consumed by `CheeseItem` now and by the
+  milk hook once the event layer lands. Effect visibility (`show` flag) and the helmet
+  charge-bar icon are phase-5 client work.
+- **Brewing** goes through `FabricBrewingRecipeRegistryBuilder.BUILD`; the congealed-slime
+  ingredients are looked up by ID at build time and skipped while the world module is still
+  unported (mixes self-activate when it lands).
+- **Copper platforms**: the Forge `getToolModifiedState`/`use` overrides are gone — pairs
+  register with `OxidizableBlocksRegistry` (scrape/wax/unwax/oxidize all via vanilla logic).
+  Knightmetal pathfinding: `LandPathNodeTypesRegistry` (`DAMAGE_OTHER`).
+  Beacon tinting: vanilla `BeaconBeamBlock` instead of Forge's color-multiplier hook.
+  1.20.5 renames handled: `GlassBlock`→`TransparentBlock` (TintedGlassBlock kept its name),
+  `isPathfindable` 2-arg, `getUpdateTag(HolderLookup.Provider)`, `BlockSource` record,
+  Forge `ItemTags/BlockTags.create` → `TagKey.create`.
+  Known gap: slimesteel piston stickiness (Forge `isSlimeBlock`/`canStickTo`) needs a piston
+  mixin — event-layer note.
+- **TiC custom ingredients** (`NoContainerIngredient`, `BlockTagIngredient`,
+  `MaterialIngredient`, `MaterialValueIngredient`, `ToolHookIngredient`, base
+  `NestedIngredient`) on Fabric's `CustomIngredient`, sharing Mantle's
+  `LoadableIngredientSerializer`. `NestedIngredientField` keeps the 1.20 flat-or-`match`
+  JSON shape and strips `type`/`fabric:type` before re-parsing flat forms (avoids codec
+  recursion). Data-file caveat for the recipe round: ingredients in vanilla slots need
+  `fabric:type` keys — scripted fixup or datagen re-emit.
+- **Loot/conditions on 1.21 MapCodecs**: `ConfigEnabledCondition` (dual recipe+loot),
+  `BlockOrEntityCondition`, `HasLootContextSetCondition`, and a fresh `mantle.loot`
+  subset (`MantleLoot`: `tag_filled`/`tag_empty` conditions + `tag_preference` entry —
+  used by 17 generated loot tables and the lustrous loot modifiers). Mantle's tag recipe
+  conditions registered via the new `IConditionSerializer` shim. The deprecated
+  `tconstruct:tag_not_empty`/`tag_preference` aliases were **dropped** (zero data uses).
+- **`BlockContainerOpenedTrigger`** rewritten as a codec-based `SimpleCriterionTrigger`;
+  `FluidParticleData` on `MapCodec` + `StreamCodec` (command-string deserializer removed).
+- **Config timing on Fabric**: values are not readable during mod init —
+  `Config.init()` registers the specs first in the bootstrap, and the knockback-resistance
+  sync tweak moved behind `ForgeModConfigEvents.loading`.
+- **`TinkerBookItem`** is a plain tooltip item carrying `BookType` until the book module
+  (phase 5) hooks the client open. Commands, `SlimeBounceHandler`, `CommonsEvents`/
+  `AchievementEvents` (jump/interact/craft events), datagen and the client classes stay
+  parked with notes in `unported.gradle`.
+- **Boot noise that is expected to self-heal**: 3 tag errors referencing tables/smeltery
+  blocks and 8 fluid-container-transfer entries referencing fluids/gadgets items — both
+  resolve as those modules gate in. `FillFluidContainerTransfer`/`Empty…` serializers now
+  register in the bootstrap (Forge Mantle did it in its mod constructor).
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

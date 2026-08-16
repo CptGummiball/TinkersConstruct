@@ -108,5 +108,25 @@ slimeknights/tconstruct/library/recipe/casting/ICastingContainer.java
 slimeknights/tconstruct/tools/network/PushBlockRowPacket.java
 # Library-clean content constants/modules pulled in by slice files.
 slimeknights/tconstruct/tools/data/ModifierIds.java
+slimeknights/tconstruct/tools/data/material/MaterialIds.java
 slimeknights/tconstruct/tools/modules/OvergrowthModule.java
 slimeknights/tconstruct/tools/modules/armor/CounterModule.java
+
+# --- Phase 4: shared module (blocks, items, effects, attributes, conditions) ---
+slimeknights/tconstruct/common/TinkerModule.java
+slimeknights/tconstruct/common/TinkerEffect.java
+slimeknights/tconstruct/common/json/**
+slimeknights/mantle/loot/**
+slimeknights/mantle/recipe/condition/**
+# shared content; client/commands/datagen/event pieces stay in unported.gradle
+slimeknights/tconstruct/shared/**
+# slime enum trio spans modules; the other world blocks come with the world module
+slimeknights/tconstruct/world/block/FoliageType.java
+slimeknights/tconstruct/world/block/DirtType.java
+# TiC custom ingredients on the Fabric ingredient API
+slimeknights/tconstruct/library/recipe/ingredient/**
+# fluid type for the registration extension; render handler lands in phase 5
+slimeknights/tconstruct/fluids/fluids/SlimeFluidType.java
+# status effects living in the tools module (registered by TinkerEffects)
+slimeknights/tconstruct/tools/modifiers/effect/**
+slimeknights/tconstruct/tools/modifiers/traits/skull/SelfDestructiveModifier.java

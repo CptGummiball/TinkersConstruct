@@ -90,6 +90,11 @@ public class FluidType implements FluidVariantAttributeHandler {
   }
 
   /** Forge derived this from a negative density; kept so buoyancy checks read the same. */
+  /** If true, entities drown in this fluid; mirrors the Forge FluidType hook. Read by the entity-in-fluid handling once the event layer lands. */
+  public boolean canDrownIn(net.minecraft.world.entity.LivingEntity entity) {
+    return true;
+  }
+
   public boolean isLighterThanAir() {
     return properties.density <= 0;
   }

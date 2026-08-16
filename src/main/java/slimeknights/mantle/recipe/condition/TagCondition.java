@@ -1,8 +1,6 @@
 package slimeknights.mantle.recipe.condition;
 
-import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.Registry;
@@ -11,8 +9,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.storage.loot.LootContext;
-import slimeknights.mantle.recipe.condition.ICondition;
-import net.minecraftforge.common.crafting.conditions.IConditionSerializer;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.util.JsonHelper;
 
@@ -46,8 +42,8 @@ public abstract class TagCondition<T> implements ICondition {
     return getClass().getSimpleName() + "(\"" + tag + "\")";
   }
 
-  /** Serializer logic for tag keys */
-  public record Serializer<C extends TagCondition<?>>(ResourceLocation getID, Function<TagKey<?>,C> constructor) implements IConditionSerializer<C>, net.minecraft.world.level.storage.loot.Serializer<C> {
+  /** Serializer logic for tag keys; plain read/write pair consumed by ConditionHelper and datagen */
+  public record Serializer<C extends TagCondition<?>>(ResourceLocation getID, Function<TagKey<?>,C> constructor) implements IConditionSerializer<C> {
     @Override
     public void write(JsonObject json, C value) {
       TagKey<?> tag = value.getTag();
@@ -66,14 +62,5 @@ public abstract class TagCondition<T> implements ICondition {
         JsonHelper.getResourceLocation(json, "tag")));
     }
 
-    @Override
-    public void serialize(JsonObject json, C value, JsonSerializationContext context) {
-      write(json, value);
-    }
-
-    @Override
-    public C deserialize(JsonObject json, JsonDeserializationContext context) {
-      return read(json);
-    }
   }
 }

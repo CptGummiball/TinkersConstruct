@@ -1,16 +1,14 @@
 package slimeknights.tconstruct.shared;
 
-import net.minecraft.core.registries.Registries;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredientSerializer;
+import net.fabricmc.fabric.api.registry.LandPathNodeTypesRegistry;
 import net.minecraft.world.item.CreativeModeTab.ItemDisplayParameters;
 import net.minecraft.world.item.CreativeModeTab.Output;
 import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.registries.RegisterEvent;
+import net.minecraft.world.level.pathfinder.PathType;
 import slimeknights.mantle.registration.object.FenceBuildingBlockObject;
 import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.mantle.registration.object.MetalItemObject;
@@ -27,18 +25,20 @@ import slimeknights.tconstruct.library.recipe.ingredient.MaterialValueIngredient
 import slimeknights.tconstruct.shared.block.KnightMetalBlock;
 import slimeknights.tconstruct.shared.block.OrientableBlock;
 import slimeknights.tconstruct.shared.block.SlimesteelBlock;
-import slimeknights.tconstruct.tools.TinkerToolParts;
 import slimeknights.tconstruct.tools.data.material.MaterialIds;
-
-import java.util.function.Consumer;
 
 import static slimeknights.tconstruct.TConstruct.getResource;
 
 /**
  * Contains bommon blocks and items used in crafting materials
+ *
+ * <p>Fabric port notes: registration is eager; {@link #init()} replaces the Forge registry
+ * event handler (ingredient serializers, material predicates, path node types).
  */
 @SuppressWarnings("unused")
 public final class TinkerMaterials extends TinkerModule {
+  private TinkerMaterials() {}
+
   // ores
   public static final MetalItemObject cobalt = BLOCKS.registerMetal("cobalt", metalBuilder(MapColor.COLOR_BLUE), TOOLTIP_BLOCK_ITEM, ITEM_PROPS);
   public static final MetalItemObject steel = BLOCKS.registerMetal("steel", metalBuilder(MapColor.STONE), TOOLTIP_BLOCK_ITEM, ITEM_PROPS);
@@ -70,26 +70,29 @@ public final class TinkerMaterials extends TinkerModule {
   public static final FenceBuildingBlockObject nahuatl = BLOCKS.registerFenceBuilding("nahuatl", builder(MapColor.COLOR_PURPLE, SoundType.WOOD).instrument(NoteBlockInstrument.BASS).requiresCorrectToolForDrops().strength(25f, 300f), BLOCK_ITEM);
   public static final FenceBuildingBlockObject blazewood = BLOCKS.registerFenceBuilding("blazewood", woodBuilder(MapColor.TERRACOTTA_RED).requiresCorrectToolForDrops().strength(25f, 300f).lightLevel(s -> 7), BLOCK_ITEM);
 
-  /*
-   * Serializers
+  /**
+   * Registers serializers and predicates; call once from the bootstrap.
+   * Replaces the Forge {@code RegisterEvent} handler.
    */
-  @SubscribeEvent
-  void registerSerializers(RegisterEvent event) {
-    if (event.getRegistryKey() == Registries.RECIPE_SERIALIZER) {
-      CraftingHelper.register(MaterialIngredient.Serializer.ID, MaterialIngredient.Serializer.INSTANCE);
-      CraftingHelper.register(MaterialValueIngredient.Serializer.ID, MaterialValueIngredient.Serializer.INSTANCE);
+  public static void init() {
+    // custom ingredients; Forge registered these through CraftingHelper
+    CustomIngredientSerializer.register(MaterialIngredient.SERIALIZER);
+    CustomIngredientSerializer.register(MaterialValueIngredient.SERIALIZER);
 
-      MaterialPredicate.LOADER.register(getResource("variant"), MaterialVariantPredicate.LOADER);
-      MaterialPredicate.LOADER.register(getResource("id"), MaterialIdPredicate.LOADER);
-      MaterialPredicate.LOADER.register(getResource("has_part"), MaterialHasPartPredicate.LOADER);
-      MaterialPredicate.LOADER.register(getResource("stat_type"), MaterialStatTypePredicate.LOADER);
-      MaterialPredicate.LOADER.register(getResource("castable"), MaterialPredicate.CASTABLE.getLoader());
-      MaterialPredicate.LOADER.register(getResource("composite"), MaterialPredicate.COMPOSITE.getLoader());
-      MaterialPredicate.LOADER.register(getResource("craftable"), MaterialDefinitionPredicate.CRAFTABLE.getLoader());
-      MaterialPredicate.LOADER.register(getResource("not_hidden"), MaterialDefinitionPredicate.NOT_HIDDEN.getLoader());
-      MaterialPredicate.LOADER.register(getResource("registered"), MaterialDefinitionPredicate.REGISTERED.getLoader());
-      MaterialPredicate.LOADER.register(getResource("tier"), MaterialTierPredicate.LOADER);
-    }
+    // knightmetal blocks hurt entities standing in them; replaces the Forge getBlockPathType override
+    LandPathNodeTypesRegistry.register(knightmetal.get(), PathType.DAMAGE_OTHER, null);
+
+    // material predicates
+    MaterialPredicate.LOADER.register(getResource("variant"), MaterialVariantPredicate.LOADER);
+    MaterialPredicate.LOADER.register(getResource("id"), MaterialIdPredicate.LOADER);
+    MaterialPredicate.LOADER.register(getResource("has_part"), MaterialHasPartPredicate.LOADER);
+    MaterialPredicate.LOADER.register(getResource("stat_type"), MaterialStatTypePredicate.LOADER);
+    MaterialPredicate.LOADER.register(getResource("castable"), MaterialPredicate.CASTABLE.getLoader());
+    MaterialPredicate.LOADER.register(getResource("composite"), MaterialPredicate.COMPOSITE.getLoader());
+    MaterialPredicate.LOADER.register(getResource("craftable"), MaterialDefinitionPredicate.CRAFTABLE.getLoader());
+    MaterialPredicate.LOADER.register(getResource("not_hidden"), MaterialDefinitionPredicate.NOT_HIDDEN.getLoader());
+    MaterialPredicate.LOADER.register(getResource("registered"), MaterialDefinitionPredicate.REGISTERED.getLoader());
+    MaterialPredicate.LOADER.register(getResource("tier"), MaterialTierPredicate.LOADER);
   }
 
   /** Adds all relevant items to the creative tab, called by general tab */
@@ -119,10 +122,8 @@ public final class TinkerMaterials extends TinkerModule {
     output.accept(netheriteNugget);
     accept(output, knightmetal);
     accept(output, knightslime);
-    // fake storage items make more sense here than tool parts
-    Consumer<ItemStack> consumer = output::accept;
-    TinkerToolParts.fakeIngot.get().addVariants(consumer, "");
-    TinkerToolParts.fakeStorageBlockItem.get().addVariants(consumer, "");
+    // PORT phase 4: fake ingot/storage block variants return with the tools module
+    // (TinkerToolParts.fakeIngot / fakeStorageBlockItem)
     // future: soulsteel
   }
 

@@ -58,13 +58,6 @@ slimeknights/mantle/item/LecternBookItem.java
 slimeknights/mantle/item/AbstractBookItem.java
 slimeknights/mantle/item/ILecternBookItem.java
 
-# --- TConstruct phase 3 stragglers ---
-slimeknights/tconstruct/common/registration/BlockDeferredRegisterExtension.java
-# Needs SlimeFluidType from the fluids module (phase 4).
-slimeknights/tconstruct/common/registration/FluidDeferredRegisterExtension.java
-# registerCast needs IMaterialItem/PartCastItem from library.tools.part, which pulls the
-# material system; gated back in with the library port.
-slimeknights/tconstruct/common/registration/ItemDeferredRegisterExtension.java
 
 # --- library/utils: blocked on the Fabric event layer (a dedicated later step) ---
 # LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
@@ -87,14 +80,11 @@ slimeknights/tconstruct/library/tools/capability/ToolCapabilityProvider.java
 # as an ItemSubPredicate; zero in-slice references, so it waits for the advancement pass.
 slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
 
-# --- Content-bound loot extensions: their getType() reads TinkerCommons/TinkerTools
-# loot-type statics, and 1.21 replaced the GSON loot Serializer classes with MapCodecs.
-# Both fixes land together when the shared/tools content modules gate in (phase 4).
+# --- Content-bound loot extensions waiting on the tools module (phase 4): their getType()
+# reads TinkerTools loot-type statics. MapCodec rewrite pattern established with the
+# shared-module loot conditions.
 slimeknights/tconstruct/library/json/loot/AddToolDataFunction.java
-slimeknights/tconstruct/library/json/loot/HasLootContextSetCondition.java
-slimeknights/tconstruct/library/json/loot/TagPreferenceLootEntry.java
 slimeknights/tconstruct/library/json/loot/ToolPartLootEntry.java
-slimeknights/tconstruct/library/json/condition/TagNotEmptyCondition.java
 
 # --- Waiting on the tool fluid capability step (ToolTankHelper) ---
 slimeknights/tconstruct/library/json/loot/equipment/MobEquipment.java
@@ -124,3 +114,24 @@ slimeknights/tconstruct/library/tools/item/ranged/ModifiableCrossbowItem.java
 # armor items: ToolInventoryCapability (capability step) + client armor model dispatch (phase 5).
 slimeknights/tconstruct/library/tools/item/armor/ModifiableArmorItem.java
 slimeknights/tconstruct/library/tools/item/armor/MultilayerArmorItem.java
+
+# --- shared module: pieces deferred from the phase-4 gate-in ---
+# client work (phase 5)
+slimeknights/tconstruct/shared/TinkerClient.java
+slimeknights/tconstruct/shared/CommonsClientEvents.java
+slimeknights/tconstruct/shared/client/**
+# commands step: argument types + MaterialRegistry.getTagSource decision
+slimeknights/tconstruct/shared/command/**
+# server->client packet whose handler is the phase-5 texture-gen command
+slimeknights/tconstruct/shared/network/GeneratePartTexturesPacket.java
+# datagen providers (phase 7)
+slimeknights/tconstruct/shared/data/**
+# event-layer step: LivingJump/RightClickBlock (also needs TinkerWorld) and
+# ItemCrafted/LivingHurt advancement bridges
+slimeknights/tconstruct/shared/CommonsEvents.java
+slimeknights/tconstruct/shared/AchievementEvents.java
+# uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
+# the charge-bar icon overlay with phase 5
+slimeknights/tconstruct/tools/modifiers/effect/HelmetChargingEffect.java
+# base block entity for tables; pulls tables.menu + tables.network (tables module)
+slimeknights/tconstruct/shared/block/entity/TableBlockEntity.java

@@ -19,4 +19,14 @@ public class LivingEvent extends Event {
   public LivingEntity getEntity() {
     return entity;
   }
+
+  /**
+   * Mirror of Forge's {@code LivingEvent.LivingJumpEvent}: fired when a living entity jumps.
+   * Posted by the Fabric event bridge (LivingEntity jump hook) once the event layer lands.
+   */
+  public static class LivingJumpEvent extends LivingEvent {
+    public LivingJumpEvent(LivingEntity entity) {
+      super(entity);
+    }
+  }
 }
