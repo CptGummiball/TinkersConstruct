@@ -21,7 +21,7 @@ java {
 repositories {
     mavenCentral()
     maven { name = 'Fabric';        url = 'https://maven.fabricmc.net/' }
-    maven { name = 'Fuzs';          url = 'https://maven.fuzs.net/' }
+    maven { name = 'Fuzs';          url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/' }
     maven { name = 'TerraformersMC'; url = 'https://maven.terraformersmc.com/releases/' }
     maven { name = 'Ladysnake';     url = 'https://maven.ladysnake.org/releases' }
     maven { name = 'BlameJared';    url = 'https://maven.blamejared.com' }
@@ -134,6 +134,10 @@ dependencies {
     // Annotations Forge supplied transitively but Fabric does not.
     implementation 'com.google.code.findbugs:jsr305:3.0.2'
     implementation 'com.google.errorprone:error_prone_annotations:2.28.0'
+
+    // Forge Config API Port: ships in GummiCraft, supplies the (Neo)Forge config API on
+    // Fabric so Tinkers' Config class ports as a rename (ForgeConfigSpec -> ModConfigSpec).
+    modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forge_config_api_port_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

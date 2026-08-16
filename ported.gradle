@@ -48,3 +48,11 @@ slimeknights/mantle/util/BlockEntityHelper.java
 slimeknights/mantle/util/RetexturedHelper.java
 slimeknights/mantle/registration/deferred/**
 slimeknights/mantle/registration/DelayedSupplier.java
+
+# --- TConstruct phase 3: common layer ---
+slimeknights/tconstruct/common/registration/**
+slimeknights/tconstruct/library/utils/**
+slimeknights/tconstruct/library/recipe/melting/IMeltingContainer.java
+slimeknights/tconstruct/world/TinkerHeadType.java
+slimeknights/tconstruct/TConstruct.java
+slimeknights/tconstruct/common/network/TinkerNetwork.java

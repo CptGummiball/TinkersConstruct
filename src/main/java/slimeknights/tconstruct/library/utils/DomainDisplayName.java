@@ -1,10 +1,9 @@
 package slimeknights.tconstruct.library.utils;
 
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.common.ForgeI18n;
-import net.minecraftforge.fml.ModList;
+import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
+import net.minecraft.locale.Language;
+import net.fabricmc.loader.api.FabricLoader;
 import org.apache.commons.lang3.text.WordUtils;
-import slimeknights.mantle.data.listener.ISafeManagerReloadListener;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +20,6 @@ public class DomainDisplayName {
   /** Cached pattern for matching a dash or underscore */
   private static final Pattern DASH_UNDERSCORE = Pattern.compile("[_-]");
   /** Reload listener to clear names on resource pack reload */
-  private static final ISafeManagerReloadListener RELOAD_LISTENER = manager -> DISPLAY_NAME_LOOKUP.clear();
 
   /**
    * Formats a domain name into title case. For example, "my_pack" becomes "My Pack"
@@ -36,14 +34,14 @@ public class DomainDisplayName {
   private static String nameForUncached(String domain) {
     // first, check if the resource pack translated the thing
     String langKey = "domain." + domain + ".display_name";
-    String translated = ForgeI18n.getPattern(langKey);
+    String translated = Language.getInstance().getOrDefault(langKey);
     if (!translated.equals(langKey)) {
       return translated;
     }
 
     // that failed? try a mod container lookup
-    return ModList.get().getModContainerById(domain)
-                  .map(container -> container.getModInfo().getDisplayName())
+    return FabricLoader.getInstance().getModContainer(domain)
+                  .map(container -> container.getMetadata().getName())
                   .orElseGet(() -> formatDomainName(domain));
   }
 
@@ -56,8 +54,12 @@ public class DomainDisplayName {
     return DISPLAY_NAME_LOOKUP.computeIfAbsent(domain, DomainDisplayName::nameForUncached);
   }
 
-  /** Registers the reload listener with the resource manager */
-  public static void addResourceListener(RegisterClientReloadListenersEvent manager) {
-    manager.registerReloadListener(RELOAD_LISTENER);
+  /**
+   * Registers cache invalidation. Forge cleared through a client resource reload listener;
+   * the language table this cache reads refreshes on tag/datapack reloads too, and the tags
+   * event fires on both sides, so it covers resource pack changes without client-only API.
+   */
+  public static void init() {
+    CommonLifecycleEvents.TAGS_LOADED.register((registries, client) -> DISPLAY_NAME_LOOKUP.clear());
   }
 }

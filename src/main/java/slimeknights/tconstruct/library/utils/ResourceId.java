@@ -11,12 +11,12 @@ import java.util.function.BiFunction;
  * @see IdParser
  */
 public abstract class ResourceId extends ResourceLocation {
-  protected ResourceId(String namespace, String path, @Nullable Dummy pDummy) {
-    super(namespace, path, pDummy);
-  }
+  // 1.21 note: ResourceLocation went final with private constructors and the validating
+  // Dummy overload removed; the access widener re-opens the (namespace, path) constructor.
+  // Validation happens in the factory paths (parse/tryParse) exactly as vanilla does it.
 
   public ResourceId(ResourceLocation location) {
-    this(location.getNamespace(), location.getPath(), null);
+    super(location.getNamespace(), location.getPath());
   }
 
   public ResourceId(String namespace, String path) {
@@ -24,7 +24,17 @@ public abstract class ResourceId extends ResourceLocation {
   }
 
   public ResourceId(String location) {
-    super(location);
+    super(namespaceOf(location), pathOf(location));
+  }
+
+  private static String namespaceOf(String location) {
+    int colon = location.indexOf(':');
+    return colon >= 1 ? location.substring(0, colon) : "minecraft";
+  }
+
+  private static String pathOf(String location) {
+    int colon = location.indexOf(':');
+    return colon >= 0 ? location.substring(colon + 1) : location;
   }
 
 
@@ -37,8 +47,7 @@ public abstract class ResourceId extends ResourceLocation {
    */
   @Nullable
   protected static <T extends ResourceLocation> T tryParse(String string, BiFunction<String,String,T> constructor) {
-    String[] parts = decompose(string, ':');
-    return tryBuild(parts[0], parts[1], constructor);
+    return tryBuild(namespaceOf(string), pathOf(string), constructor);
   }
 
   /**

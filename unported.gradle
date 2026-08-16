@@ -71,3 +71,25 @@ slimeknights/mantle/item/ContainerFoodItem.java
 slimeknights/mantle/item/LecternBookItem.java
 slimeknights/mantle/item/AbstractBookItem.java
 slimeknights/mantle/item/ILecternBookItem.java
+
+# --- TConstruct phase 3 stragglers ---
+# Needs world/block crystal classes (phase 4 world module).
+slimeknights/tconstruct/common/registration/GeodeItemObject.java
+slimeknights/tconstruct/common/registration/BlockDeferredRegisterExtension.java
+# Needs SlimeFluidType from the fluids module (phase 4).
+slimeknights/tconstruct/common/registration/FluidDeferredRegisterExtension.java
+# registerCast needs IMaterialItem/PartCastItem from library.tools.part, which pulls the
+# material system; gated back in with the library port.
+slimeknights/tconstruct/common/registration/ItemDeferredRegisterExtension.java
+
+# --- library/utils: blocked on the Fabric event layer (a dedicated later step) ---
+# LeftClickBlock -> AttackBlockCallback plus block-break events.
+slimeknights/tconstruct/library/utils/BlockSideHitListener.java
+# LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
+slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
+# Fires Forge's EntityTeleportEvent; belongs with the event layer.
+slimeknights/tconstruct/library/utils/TeleportHelper.java
+# Forge's TierSortingRegistry is gone; harvest-tier ordering needs its own 1.21 answer.
+slimeknights/tconstruct/library/utils/HarvestTiers.java
+# ForgeEventFactory explosion hooks; belongs with the event layer.
+slimeknights/tconstruct/library/utils/CustomExplosion.java

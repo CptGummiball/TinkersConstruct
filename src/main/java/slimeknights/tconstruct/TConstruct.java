@@ -1,256 +1,42 @@
 package slimeknights.tconstruct;
 
-import net.minecraft.core.HolderLookup.Provider;
-import net.minecraft.core.RegistrySetBuilder;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.data.DataGenerator;
-import net.minecraft.data.PackOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.data.DatapackBuiltinEntriesProvider;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.MissingMappingsEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import slimeknights.mantle.registration.RegistrationHelper;
-import slimeknights.tconstruct.common.TinkerModule;
-import slimeknights.tconstruct.common.TinkerTags;
-import slimeknights.tconstruct.common.config.Config;
-import slimeknights.tconstruct.common.data.AdvancementsProvider;
-import slimeknights.tconstruct.common.data.ConfigurationDataProvider;
-import slimeknights.tconstruct.common.data.DamageTypeProvider;
-import slimeknights.tconstruct.common.data.loot.GlobalLootModifiersProvider;
-import slimeknights.tconstruct.common.data.loot.LootTableInjectionProvider;
-import slimeknights.tconstruct.common.data.loot.TConstructLootTableProvider;
-import slimeknights.tconstruct.common.data.tags.BiomeTagProvider;
-import slimeknights.tconstruct.common.data.tags.BlockEntityTypeTagProvider;
-import slimeknights.tconstruct.common.data.tags.BlockTagProvider;
-import slimeknights.tconstruct.common.data.tags.DamageTypeTagProvider;
-import slimeknights.tconstruct.common.data.tags.EnchantmentTagProvider;
-import slimeknights.tconstruct.common.data.tags.EntityTypeTagProvider;
-import slimeknights.tconstruct.common.data.tags.FluidTagProvider;
-import slimeknights.tconstruct.common.data.tags.ItemTagProvider;
-import slimeknights.tconstruct.common.data.tags.MenuTypeTagProvider;
-import slimeknights.tconstruct.common.data.tags.PotionTagProvider;
-import slimeknights.tconstruct.common.network.TinkerNetwork;
-import slimeknights.tconstruct.fluids.TinkerFluids;
-import slimeknights.tconstruct.gadgets.TinkerGadgets;
-import slimeknights.tconstruct.library.TinkerItemDisplays;
-import slimeknights.tconstruct.library.materials.MaterialRegistry;
-import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.ComputableDataKey;
-import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability.TinkerDataKey;
-import slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader;
-import slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader;
-import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.plugin.DietPlugin;
-import slimeknights.tconstruct.plugin.DummmmmmyPlugin;
-import slimeknights.tconstruct.plugin.ImmersiveEngineeringPlugin;
-import slimeknights.tconstruct.plugin.craftingtweaks.CraftingTweaksPlugin;
-import slimeknights.tconstruct.plugin.jsonthings.JsonThingsPlugin;
-import slimeknights.tconstruct.shared.TinkerAttributes;
-import slimeknights.tconstruct.shared.TinkerClient;
-import slimeknights.tconstruct.shared.TinkerCommons;
-import slimeknights.tconstruct.shared.TinkerEffects;
-import slimeknights.tconstruct.shared.TinkerMaterials;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
-import slimeknights.tconstruct.tables.TinkerTables;
-import slimeknights.tconstruct.tools.TinkerModifiers;
-import slimeknights.tconstruct.tools.TinkerToolParts;
-import slimeknights.tconstruct.tools.TinkerTools;
-import slimeknights.tconstruct.tools.data.material.TrimMaterialProvider;
-import slimeknights.tconstruct.world.TinkerStructures;
-import slimeknights.tconstruct.world.TinkerWorld;
-import slimeknights.tconstruct.world.data.WorldgenProvider;
 
 import java.util.Locale;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * TConstruct, the tool mod. Craft your tools with style, then modify until the original is gone!
  *
+ * <p>On Forge this was the {@code @Mod} entry class, driving module registration through the
+ * event bus, datagen through {@code GatherDataEvent} and world migrations through
+ * {@code MissingMappingsEvent}. On Fabric none of those mechanisms exist: initialisation
+ * lives in {@code slimeknights.tconstruct.fabric.TConstructBootstrap}, datagen in the Fabric
+ * datagen entrypoint, and there are no Forge-era worlds to migrate. What remains here is what
+ * the other 1900 files actually reference — the mod id and the static helpers.
+ *
+ * <p>{@code createKey}/{@code ComputableDataKey} return with the TinkerData port (the Forge
+ * entity capability that backs modifier markers); tracked in PORTING.md.
+ *
  * @author mDiyo
  */
-
-@Mod(TConstruct.MOD_ID)
-@Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class TConstruct {
 
   public static final String MOD_ID = "tconstruct";
   public static final Logger LOG = LogManager.getLogger(MOD_ID);
   public static final Random RANDOM = new Random();
 
-  /* Instance of this mod, used for grabbing prototype fields */
-  public static TConstruct instance;
-
-  public TConstruct() {
-    instance = this;
-
-    Config.init();
-    TinkerItemDisplays.init();
-    MaterialRegistry.init();
-
-    // initialize modules, done this way rather than with annotations to give us control over the order
-    MinecraftForge.EVENT_BUS.addListener(TConstruct::missingMappings);
-    IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-    // base
-    bus.register(new TinkerCommons());
-    bus.register(new TinkerMaterials());
-    bus.register(new TinkerEffects());
-    bus.register(new TinkerGadgets());
-    bus.register(new TinkerAttributes());
-    // world
-    bus.register(new TinkerWorld());
-    bus.register(new TinkerStructures());
-    // tools
-    bus.register(new TinkerTables());
-    bus.register(new TinkerModifiers());
-    bus.register(new TinkerToolParts());
-    bus.register(new TinkerTools());
-    // smeltery
-    bus.register(new TinkerSmeltery());
-    bus.register(new TinkerFluids());
-
-    // init deferred registers
-    TinkerModule.initRegisters();
-    TinkerNetwork.setup();
-    TinkerTags.init();
-    // init client logic
-    DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> TinkerClient::onConstruct);
-
-    // compat
-    ModList modList = ModList.get();
-    if (modList.isLoaded("immersiveengineering")) {
-      bus.register(new ImmersiveEngineeringPlugin());
-    }
-    if (modList.isLoaded("jsonthings")) {
-      JsonThingsPlugin.onConstruct();
-    }
-    if (modList.isLoaded("diet")) {
-      DietPlugin.onConstruct();
-    }
-    if (modList.isLoaded("craftingtweaks")) {
-      CraftingTweaksPlugin.onConstruct();
-    }
-    if (modList.isLoaded("dummmmmmy")) {
-      bus.register(new DummmmmmyPlugin());
-    }
-  }
-
-  @SubscribeEvent
-  static void commonSetup(final FMLCommonSetupEvent event) {
-    ToolDefinitionLoader.init();
-    StationSlotLayoutLoader.init();
-  }
-
-  @SubscribeEvent
-  static void gatherData(final GatherDataEvent event) {
-    DataGenerator generator = event.getGenerator();
-    PackOutput packOutput = generator.getPackOutput();
-    ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
-    CompletableFuture<Provider> lookupProvider = event.getLookupProvider();
-    boolean server = event.includeServer();
-
-    // its sometimes cleaner to splitup different registry sets to their own classes, combine them here into a single provider
-    RegistrySetBuilder registrySetBuilder = new RegistrySetBuilder();
-    DamageTypeProvider.register(registrySetBuilder);
-    WorldgenProvider.register(registrySetBuilder);
-    TrimMaterialProvider.register(registrySetBuilder);
-    DatapackBuiltinEntriesProvider datapackRegistryProvider = new DatapackBuiltinEntriesProvider(packOutput, lookupProvider, registrySetBuilder, Set.of(MOD_ID));
-    generator.addProvider(server, datapackRegistryProvider);
-
-    // tags
-    BlockTagProvider blockTags = new BlockTagProvider(packOutput, lookupProvider, existingFileHelper);
-    generator.addProvider(server, blockTags);
-    generator.addProvider(server, new ItemTagProvider(packOutput, lookupProvider, blockTags.contentsGetter(), existingFileHelper));
-    generator.addProvider(server, new FluidTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new EntityTypeTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new BlockEntityTypeTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new BiomeTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new EnchantmentTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new MenuTypeTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new PotionTagProvider(packOutput, lookupProvider, existingFileHelper));
-    generator.addProvider(server, new DamageTypeTagProvider(packOutput, datapackRegistryProvider.getRegistryProvider(), existingFileHelper));
-
-    // other datagen
-    generator.addProvider(server, new TConstructLootTableProvider(packOutput));
-    generator.addProvider(server, new AdvancementsProvider(packOutput));
-    generator.addProvider(server, new GlobalLootModifiersProvider(packOutput));
-    generator.addProvider(server, new LootTableInjectionProvider(packOutput));
-    generator.addProvider(server, new ConfigurationDataProvider(packOutput));
-  }
-
-  /** Handles missing mappings of all types */
-  private static void missingMappings(MissingMappingsEvent event) {
-    RegistrationHelper.handleMissingMappings(event, MOD_ID, Registries.BLOCK, name -> switch (name) {
-      // silky jewel removal
-      case "silky_jewel_block" -> Blocks.EMERALD_BLOCK;
-      // piglin heads are vanilla
-      case "piglin_head" -> Blocks.PIGLIN_HEAD;
-      case "piglin_wall_head" -> Blocks.PIGLIN_WALL_HEAD;
-      default -> null;
-    });
-    RegistrationHelper.handleMissingMappings(event, MOD_ID, Registries.ITEM, name -> switch (name) {
-      // silky jewel removal
-      case "silky_jewel" -> Items.EMERALD;
-      case "silky_jewel_block" -> Items.EMERALD_BLOCK;
-      // piglin heads are vanilla
-      case "piglin_head" -> Items.PIGLIN_HEAD;
-      // round plate rename
-      case "round_plate" -> TinkerToolParts.adzeHead.get();
-      case "round_plate_cast" -> TinkerSmeltery.adzeHeadCast.get();
-      case "round_plate_sand_cast" -> TinkerSmeltery.adzeHeadCast.getSand();
-      case "round_plate_red_sand_cast" -> TinkerSmeltery.adzeHeadCast.getRedSand();
-      // slimesuit rework
-      case "slime_chestplate" -> TinkerTools.slimeWings.get();
-      default -> null;
-    });
-  }
-
-  /* Utils */
-
   /**
    * Gets a resource location for Tinkers
    * @param name  Resource path
    * @return  Location for tinkers
    */
-  @SuppressWarnings("removal")
   public static ResourceLocation getResource(String name) {
     return ResourceLocation.fromNamespaceAndPath(MOD_ID, name);
-  }
-
-  /**
-   * Gets a data key for the capability, mainly used for modifier markers
-   * @param name  Resource path
-   * @return  Location for tinkers
-   */
-  public static <T> TinkerDataKey<T> createKey(String name) {
-    return TinkerDataKey.of(getResource(name));
-  }
-
-  /**
-   * Gets a data key for the capability, mainly used for modifier markers
-   * @param name         Resource path
-   * @param constructor  Constructor for compute if absent
-   * @return  Location for tinkers
-   */
-  public static <T> ComputableDataKey<T> createKey(String name, Supplier<T> constructor) {
-    return ComputableDataKey.of(getResource(name), constructor);
   }
 
   /**
@@ -281,7 +67,7 @@ public class TConstruct {
    * @return  Translation key
    */
   public static String makeTranslationKey(String base, String name) {
-    return Util.makeTranslationKey(base, getResource(name));
+    return net.minecraft.Util.makeDescriptionId(base, getResource(name));
   }
 
   /**
@@ -318,7 +104,12 @@ public class TConstruct {
     // Dumb restriction but not like we can change it.
     String name = self.getClass().getName();
     if (!name.startsWith("slimeknights.tconstruct.")) {
-      throw new IllegalStateException(base + " being extended from invalid package " + name + ". " + solution);
+      throw new IllegalStateException(base + " being extended improperly by " + name + ". " + solution + ". For any questions, discuss with us on Discord or GitHub.");
     }
+  }
+
+  /** Returns the value, or the fallback when null. */
+  public static <T> T defaultIfNull(@javax.annotation.Nullable T value, T fallback) {
+    return value == null ? fallback : value;
   }
 }

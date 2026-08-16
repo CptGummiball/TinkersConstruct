@@ -29,3 +29,19 @@ accessible method net/minecraft/world/level/material/FlowingFluid isSourceBlockO
 # BlockSetType/WoodType registration for Mantle's wood registration flow; both went
 # private in 1.21, Forge exposed them through its registration hooks.
 accessible method net/minecraft/world/level/block/state/properties/BlockSetType register (Lnet/minecraft/world/level/block/state/properties/BlockSetType;)Lnet/minecraft/world/level/block/state/properties/BlockSetType;
+# ArgumentTypeInfos.BY_CLASS — 1.21 removed the public registerByClass helper; custom
+# argument types still need their class->info mapping for serialization.
+accessible field net/minecraft/commands/synchronization/ArgumentTypeInfos BY_CLASS Ljava/util/Map;
+
+# ResourceLocation went final in 1.21. Tinkers' whole typed-id system (MaterialId,
+# ModifierId, ToolDefinitionId, ...) extends it via ResourceId for type safety across
+# hundreds of signatures; un-finaling beats rewriting all of them onto a wrapper.
+extendable class net/minecraft/resources/ResourceLocation
+accessible method net/minecraft/resources/ResourceLocation <init> (Ljava/lang/String;Ljava/lang/String;)V
+extendable method net/minecraft/resources/ResourceLocation <init> (Ljava/lang/String;Ljava/lang/String;)V
+# UseOnContext.getHitResult — MutableUseOnContext (used by AOE tool interactions) copies
+# contexts; the accessor went protected in vanilla.
+accessible method net/minecraft/world/item/context/UseOnContext getHitResult ()Lnet/minecraft/world/phys/BlockHitResult;
+# ClientboundBlockEntityDataPacket constructor — Util.createBEPacket builds sync packets
+# with custom tag payloads; vanilla only exposes the create() factory.
+accessible method net/minecraft/network/protocol/game/ClientboundBlockEntityDataPacket <init> (Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/nbt/CompoundTag;)V
