@@ -16,7 +16,8 @@
   "environment": "*",
   "entrypoints": {
     "main": [ "slimeknights.tconstruct.fabric.TConstructBootstrap" ],
-    "client": [ "slimeknights.tconstruct.fabric.TConstructClientBootstrap" ]
+    "client": [ "slimeknights.tconstruct.fabric.TConstructClientBootstrap" ],
+    "cardinal-components": [ "slimeknights.tconstruct.fabric.TinkerComponents" ]
   },
   "mixins": [
     "tconstruct.mixins.json",

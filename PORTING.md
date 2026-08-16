@@ -120,6 +120,29 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
       condition layer reading the existing `forge:`-namespaced blocks.
 - [ ] **1c — Remaining shims.** Event bus → Fabric events + mixins, registry helpers
       (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
+### Core-slice status (phase 3)
+
+The slice went from 2987 to **1526 errors** with the capability layer done:
+
+- **`TinkerDataCapability`** — runtime-only armor data; now a weak map keyed by entity
+  identity (equivalent contract: entries die with the entity, equipment events refill new
+  instances). No attachment machinery needed.
+- **`PersistentDataCapability`** — now a Cardinal Components entity component with
+  `RespawnCopyStrategy.ALWAYS_COPY` (survives death, like the Forge clone handler) and
+  explicit join sync. `TinkerComponents` is the CCA entrypoint; CCA base+entity resolve
+  from Ladysnake's maven.
+
+Remaining error mass is mapped, in working order for the next pass:
+
+1. `Modifiable*Item` classes (55/48/42/25/21 errors) — the Forge `IForgeItem` hook surface
+   (attribute modifiers, canPerformAction, swing/interaction hooks) needs its Fabric
+   answer per hook: FabricItem where it exists, Tinkers' own call paths otherwise.
+2. `TooltipUtil`/`ToolAttackUtil`/`ToolHarvestLogic` — helpers sitting on those hooks.
+3. `ModifierManager`/`MaterialRegistry` — reload listeners + sync events, same pattern as
+   `FluidContainerTransferManager`.
+4. **`ToolStack` (22) — the NBT→components heart, deliberately last** once its callers
+   compile.
+
 - [~] **2 — Mantle-lite.** Ported: `data.loadable` (unblocks 398 dependent files),
       `data.predicate` (98), `registration.object` (92), `data.registry`, `data.gson`, `util`.
       `recipe.container`, **`fluid` + `fluid.transfer`** (transfer helper, container

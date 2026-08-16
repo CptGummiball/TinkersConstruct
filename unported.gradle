@@ -73,8 +73,6 @@ slimeknights/mantle/item/AbstractBookItem.java
 slimeknights/mantle/item/ILecternBookItem.java
 
 # --- TConstruct phase 3 stragglers ---
-# Needs world/block crystal classes (phase 4 world module).
-slimeknights/tconstruct/common/registration/GeodeItemObject.java
 slimeknights/tconstruct/common/registration/BlockDeferredRegisterExtension.java
 # Needs SlimeFluidType from the fluids module (phase 4).
 slimeknights/tconstruct/common/registration/FluidDeferredRegisterExtension.java
@@ -95,7 +93,16 @@ slimeknights/tconstruct/library/utils/CustomExplosion.java
 # --- Core-slice deferrals ---
 # Forge capability system (entity data, tool fluid/energy caps). Ports onto Cardinal
 # Components (ships in GummiCraft) as its own step; tools/nbt does not reference it.
-slimeknights/tconstruct/library/tools/capability/**
-# Converted but slice-bound: TeleportHelper -> Sounds -> GeodeItemObject.BudSize chain
-# lands with the core slice.
+# fluid/inventory/energy tool caps still Forge-coupled; the data caps are ported.
+slimeknights/tconstruct/library/tools/capability/fluid/**
+slimeknights/tconstruct/library/tools/capability/inventory/**
+slimeknights/tconstruct/library/tools/capability/ToolEnergyCapability.java
+slimeknights/tconstruct/library/tools/capability/ToolCapabilityProvider.java
+slimeknights/tconstruct/library/tools/capability/BlockItemProviderCapability.java
+slimeknights/tconstruct/library/tools/capability/EntityModifierCapability.java
+# CCA initializer references PersistentDataCapability/ModDataNBT from the core slice;
+# gates in together with it.
+# Re-park with the slice (see ported.gradle):
+slimeknights/tconstruct/common/registration/GeodeItemObject.java
 slimeknights/tconstruct/library/utils/TeleportHelper.java
+slimeknights/tconstruct/fabric/TinkerComponents.java

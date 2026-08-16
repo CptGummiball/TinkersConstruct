@@ -139,6 +139,11 @@ dependencies {
     // Fabric so Tinkers' Config class ports as a rename (ForgeConfigSpec -> ModConfigSpec).
     modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${forge_config_api_port_version}"
 
+    // Cardinal Components (ships in GummiCraft): backs the persistent entity data that
+    // Forge attached via AttachCapabilitiesEvent -- NBT persistence, respawn copy, sync.
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-base:${cardinal_components_version}"
+    modImplementation "org.ladysnake.cardinal-components-api:cardinal-components-entity:${cardinal_components_version}"
+
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
