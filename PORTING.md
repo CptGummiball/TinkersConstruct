@@ -41,7 +41,35 @@ exactly — no data migration, no rounding drift.
 
 A 237k-line rewrite that only compiles at the very end is unverifiable. `ported.gradle`
 lists the packages handed to javac; each finished module is appended, so **every step ends
-on a compiling build**. `-Pport.all=true` forces a full compile.
+on a compiling build**. `ported-tests.gradle` does the same for `src/test`, and
+`unported.gradle` blocks individual files inside an otherwise-ported package.
+`-Pport.all=true` ignores all three and attempts a full compile.
+
+## Open decision: buffer type
+
+**This is the next thing to settle — several blocked items all trace back to it.**
+
+1.21 requires `RegistryFriendlyByteBuf` for anything that serialises registry contents, but
+Mantle's `Loadable` interface passes a plain `FriendlyByteBuf`. Widening `encode`/`decode`
+across the framework is the correct fix; casting at the call site would compile and then
+fail at runtime whenever a plain buffer is handed over.
+
+Blocked on it right now:
+
+| Item | Why |
+|---|---|
+| `IngredientLoadable` | 1.21 ingredients serialise via `CONTENTS_STREAM_CODEC`, registry-aware |
+| `ItemStackLoadable` | components replaced NBT; stack codecs are registry-aware |
+| `Loadables.ENCHANTMENT` | enchantments moved to a datapack registry, needs `HolderLookup.Provider` (2 call sites) |
+
+## Deferred, tracked so it is not lost
+
+- `JsonHelper.syncPackets`/`sendPackets` were removed when porting `JsonHelper` — they are
+  networking, not JSON, and belong with the network module in phase 3.
+- Fluid amounts in data files stay in mB; no JSON migration is needed (see Unit convention).
+- Data files keep `forge:`-namespaced condition types, read by the ported condition layer.
+  Material/ore **tags**, however, now resolve against `c:` — see the `COMMON` note in
+  `Mantle.java`. Tag JSONs still referencing `forge:` need a sweep in phase 3.
 
 ## Target environment
 
@@ -62,11 +90,15 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
 
 - [x] **0 — Build foundation.** Loom build, `fabric.mod.json`, access widener, mixin configs,
       entrypoints, port gate.
-- [ ] **1 — Forge-compat shim layer.** Fluids (`FluidStack` ↔ `FluidVariant`), item handlers,
-      capabilities → `BlockApiLookup`/`ItemApiLookup`, event bus → Fabric events + mixins,
-      registries, `ToolAction`, recipe conditions.
-- [ ] **2 — Mantle-lite.** `data.loadable` framework (used by 398 files), predicates,
-      registration, recipe helpers, util, fluid, block/inventory/network, client + book.
+- [x] **1a — Transfer layer.** `FluidStack` ↔ `FluidVariant`, `IFluidHandler`, `FluidTank`,
+      item handlers, both-direction `Storage` bridges, capability lookups via `TransferUtil`.
+- [x] **1b — Tool actions & recipe conditions.** `ToolAction`/`ToolActions`;
+      condition layer reading the existing `forge:`-namespaced blocks.
+- [ ] **1c — Remaining shims.** Event bus → Fabric events + mixins, registry helpers
+      (`DeferredRegister`/`RegistryObject`), Forge model loaders, `FluidType` (47 files).
+- [~] **2 — Mantle-lite.** `data.loadable` framework ported (398 dependent files unblocked);
+      `util`, `data.registry`, `data.gson` ported. Still to do: predicates, registration,
+      recipe helpers, fluid, block/inventory/network, client + book.
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
