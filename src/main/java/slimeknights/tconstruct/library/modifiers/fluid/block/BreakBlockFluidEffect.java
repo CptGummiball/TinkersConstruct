@@ -45,7 +45,7 @@ public record BreakBlockFluidEffect(float hardness, Map<Holder<Enchantment>,Inte
     this(hardness, Map.of());
   }
 
-  public BreakBlockFluidEffect(float hardness, Enchantment enchantment, int level) {
+  public BreakBlockFluidEffect(float hardness, Holder<Enchantment> enchantment, int level) {
     this(hardness, Map.of(enchantment, level));
   }
 
@@ -87,7 +87,10 @@ public record BreakBlockFluidEffect(float hardness, Map<Holder<Enchantment>,Inte
         ItemStack fakeTool = ItemStack.EMPTY;
         if (!enchantments.isEmpty()) {
           fakeTool = new ItemStack(Items.STICK);
-          EnchantmentHelper.setEnchantments(enchantments, fakeTool);
+          net.minecraft.world.item.enchantment.ItemEnchantments.Mutable mutable =
+            new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+          enchantments.forEach(mutable::set);
+          EnchantmentHelper.setEnchantments(fakeTool, mutable.toImmutable());
         }
 
         // ensures tile entity is fetched so its around for afterBlockBreak
@@ -98,7 +101,8 @@ public record BreakBlockFluidEffect(float hardness, Map<Holder<Enchantment>,Inte
         Player player = context.getPlayer();
         boolean removed;
         if (player != null) {
-          removed = state.onDestroyedByPlayer(world, pos, player, true, world.getFluidState(pos));
+          state.getBlock().playerWillDestroy(world, pos, state, player);
+          removed = world.setBlock(pos, world.getFluidState(pos).createLegacyBlock(), 3);
           if (removed) {
             player.awardStat(Stats.BLOCK_MINED.get(block));
           }

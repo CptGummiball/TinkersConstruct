@@ -22,6 +22,31 @@ public class TierSortingRegistry {
   private static final List<Tier> SORTED = Collections.synchronizedList(new ArrayList<>(List.of(
     Tiers.WOOD, Tiers.GOLD, Tiers.STONE, Tiers.IRON, Tiers.DIAMOND, Tiers.NETHERITE)));
 
+  /** Names for display/serialization; Forge captured these at registration. */
+  private static final java.util.Map<Tier, ResourceLocation> NAMES = Collections.synchronizedMap(new java.util.HashMap<>(java.util.Map.of(
+    Tiers.WOOD, ResourceLocation.withDefaultNamespace("wood"),
+    Tiers.GOLD, ResourceLocation.withDefaultNamespace("gold"),
+    Tiers.STONE, ResourceLocation.withDefaultNamespace("stone"),
+    Tiers.IRON, ResourceLocation.withDefaultNamespace("iron"),
+    Tiers.DIAMOND, ResourceLocation.withDefaultNamespace("diamond"),
+    Tiers.NETHERITE, ResourceLocation.withDefaultNamespace("netherite"))));
+
+  /** Name a tier was registered under, or minecraft:unknown for unregistered tiers. */
+  public static ResourceLocation getName(Tier tier) {
+    return NAMES.getOrDefault(tier, ResourceLocation.withDefaultNamespace("unknown"));
+  }
+
+  /** Looks up a tier by registered name. */
+  @javax.annotation.Nullable
+  public static Tier byName(ResourceLocation name) {
+    for (java.util.Map.Entry<Tier, ResourceLocation> entry : NAMES.entrySet()) {
+      if (entry.getValue().equals(name)) {
+        return entry.getKey();
+      }
+    }
+    return null;
+  }
+
   /** All tiers in ascending order. */
   public static List<Tier> getSortedTiers() {
     return List.copyOf(SORTED);
@@ -47,6 +72,7 @@ public class TierSortingRegistry {
       }
     }
     SORTED.add(Math.min(index, SORTED.size()), tier);
+    NAMES.put(tier, name);
     return tier;
   }
 

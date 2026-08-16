@@ -85,8 +85,6 @@ slimeknights/tconstruct/common/registration/ItemDeferredRegisterExtension.java
 slimeknights/tconstruct/library/utils/BlockSideHitListener.java
 # LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
 slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
-# Forge's TierSortingRegistry is gone; harvest-tier ordering needs its own 1.21 answer.
-slimeknights/tconstruct/library/utils/HarvestTiers.java
 # ForgeEventFactory explosion hooks; belongs with the event layer.
 slimeknights/tconstruct/library/utils/CustomExplosion.java
 
@@ -105,6 +103,7 @@ slimeknights/tconstruct/library/tools/capability/EntityModifierCapability.java
 # Slice-bound (see ported.gradle):
 slimeknights/tconstruct/common/registration/GeodeItemObject.java
 slimeknights/tconstruct/library/utils/TeleportHelper.java
+slimeknights/tconstruct/library/utils/HarvestTiers.java
 slimeknights/tconstruct/fabric/TinkerComponents.java
 slimeknights/tconstruct/tools/TinkerToolActions.java
 slimeknights/tconstruct/common/TinkerDamageTypes.java

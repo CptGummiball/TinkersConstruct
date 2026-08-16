@@ -58,10 +58,12 @@ slimeknights/tconstruct/TConstruct.java
 slimeknights/tconstruct/common/network/TinkerNetwork.java
 slimeknights/tconstruct/common/config/Config.java
 slimeknights/tconstruct/common/config/ConfigurableAction.java
-# --- Core slice: parked at ~1340. ForgeHooks bridged onto Fabric events, crit event
-# inlined, broadcastBreakEvent -> onEquippedItemBroken, enchantment users holder-swept
-# (their usage-site fallout is next). Then: getHitResult sites, LazyOptional remnants,
-# then the cascade should collapse and ToolStack itself is last.
+# --- Core slice: parked at ~1260 real+cascade. THE KEY FINDING of this pass:
+# Lombok verifiably works under raw javac for these files but silently skips a subset
+# under the Gradle run (proven with a @Getter probe). Suspects: interaction with Loom's
+# mixin AP or a slice file crashing the agent mid-batch. Next session: bisect the slice
+# through the gate until the file that kills Lombok is found; everything else (managers,
+# hooks, holders) is done and waiting.
 slimeknights/mantle/client/TooltipKey.java
 slimeknights/mantle/client/SafeClientAccess.java
 slimeknights/mantle/event/**
