@@ -8,7 +8,7 @@ import io.netty.handler.codec.EncoderException;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import slimeknights.mantle.data.loadable.Loadable;
 import slimeknights.mantle.util.typed.TypedMap;
 
@@ -25,7 +25,7 @@ public record GsonLoadable<T>(Gson gson, Class<T> classType) implements Loadable
   }
 
   @Override
-  public T decode(FriendlyByteBuf buffer, TypedMap context) {
+  public T decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
     net.minecraft.nbt.Tag read = buffer.readNbt(net.minecraft.nbt.NbtAccounter.unlimitedHeap());
     CompoundTag tag = read instanceof CompoundTag compound ? compound : null;
     if (tag != null) {
@@ -35,7 +35,7 @@ public record GsonLoadable<T>(Gson gson, Class<T> classType) implements Loadable
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer, T object) {
+  public void encode(RegistryFriendlyByteBuf buffer, T object) {
     // TODO: do we need to support lists here? probably not as loadable gives us lists
     Tag tag = JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, gson.toJsonTree(object, classType));
     if (tag.getId() == Tag.TAG_COMPOUND) {

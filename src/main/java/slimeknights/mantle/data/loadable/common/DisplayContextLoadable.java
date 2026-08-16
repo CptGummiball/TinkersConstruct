@@ -1,7 +1,7 @@
 package slimeknights.mantle.data.loadable.common;
 
 import com.google.gson.JsonSyntaxException;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import slimeknights.mantle.data.loadable.Loadable;
@@ -41,12 +41,12 @@ public enum DisplayContextLoadable implements ResourceLocationLoadable<ItemDispl
   }
 
   @Override
-  public ItemDisplayContext decode(FriendlyByteBuf buffer, TypedMap context) {
+  public ItemDisplayContext decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
     return buffer.readEnum(ItemDisplayContext.class);
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer, ItemDisplayContext value) {
+  public void encode(RegistryFriendlyByteBuf buffer, ItemDisplayContext value) {
     buffer.writeEnum(value);
   }
 

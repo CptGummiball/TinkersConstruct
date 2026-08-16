@@ -4,9 +4,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.netty.handler.codec.EncoderException;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.Item;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.Items;
 import slimeknights.mantle.data.loadable.ErrorFactory;
 import slimeknights.mantle.data.loadable.Loadable;
@@ -42,7 +44,7 @@ public class ItemStackLoadable {
   /** Field for item stack count that allows empty */
   private static final LoadableField<Integer,ItemStack> COUNT = IntLoadable.FROM_ZERO.defaultField("count", 1, true, ItemStack::getCount);
   /** Field for item stack count that allows empty */
-  private static final LoadableField<CompoundTag,ItemStack> NBT = NBTLoadable.ALLOW_STRING.nullableField("nbt", ItemStack::getTag);
+  private static final LoadableField<CompoundTag,ItemStack> NBT = NBTLoadable.ALLOW_STRING.nullableField("nbt", ItemStackLoadable::getCustomData);
 
 
   /* Optional */
@@ -76,9 +78,16 @@ public class ItemStackLoadable {
     }
     ItemStack stack = new ItemStack(item, count);
     if (nbt != null) {
-      stack.setTag(nbt);
+      stack.set(DataComponents.CUSTOM_DATA, CustomData.of(nbt));
     }
     return stack;
+  }
+
+  /** Reads the legacy NBT blob back out of the stack's custom data, or null when absent. */
+  @Nullable
+  private static CompoundTag getCustomData(ItemStack stack) {
+    CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+    return data == null ? null : data.copyTag();
   }
 
   /** Creates a non-empty variant of the loadable */
@@ -132,7 +141,7 @@ public class ItemStackLoadable {
 
     @Override
     public JsonElement serialize(ItemStack stack) {
-      if ((this == FIXED_COUNT || stack.getCount() == 1) && !stack.hasTag()) {
+      if ((this == FIXED_COUNT || stack.getCount() == 1) && !stack.has(DataComponents.CUSTOM_DATA)) {
         return OPTIONAL_ITEM.serialize(stack);
       }
       return RecordLoadable.super.serialize(stack);
@@ -142,30 +151,21 @@ public class ItemStackLoadable {
     /* Buffer */
 
     @Override
-    public ItemStack decode(FriendlyByteBuf buffer, TypedMap context) {
+    public ItemStack decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
       // not using makeItemStack as we need to set the share tag NBT here
-      Item item = ITEM.decode(buffer, context);
-      int count = 1;
-      if (this == READ_COUNT) {
-        count = COUNT.decode(buffer, context);
+      // 1.21's stream codec carries all components, which is strictly more than the
+      // item/count/share-tag triple it replaces.
+      ItemStack stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
+      if (this != READ_COUNT && !stack.isEmpty()) {
+        stack.setCount(1);
       }
-      CompoundTag nbt = buffer.readNbt();
-      // not using make stack because we want to set share tag
-      if (item == Items.AIR || count <= 0) {
-        return ItemStack.EMPTY;
-      }
-      ItemStack stack = new ItemStack(item, count);
-      stack.readShareTag(nbt);
       return stack;
     }
 
     @Override
-    public void encode(FriendlyByteBuf buffer, ItemStack stack) throws EncoderException {
-      ITEM.encode(buffer, stack);
-      if (this == READ_COUNT) {
-        COUNT.encode(buffer, stack);
-      }
-      buffer.writeNbt(stack.getShareTag());
+    public void encode(RegistryFriendlyByteBuf buffer, ItemStack stack) throws EncoderException {
+      ItemStack.OPTIONAL_STREAM_CODEC.encode(
+        buffer, this == READ_COUNT ? stack : stack.copyWithCount(1));
     }
   }
 }

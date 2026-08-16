@@ -45,22 +45,32 @@ on a compiling build**. `ported-tests.gradle` does the same for `src/test`, and
 `unported.gradle` blocks individual files inside an otherwise-ported package.
 `-Pport.all=true` ignores all three and attempts a full compile.
 
-## Open decision: buffer type
+## Settled: registry-aware serialisation
 
-**This is the next thing to settle — several blocked items all trace back to it.**
+1.21 requires `RegistryFriendlyByteBuf` for anything serialising registry contents, but
+Mantle's `Loadable` passed a plain `FriendlyByteBuf`. **Resolved** by widening `encode`/
+`decode` across the framework (271 references in 82 files) rather than casting at call
+sites, which would have compiled and then failed at runtime on any plain buffer. JSON-side
+registry access arrives through the new `ContextKey.REGISTRY_ACCESS`.
 
-1.21 requires `RegistryFriendlyByteBuf` for anything that serialises registry contents, but
-Mantle's `Loadable` interface passes a plain `FriendlyByteBuf`. Widening `encode`/`decode`
-across the framework is the correct fix; casting at the call site would compile and then
-fail at runtime whenever a plain buffer is handed over.
+That unblocked:
 
-Blocked on it right now:
+- **`IngredientLoadable`** — now uses `Ingredient.CODEC` with `RegistryOps` and
+  `CONTENTS_STREAM_CODEC` on the wire.
+- **`ItemStackLoadable`** — the legacy `"nbt"` blob maps to `DataComponents.CUSTOM_DATA`,
+  and the wire format is vanilla's `OPTIONAL_STREAM_CODEC`, which carries *all* components
+  rather than only the custom blob. Safe here because every `nbt` payload in the data files
+  is either a Tinkers key (`tic_materials`, `tic_broken`, `tank`, `Material`, `metal`) or
+  `Damage:0`, which is the vanilla default and so loses nothing. Item stacks carrying real
+  vanilla component data would need per-component mapping instead.
 
-| Item | Why |
-|---|---|
-| `IngredientLoadable` | 1.21 ingredients serialise via `CONTENTS_STREAM_CODEC`, registry-aware |
-| `ItemStackLoadable` | components replaced NBT; stack codecs are registry-aware |
-| `Loadables.ENCHANTMENT` | enchantments moved to a datapack registry, needs `HolderLookup.Provider` (2 call sites) |
+### Still open: `Loadables.ENCHANTMENT`
+
+1.21 moved enchantments into a **datapack** registry, so they cannot be resolved from a
+static `BuiltInRegistries` lookup. `LazyRegistryLoadable` is explicitly documented as unfit
+for world registries. The fix is a `DynamicRegistryLoadable` resolving through
+`ContextKey.REGISTRY_ACCESS`, which now exists. Two call sites wait on it:
+`BreakBlockFluidEffect` and `EnchantmentModule`.
 
 ## Deferred, tracked so it is not lost
 

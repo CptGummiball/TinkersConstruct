@@ -6,7 +6,7 @@ import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import slimeknights.mantle.data.loadable.ErrorFactory;
 import slimeknights.mantle.data.loadable.Loadable;
 import slimeknights.mantle.util.typed.TypedMap;
@@ -28,12 +28,12 @@ public record CodecLoadable<T>(DynamicOps<Tag> ops, Codec<T> codec) implements L
   }
 
   @Override
-  public T decode(FriendlyByteBuf buffer, TypedMap context) {
+  public T decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
     return buffer.readWithCodecTrusted(ops, codec);
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer, T object) {
+  public void encode(RegistryFriendlyByteBuf buffer, T object) {
     buffer.writeWithCodec(ops, codec, object);
   }
 }

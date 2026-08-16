@@ -10,5 +10,3 @@
 # Fixing them by casting the buffer would compile and then fail at runtime on any
 # connection that hands over a plain buffer, so they stay out until it is done properly.
 
-slimeknights/mantle/data/loadable/common/IngredientLoadable.java
-slimeknights/mantle/data/loadable/common/ItemStackLoadable.java

@@ -23,6 +23,14 @@ public class ContextKey<T> implements Key<T> {
   public static final ContextKey<String> DEBUG = new ContextKey<>("debug info");
   /** Key for adding condition context, used in {@link slimeknights.mantle.data.loadable.mapping.ConditionalLoadable} */
   public static final ContextKey<IContext> CONDITION_CONTEXT = new ContextKey<>("condition context");
+  /**
+   * Registry access for loadables that need it.
+   *
+   * <p>New in 1.21: ingredients, item stacks and datapack-registry entries can no longer be
+   * parsed from JSON without a lookup provider. Recipe loading and datagen both put one here.
+   */
+  public static final ContextKey<net.minecraft.core.HolderLookup.Provider> REGISTRY_ACCESS =
+    new ContextKey<>("registry access");
 
   /** Name of the field, used primarily for debug */
   @Getter

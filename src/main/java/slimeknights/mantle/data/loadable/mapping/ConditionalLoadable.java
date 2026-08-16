@@ -1,7 +1,7 @@
 package slimeknights.mantle.data.loadable.mapping;
 
 import com.google.gson.JsonObject;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.recipe.condition.ICondition;
 import slimeknights.mantle.recipe.condition.ICondition.IContext;
@@ -49,12 +49,12 @@ public record ConditionalLoadable<T extends IHaveLoader>(GenericLoaderRegistry<T
   }
 
   @Override
-  public T decode(FriendlyByteBuf buffer, TypedMap context) {
+  public T decode(RegistryFriendlyByteBuf buffer, TypedMap context) {
     throw new UnsupportedOperationException("Conditional loadable should always resolve to a specific instance. This should never happen.");
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer, T value) {
+  public void encode(RegistryFriendlyByteBuf buffer, T value) {
     throw new UnsupportedOperationException("Conditional loadable should always resolve to a specific instance. This should never happen.");
   }
 
