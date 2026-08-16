@@ -75,6 +75,17 @@ That unblocked:
   **The two call sites (`BreakBlockFluidEffect`, `EnchantmentModule`) must therefore be ported
   to holders**, which they need anyway.
 
+## The recipe-ID problem (phase 3)
+
+1.20 handed the recipe id to the serializer (`fromJson(ResourceLocation id, JsonObject)`),
+and Mantle exposed it to recipes as `ContextKey.ID`. **1.21 does not**: a recipe is wrapped
+in a `RecipeHolder` that carries the id alongside it, and the serializer never sees it.
+
+**68 references across 67 TConstruct files read `ContextKey.ID`.** Every one needs the id
+supplied from its `RecipeHolder` instead of from inside the recipe. This is the single
+largest mechanical consequence of the recipe rewrite and it lands in phase 3, not in Mantle
+— `LoadableRecipeSerializer` simply stops populating that key.
+
 ## Deferred, tracked so it is not lost
 
 - `JsonHelper.syncPackets`/`sendPackets` were removed when porting `JsonHelper` — they are
@@ -126,13 +137,12 @@ Compat targets present in GummiCraft (these replace the Forge build's assumption
          `CustomIngredient` API in `fabric-recipe-api-v1`: implement `CustomIngredient` +
          `CustomIngredientSerializer` and expose the result via `toVanilla()`. Low urgency —
          one TConstruct call site between them.
-      2. **The 1.21 recipe-system rewrite.** `RecipeSerializer` lost
-         `fromJson`/`toNetwork`/`fromNetwork` in favour of `codec()` + `streamCodec()`, and
-         `Recipe<Container>` became `Recipe<RecipeInput>` with `RecipeManager.byType`
-         returning `RecipeHolder`. This affects `LoadableRecipeSerializer` and friends,
-         `RecipeHelper`, `ICommonRecipe` and `ICustomOutputRecipe`. The real decision is how
-         a `Loadable` turns into a `MapCodec` + `StreamCodec` pair; everything else follows.
-         This one blocks phase 3, so it comes first.
+      2. **The 1.21 recipe-system rewrite.** The bridging decision is **made**:
+         `LoadableMapCodec` and `LoadableStreamCodec` adapt a `Loadable` to the
+         `MapCodec` + `StreamCodec` pair `RecipeSerializer` now demands, so the ~400
+         loadable definitions stay as they are. Rewiring `LoadableRecipeSerializer`,
+         `RecipeHelper`, `ICommonRecipe` and `ICustomOutputRecipe` onto them follows
+         mechanically — except for the recipe-ID problem below.
 - [ ] **3 — TConstruct core.** `common`, `shared`, `library`: materials, modifiers, recipe —
       and the **NBT → DataComponents migration** of `ToolStack`, the single largest 1.21 change.
 - [ ] **4 — Content.** `fluids`, `smeltery`, `tables`, `tools`, `gadgets`, `world`.
