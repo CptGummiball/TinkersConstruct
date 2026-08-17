@@ -9,8 +9,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
-import net.minecraftforge.client.model.data.ModelData;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.shared.block.entity.TableBlockEntity;
@@ -25,19 +23,20 @@ public abstract class RetexturedTableBlockEntity extends TableBlockEntity implem
   public RetexturedTableBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Component name, int size) {
     super(type, pos, state, name, size);
   }
-  @Override
-  public AABB getRenderBoundingBox() {
-    return new AABB(worldPosition, worldPosition.offset(1, 2, 1));
-  }
+  // phase 5: Forge's getRenderBoundingBox extension returns with the client render layer
 
 
   /* Textures */
 
-  @Nonnull
+  /** Scratch tag satisfying the mantle interface; this implementation stores the texture in its own NBT key instead */
+  private final CompoundTag persistentData = new CompoundTag();
+
   @Override
-  public ModelData getModelData() {
-    return RetexturedHelper.getModelData(texture);
+  public CompoundTag getPersistentData() {
+    return persistentData;
   }
+
+
 
   @Override
   public String getTextureName() {
@@ -45,15 +44,11 @@ public abstract class RetexturedTableBlockEntity extends TableBlockEntity implem
   }
 
   private void textureUpdated() {
-    // update the texture in BE data
+    // phase 5 note: Forge refreshed ModelData here; on Fabric the render layer reads the
+    // texture from the synced NBT, so a block update is all that is needed
     if (level != null && level.isClientSide) {
-      Block normalizedTexture = texture == Blocks.AIR ? null : texture;
-      ModelData data = getModelData();
-      if (data.get(RetexturedHelper.BLOCK_PROPERTY) != normalizedTexture) {
-        requestModelDataUpdate();
-        BlockState state = getBlockState();
-        level.sendBlockUpdated(worldPosition, state, state, 0);
-      }
+      BlockState state = getBlockState();
+      level.sendBlockUpdated(worldPosition, state, state, 0);
     }
   }
 
@@ -68,16 +63,16 @@ public abstract class RetexturedTableBlockEntity extends TableBlockEntity implem
   }
 
   @Override
-  public void saveSynced(CompoundTag tags) {
-    super.saveSynced(tags);
+  public void saveSynced(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(tags, registries);
     if (texture != Blocks.AIR) {
       tags.putString(TAG_TEXTURE, getTextureName());
     }
   }
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  public void loadAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(TAG_TEXTURE, Tag.TAG_STRING)) {
       texture = RetexturedHelper.getBlock(tags.getString(TAG_TEXTURE));
       textureUpdated();

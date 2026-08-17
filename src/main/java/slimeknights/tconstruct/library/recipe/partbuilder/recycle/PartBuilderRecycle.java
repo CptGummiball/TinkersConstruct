@@ -101,7 +101,6 @@ public class PartBuilderRecycle implements IPartBuilderRecipe, IMultiRecipe<Disp
     return partialMatch(inv) && getAmount(stack, resultCount) > 0 && stack.is(TinkerTags.Items.MODIFIABLE) ? !ModifierUtil.hasUpgrades(stack) : !stack.isEnchanted();
   }
 
-  @Override
   public ItemStack assemble(IPartBuilderContainer inv, RegistryAccess access, Pattern pattern) {
     int maxCount = getAmount(inv.getStack(), resultCount);
     ItemOutput result = results.get(pattern);
@@ -147,7 +146,7 @@ public class PartBuilderRecycle implements IPartBuilderRecipe, IMultiRecipe<Disp
   /** @deprecated use {@link #assemble(IPartBuilderContainer, RegistryAccess, Pattern)} */
   @Deprecated
   @Override
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider access) {
     return ItemStack.EMPTY;
   }
 

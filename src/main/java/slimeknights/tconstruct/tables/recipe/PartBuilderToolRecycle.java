@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.recipes.FinishedRecipe;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -127,7 +126,6 @@ public class PartBuilderToolRecycle implements IPartBuilderRecipe, IMultiRecipe<
     return partialMatch(inv) && ToolStack.from(inv.getStack()).getUpgrades().isEmpty();
   }
 
-  @Override
   public ItemStack assemble(IPartBuilderContainer inv, RegistryAccess access, Pattern pattern) {
     ToolStack tool = ToolStack.from(inv.getStack());
     // find our parts list, either set or override
@@ -205,7 +203,7 @@ public class PartBuilderToolRecycle implements IPartBuilderRecipe, IMultiRecipe<
   /** @deprecated use {@link IPartBuilderRecipe#assemble(IPartBuilderContainer, RegistryAccess, Pattern)} */
   @Deprecated
   @Override
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider access) {
     return ItemStack.EMPTY;
   }
 
@@ -236,7 +234,7 @@ public class PartBuilderToolRecycle implements IPartBuilderRecipe, IMultiRecipe<
     Collection<PartIndex> displayParts = IntStream.range(0, parts.size()).mapToObj(i -> new PartIndex(parts.get(i), i)).collect(Collectors.toMap(PartIndex::part, Function.identity(), (a, b) -> a)).values();
     return displayParts.stream().map(pi -> {
       ItemStack part = pi.part.withMaterialForDisplay(ToolBuildHandler.getRenderMaterial(pi.index));
-      part.getOrCreateTag().putBoolean(TooltipUtil.KEY_DISPLAY, true);
+      slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(part).putBoolean(TooltipUtil.KEY_DISPLAY, true);
       return new DisplayPartRecipe(id, MaterialVariant.UNKNOWN, new Pattern(Loadables.ITEM.getKey(pi.part.asItem())), patternItems, 0, tool, List.of(part));
     });
   }
@@ -262,30 +260,5 @@ public class PartBuilderToolRecycle implements IPartBuilderRecipe, IMultiRecipe<
     return displayRecipes;
   }
 
-  /** @deprecated use {@link slimeknights.tconstruct.library.recipe.partbuilder.recycle.PartBuilderToolRecycleBuilder} */
-  @Deprecated(forRemoval = true)
-  public record Finished(ResourceLocation getId, SizedIngredient tools, Ingredient pattern) implements FinishedRecipe {
-    @Override
-    public void serializeRecipeData(JsonObject json) {
-      json.add("tools", SizedIngredient.LOADABLE.serialize(tools));
-      json.add("pattern", pattern.toJson());
-    }
-
-    @Override
-    public RecipeSerializer<?> getType() {
-      return TinkerTables.partBuilderToolRecycling.get();
-    }
-
-    @Nullable
-    @Override
-    public JsonObject serializeAdvancement() {
-      return null;
-    }
-
-    @Nullable
-    @Override
-    public ResourceLocation getAdvancementId() {
-      return null;
-    }
-  }
+  // phase 7: the FinishedRecipe datagen record returns with the RecipeOutput rework
 }

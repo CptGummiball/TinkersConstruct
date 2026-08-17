@@ -124,8 +124,7 @@ public class ShapedMaterialRecipe extends ShapedRecipe {
     ShapedMaterialsRecipe.setMaterial(stack, material, extraMaterials);
   }
 
-  @Override
-  public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryAccess) {
+  public ItemStack assemble(CraftingContainer inventory, net.minecraft.core.HolderLookup.Provider registryAccess) {
     ItemStack stack = super.assemble(inventory, registryAccess);
     MaterialVariantId material = findMaterial(inventory);
     if (material != null) {

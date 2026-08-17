@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.tables.menu;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -60,15 +60,20 @@ public class ModifierWorktableContainerMenu extends TabbedContainerMenu<Modifier
     for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
       this.addSlot(new ArmorSlot(inv, slotType.getSlot(), 152, 16 + slotType.ordinal() * 18));
     }
-    this.addSlot(new Slot(inv, 40, 132, 70).setBackground(InventoryMenu.BLOCK_ATLAS, InventoryMenu.EMPTY_ARMOR_SLOT_SHIELD));
+    this.addSlot(new Slot(inv, 40, 132, 70) {
+      @Override
+      public com.mojang.datafixers.util.Pair<net.minecraft.resources.ResourceLocation, net.minecraft.resources.ResourceLocation> getNoItemIcon() {
+        return com.mojang.datafixers.util.Pair.of(InventoryMenu.BLOCK_ATLAS, InventoryMenu.EMPTY_ARMOR_SLOT_SHIELD);
+      }
+    });
 
     // other inventories
     this.addChestSideInventory();
     this.addInventorySlots();
   }
 
-  public ModifierWorktableContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, ModifierWorktableBlockEntity.class));
+  public ModifierWorktableContainerMenu(int id, Inventory inv, BlockPos pos) {
+    this(id, inv, getTileEntityFromPos(pos, ModifierWorktableBlockEntity.class));
   }
 
   @Override

@@ -9,8 +9,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.util.Lazy;
-import net.minecraftforge.items.ItemHandlerHelper;
+import com.google.common.base.Suppliers;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.field.LoadableField;
@@ -27,7 +27,7 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationContai
 import slimeknights.tconstruct.library.tools.SlotType.SlotCount;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -153,7 +153,7 @@ public class IncrementalModifierRecipe extends AbstractModifierRecipe {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.incrementalModifierSerializer.get();
+    return ContentLookups.recipeSerializer("incremental_modifier");
   }
 
 
@@ -181,7 +181,7 @@ public class IncrementalModifierRecipe extends AbstractModifierRecipe {
       if (neededPerLevel % amountPerInput > 0) {
         needed++;
       }
-      Lazy<List<ItemStack>> fullSize = Lazy.of(() -> items.stream().map(stack -> ItemHandlerHelper.copyStackWithSize(stack, maxStackSize)).collect(Collectors.toList()));
+      java.util.function.Supplier<List<ItemStack>> fullSize = Suppliers.memoize(() -> items.stream().map(stack -> ItemHandlerHelper.copyStackWithSize(stack, maxStackSize)).collect(Collectors.toList()));
       while (needed > maxStackSize) {
         builder.add(fullSize.get());
         needed -= maxStackSize;

@@ -138,3 +138,10 @@ slimeknights/tconstruct/tools/network/FluidDataSerializer.java
 
 # --- Phase 4: world module (slime islands, trees, entities, geodes, heads) ---
 slimeknights/tconstruct/world/**
+
+# --- Phase 4: recipe tree + tables module ---
+slimeknights/tconstruct/common/SoundUtils.java
+slimeknights/mantle/util/sync/**
+slimeknights/tconstruct/common/network/InventorySlotSyncPacket.java
+slimeknights/tconstruct/library/recipe/**
+slimeknights/tconstruct/tables/**

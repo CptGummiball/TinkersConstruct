@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.tables.menu.slot;
 
+import com.mojang.datafixers.util.Pair;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
@@ -7,7 +8,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentEffectComponents;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
+
+import javax.annotation.Nullable;
 
 /** Slot for accessing player armor */
 public class ArmorSlot extends Slot {
@@ -25,7 +29,12 @@ public class ArmorSlot extends Slot {
     super(inv, 36 + slotType.getIndex(), xPosition, yPosition);
     this.player = inv.player;
     this.slotType = slotType;
-    setBackground(InventoryMenu.BLOCK_ATLAS, ARMOR_SLOT_BACKGROUNDS[slotType.getIndex()]);
+  }
+
+  @Nullable
+  @Override
+  public Pair<ResourceLocation, ResourceLocation> getNoItemIcon() {
+    return Pair.of(InventoryMenu.BLOCK_ATLAS, ARMOR_SLOT_BACKGROUNDS[slotType.getIndex()]);
   }
 
   @Override
@@ -35,12 +44,12 @@ public class ArmorSlot extends Slot {
 
   @Override
   public boolean mayPlace(ItemStack stack) {
-    return stack.canEquip(slotType, player);
+    return player.getEquipmentSlotForItem(stack) == slotType;
   }
 
   @Override
   public boolean mayPickup(Player player) {
     ItemStack stack = this.getItem();
-    return stack.isEmpty() || player.isCreative() || !EnchantmentHelper.hasBindingCurse(stack);
+    return stack.isEmpty() || player.isCreative() || !EnchantmentHelper.has(stack, EnchantmentEffectComponents.PREVENT_ARMOR_CHANGE);
   }
 }

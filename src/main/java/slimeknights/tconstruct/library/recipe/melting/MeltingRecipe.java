@@ -6,9 +6,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.field.LoadableField;
@@ -18,7 +18,7 @@ import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingContainer.OreRateType;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -102,7 +102,7 @@ public class MeltingRecipe implements IMeltingRecipe {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerSmeltery.meltingSerializer.get();
+    return ContentLookups.recipeSerializer("melting");
   }
 
   /** If nonnull, recipe is boosted by this ore type */

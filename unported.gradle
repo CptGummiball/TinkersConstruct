@@ -131,8 +131,6 @@ slimeknights/tconstruct/shared/AchievementEvents.java
 # uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
 # the charge-bar icon overlay with phase 5
 slimeknights/tconstruct/tools/modifiers/effect/HelmetChargingEffect.java
-# base block entity for tables; pulls tables.menu + tables.network (tables module)
-slimeknights/tconstruct/shared/block/entity/TableBlockEntity.java
 
 # --- fluids module: pieces deferred from the phase-4 gate-in ---
 # client render/tint handlers (phase 5)
@@ -150,3 +148,62 @@ slimeknights/tconstruct/world/data/**
 # (AncientToolItemListing also needs the tools module's ancient tools)
 slimeknights/tconstruct/world/WorldEvents.java
 slimeknights/tconstruct/world/logic/AncientToolItemListing.java
+
+# --- tables module: pieces deferred from the phase-4 gate-in ---
+# client screens/events (phase 5)
+slimeknights/tconstruct/tables/TableClientEvents.java
+slimeknights/tconstruct/tables/client/**
+# datagen provider (phase 7)
+slimeknights/tconstruct/tables/data/**
+
+# --- recipe-tree datagen builders (FinishedRecipe/RecipeOutput rework, phase 7) ---
+slimeknights/tconstruct/library/recipe/alloying/AlloyRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/ItemCastingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/PotionCastingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/container/ContainerFillingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/material/CompositeCastingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialCastingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialFluidRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/casting/material/PartSwapCastingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/entitymelting/EntityMeltingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/fuel/MeltingFuelBuilder.java
+slimeknights/tconstruct/library/recipe/material/MaterialRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/material/MaterialsConsumerBuilder.java
+slimeknights/tconstruct/library/recipe/material/ShapedMaterialConsumerBuilder.java
+slimeknights/tconstruct/library/recipe/melting/MaterialMeltingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/melting/MeltingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractMultilevelModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/IncrementalModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/ModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/MultilevelIncrementalModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/MultilevelModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/OverslimeModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/adding/SwappableModifierRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/modifiers/severing/SeveringRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/molding/MoldingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/partbuilder/ItemPartRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/partbuilder/PartRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/partbuilder/recycle/PartBuilderRecycleBuilder.java
+slimeknights/tconstruct/library/recipe/partbuilder/recycle/PartBuilderToolRecycleBuilder.java
+slimeknights/tconstruct/library/recipe/tinkerstation/building/MaterialSwappingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/tinkerstation/building/ToolBuildingRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierMaterialRepairRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierRepairRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/worktable/AbstractSizedIngredientRecipeBuilder.java
+slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuilder.java
+
+# --- casting recipes bound to smeltery content (potions, tools); smeltery round ---
+slimeknights/tconstruct/library/recipe/casting/PotionCastingRecipe.java
+slimeknights/tconstruct/library/recipe/casting/TippingCastingRecipe.java
+slimeknights/tconstruct/library/recipe/casting/TipClearingCastingRecipe.java
+slimeknights/tconstruct/library/recipe/casting/container/ContainerFillingRecipe.java
+slimeknights/tconstruct/library/recipe/casting/material/ToolCastingRecipe.java
+slimeknights/tconstruct/library/recipe/casting/material/PartSwapCastingRecipe.java
+# --- vanilla shaped/shapeless material crafting: 1.21 rewrote ShapedRecipe around
+# ShapedRecipePattern; these three get their own rewrite pass ---
+slimeknights/tconstruct/library/recipe/material/ShapedMaterialRecipe.java
+slimeknights/tconstruct/library/recipe/material/ShapedMaterialsRecipe.java
+slimeknights/tconstruct/library/recipe/material/ShapelessMaterialsRecipe.java
+slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
+slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java

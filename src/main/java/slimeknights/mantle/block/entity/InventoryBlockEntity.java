@@ -39,6 +39,11 @@ public abstract class InventoryBlockEntity extends NameableBlockEntity implement
   @Getter
   protected IItemHandlerModifiable itemHandler;
 
+  /** Gets the item handler backing this inventory, for Fabric storage registration */
+  public IItemHandlerModifiable getItemHandler() {
+    return itemHandler;
+  }
+
   /**
    * @param name Localization String for the inventory title. Can be overridden through setCustomName
    */

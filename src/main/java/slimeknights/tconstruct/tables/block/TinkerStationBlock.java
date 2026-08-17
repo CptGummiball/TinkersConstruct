@@ -41,7 +41,7 @@ public class TinkerStationBlock extends RetexturedTableBlock {
   @Override
   public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
     super.setPlacedBy(level, pos, state, placer, stack);
-    if (stack.hasTag() && level.getBlockEntity(pos) instanceof TinkerStationBlockEntity be) {
+    if (level.getBlockEntity(pos) instanceof TinkerStationBlockEntity be) {
       // try block first
       String block = RetexturedHelper.getTextureName(stack);
       if (!block.isEmpty()) {
@@ -57,7 +57,7 @@ public class TinkerStationBlock extends RetexturedTableBlock {
   }
 
   @Override
-  public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter level, BlockPos pos, Player player) {
+  public ItemStack getCloneItemStack(net.minecraft.world.level.LevelReader level, BlockPos pos, BlockState state) {
     ItemStack stack = new ItemStack(state.getBlock());
     if (level.getBlockEntity(pos) instanceof TinkerStationBlockEntity be) {
       Block block = be.getTexture();

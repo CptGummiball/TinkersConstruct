@@ -22,7 +22,7 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationRecipe
 import slimeknights.tconstruct.library.tools.helper.ToolDamageUtil;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 @RequiredArgsConstructor
 public class ModifierRepairTinkerStationRecipe implements ITinkerStationRecipe, IModifierRepairRecipe {
@@ -108,6 +108,6 @@ public class ModifierRepairTinkerStationRecipe implements ITinkerStationRecipe, 
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.modifierRepair.get();
+    return ContentLookups.recipeSerializer("modifier_repair");
   }
 }

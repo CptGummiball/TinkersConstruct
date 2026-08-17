@@ -56,8 +56,7 @@ public class ShapelessMaterialsRecipe extends ShapelessRecipe implements Materia
     ShapedMaterialsRecipe.setMaterial(stack, material, extraMaterials);
   }
 
-  @Override
-  public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryAccess) {
+  public ItemStack assemble(CraftingContainer inventory, net.minecraft.core.HolderLookup.Provider registryAccess) {
     return ShapedMaterialsRecipe.assemble(super.assemble(inventory, registryAccess), inventory, getIngredients(), partCount, false, extraMaterials);
   }
 

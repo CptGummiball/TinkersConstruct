@@ -25,7 +25,7 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationContai
 import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationRecipe;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -59,7 +59,7 @@ public class OverslimeModifierRecipe implements ITinkerStationRecipe, IDisplayMo
     this.tools = tools;
     this.ingredient = ingredient;
     this.restoreAmount = restoreAmount;
-    ModifierRecipeLookup.addRecipeModifier(null, TinkerModifiers.overslime);
+    ModifierRecipeLookup.addRecipeModifier(null, new slimeknights.tconstruct.library.modifiers.util.LazyModifier(ContentLookups.OVERSLIME));
   }
 
   /** @deprecated use {@link #OverslimeModifierRecipe(ResourceLocation, Ingredient, Ingredient, int)} */
@@ -80,7 +80,7 @@ public class OverslimeModifierRecipe implements ITinkerStationRecipe, IDisplayMo
   @Override
   public RecipeResult<LazyToolStack> getValidatedResult(ITinkerStationContainer inv, RegistryAccess access) {
     ToolStack tool = inv.getTinkerable();
-    ModifierId overslime = TinkerModifiers.overslime.getId();
+    ModifierId overslime = ContentLookups.OVERSLIME;
     // if the tool lacks true overslime, add overslime
     if (tool.getUpgrades().getLevel(overslime) == 0) {
       // however, if we have overslime though a trait and reached our cap, also do nothing
@@ -116,12 +116,12 @@ public class OverslimeModifierRecipe implements ITinkerStationRecipe, IDisplayMo
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.overslimeSerializer.get();
+    return ContentLookups.recipeSerializer("overslime_modifier");
   }
 
   /* JEI display */
   /** Cache of modifier result, same for all overslime */
-  private static final ModifierEntry RESULT = new ModifierEntry(TinkerModifiers.overslime, 1);
+  private static final ModifierEntry RESULT = new ModifierEntry(ContentLookups.OVERSLIME, 1);
   /** Cache of input and output tools for display */
   private List<ItemStack> toolWithoutModifier, toolWithModifier = null;
 

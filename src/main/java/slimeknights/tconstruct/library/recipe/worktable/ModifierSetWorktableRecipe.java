@@ -28,7 +28,7 @@ import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -141,7 +141,7 @@ public class ModifierSetWorktableRecipe extends AbstractWorktableRecipe {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.modifierSetWorktableSerializer.get();
+    return ContentLookups.recipeSerializer("modifier_set_worktable");
   }
 
   /** Gets the set of modifiers in persistent data at the given key */

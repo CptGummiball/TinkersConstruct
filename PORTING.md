@@ -376,6 +376,53 @@ cobalt ore, and the three slime entities all register and load. Load-bearing dec
   import of the deleted TiC `EmptyPotionTransfer` alias → smeltery round registers
   mantle's `EmptyPotionTransfer` instead. Forge's milk fluid does not exist on Fabric;
   the milk decision lands with the smeltery recipe pass.
+
+### Phase 4, fourth slice: the recipe tree + tables module — **DONE**
+
+The biggest slice so far: `library/recipe/**` (the full recipe-type tree, 43 runtime recipe
+classes) plus `tables/**` (five stations, three chests, menus, packets). Started at 2114
+errors, shipped at 0. Load-bearing decisions:
+
+- **The recipe-ID problem**: 1.21 moved recipe ids out of `Recipe` onto `RecipeHolder`.
+  Mantle's loadable infrastructure keeps providing `ContextKey.ID`, so loadable-based
+  recipes keep their id field (MaterialRecipe pattern). `SimpleRecipeSerializer` became a
+  `Supplier`-based codec shim — recipes it builds either need no id
+  (`CraftingTableRepairKitRecipe` went no-arg) or get their canonical one
+  (`TinkerStationRepairRecipe`). Sync packets carry `holder.id()`; the table BEs cache the
+  `RecipeHolder` alongside the recipe for that.
+- **`ContainerRecipeInput` bridge**: a container type cannot also implement 1.21's
+  `RecipeInput` (remap conflict on `getItem`/`isEmpty`), so Mantle wraps containers for the
+  vanilla surface and `ICommonRecipe` keeps the container-typed `matches` for
+  implementations. Every own-type `getRecipeFor` call wraps its container; results unwrap
+  via `RecipeHolder::value`. `RecipeManager.byType` went private → `getAllRecipesFor`,
+  sorted by holder id (part builder button order stays deterministic).
+- **CustomRecipe family on `CraftingInput`**: overslime/repair-kit/modifier-repair crafting
+  recipes moved to `matches/assemble(CraftingInput, ...)`, remainders via Fabric's
+  `getRecipeRemainder()`. `ResultSlot.player/removeCount` went private → CraftingResultSlot
+  tracks its own crafter/amount and mirrors the vanilla quick-craft hooks.
+- **Menus open by `BlockPos`** through `ExtendedScreenHandlerFactory` (mantle
+  `NetworkHooks.openScreen`); all six table packets now `encode(RegistryFriendlyByteBuf)`.
+  Slot backgrounds moved from Forge's `setBackground` to vanilla `getNoItemIcon`; armor
+  slots check `getEquipmentSlotForItem` and `PREVENT_ARMOR_CHANGE` (binding curse).
+- **Block interaction split**: chest insert logic lives in `useItemOn` (falls through to
+  `useWithoutItem`, which opens the GUI via mantle `InventoryBlock`); pick-block moved to
+  the 3-arg `getCloneItemStack` (the 5-arg player-sensitive form was a Forge hook). The
+  dyeable tinkers chest reads/writes the `DYED_COLOR` component; chest inventories persist
+  through `minecraft:custom_data` ("TinkerData"), matching the ToolStack tag decision.
+- **Fabric storage**: new `ItemStorageBridge` (IItemHandler → `Storage<ItemVariant>`)
+  registered for all seven table/chest block entities in `TinkerTables.init()` — hoppers
+  and pipes work like the Forge item-handler capabilities did.
+- **Seams for unported modules**: ~25 serializer/`getSerializer()` statics from
+  `TinkerModifiers`/`TinkerSmeltery` resolve lazily via `ContentLookups.recipeSerializer`;
+  toast icons, overslime (`ContentLookups.OVERSLIME` + `LazyModifier`), modifier crystals,
+  and the anvil's fake-storage-block item go through the same seam class.
+- **Parked**: 35 datagen `*Builder` files (phase 7), six smeltery-bound casting recipes
+  (smeltery round), the three `ShapedMaterialRecipe` variants (need a 1.21
+  `ShapedRecipePattern` rewrite), client screens/`TableClientEvents` (phase 5).
+- **Debug lesson recorded**: a duplicate simple class name (`EmptyItemHandler` twice)
+  aborts Lombok for the whole batch and surfaces as ~1300 bogus "constructor missing"
+  errors on unrelated files. Found by gate bisection; the collision, not any of the
+  reported files, was the root cause.
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.tables.menu;
 
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -53,8 +53,8 @@ public class CraftingStationContainerMenu extends TabbedContainerMenu<CraftingSt
    * @param inv  Player inventory
    * @param buf  Buffer for fetching tile
    */
-  public CraftingStationContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, CraftingStationBlockEntity.class));
+  public CraftingStationContainerMenu(int id, Inventory inv, BlockPos pos) {
+    this(id, inv, getTileEntityFromPos(pos, CraftingStationBlockEntity.class));
   }
 
   @Override

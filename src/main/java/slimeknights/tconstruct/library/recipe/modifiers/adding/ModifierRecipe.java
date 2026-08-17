@@ -22,7 +22,7 @@ import slimeknights.tconstruct.library.tools.SlotType.SlotCount;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.BitSet;
@@ -199,7 +199,7 @@ public class ModifierRecipe extends AbstractModifierRecipe {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.modifierSerializer.get();
+    return ContentLookups.recipeSerializer("modifier");
   }
 
 

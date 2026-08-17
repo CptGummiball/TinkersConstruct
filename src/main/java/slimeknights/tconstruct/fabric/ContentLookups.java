@@ -211,4 +211,49 @@ public final class ContentLookups {
       .map(item -> (slimeknights.tconstruct.library.tools.item.IModifiable) item)
       .orElse(null);
   }
+
+  /**
+   * Looks up a material item from the tools module by registry name; throws if used before
+   * that module ports (only reachable through anvil material copying, which needs tools).
+   */
+  public static slimeknights.tconstruct.library.tools.part.IMaterialItem materialItem(String name) {
+    return (slimeknights.tconstruct.library.tools.part.IMaterialItem) net.minecraft.core.registries.BuiltInRegistries.ITEM
+      .getOptional(slimeknights.tconstruct.TConstruct.getResource(name))
+      .orElseThrow(() -> new IllegalStateException("Material item tconstruct:" + name + " requested before the tools module was ported"));
+  }
+
+  /**
+   * Looks up a recipe serializer registered by a content module that has not been ported
+   * yet. Recipes of these types only exist once that module registers the serializer, so
+   * the lookup cannot run before it succeeds.
+   */
+  @SuppressWarnings("unchecked")
+  public static <T extends net.minecraft.world.item.crafting.Recipe<?>> net.minecraft.world.item.crafting.RecipeSerializer<T> recipeSerializer(String name) {
+    return (net.minecraft.world.item.crafting.RecipeSerializer<T>) net.minecraft.core.registries.BuiltInRegistries.RECIPE_SERIALIZER
+      .getOptional(slimeknights.tconstruct.TConstruct.getResource(name))
+      .orElseThrow(() -> new IllegalStateException("Recipe serializer tconstruct:" + name + " requested before its module was ported"));
+  }
+
+  /**
+   * Looks up a display item (recipe toast symbols) from a module that has not been ported
+   * yet, falling back to the crafting table while it is missing.
+   */
+  public static net.minecraft.world.item.ItemStack toastSymbol(String name) {
+    return new net.minecraft.world.item.ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM
+      .getOptional(slimeknights.tconstruct.TConstruct.getResource(name))
+      .orElse(net.minecraft.world.item.Items.CRAFTING_TABLE));
+  }
+
+  /**
+   * Reads the modifier id from a modifier crystal's NBT; mirrors the tools module's
+   * ModifierCrystalItem.getModifier without loading that class before its module ports.
+   */
+  @javax.annotation.Nullable
+  public static slimeknights.tconstruct.library.modifiers.ModifierId crystalModifier(net.minecraft.world.item.ItemStack stack) {
+    net.minecraft.nbt.CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
+    if (tag != null) {
+      return slimeknights.tconstruct.library.modifiers.ModifierId.tryParse(tag.getString("modifier"));
+    }
+    return null;
+  }
 }

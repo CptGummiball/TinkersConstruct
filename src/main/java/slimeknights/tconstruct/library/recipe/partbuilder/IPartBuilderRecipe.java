@@ -63,6 +63,15 @@ public interface IPartBuilderRecipe extends ICommonRecipe<IPartBuilderContainer>
                    .orElse(1);
   }
 
+  /**
+   * Container-typed assemble, the 1.20 signature implementations override; the vanilla
+   * {@code assemble(ContainerRecipeInput, Provider)} surface is unused for part builder
+   * recipes since the block entity calls these directly.
+   */
+  default ItemStack assemble(IPartBuilderContainer inv, net.minecraft.core.HolderLookup.Provider access) {
+    return getResultItem(access).copy();
+  }
+
   /** Assembles the result with the given pattern */
   default ItemStack assemble(IPartBuilderContainer inv, RegistryAccess access, Pattern pattern) {
     return assemble(inv, access);

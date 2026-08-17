@@ -212,7 +212,7 @@ public class ToolBuildingRecipe implements ITinkerStationRecipe {
     if (error != null) {
       return RecipeResult.failure(error);
     }
-    return LazyToolStack.success(tool, Math.min(output.asItem().getMaxStackSize(), count));
+    return LazyToolStack.success(tool, Math.min(output.asItem().getDefaultMaxStackSize(), count));
   }
 
 
@@ -331,13 +331,12 @@ public class ToolBuildingRecipe implements ITinkerStationRecipe {
 
   @Deprecated
   @Override
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider access) {
     return new ItemStack(this.output);
   }
 
   @Deprecated
-  @Override
-  public ItemStack assemble(ITinkerStationContainer inv, RegistryAccess access) {
+  public ItemStack assemble(ITinkerStationContainer inv, net.minecraft.core.RegistryAccess access) {
     return getValidatedResult(inv, access).getResult().getStack();
   }
 }

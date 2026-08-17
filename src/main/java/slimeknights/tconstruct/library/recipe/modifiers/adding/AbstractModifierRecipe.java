@@ -32,8 +32,7 @@ import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
-import slimeknights.tconstruct.tools.item.ModifierCrystalItem;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -214,11 +213,11 @@ public abstract class AbstractModifierRecipe implements ITinkerStationRecipe, ID
       if (!stack.isEmpty()) {
         // cannot have two stacks
         // must be a crystal
-        if (found || !stack.is(TinkerModifiers.modifierCrystal.asItem())) {
+        if (found || !net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem()).equals(slimeknights.tconstruct.TConstruct.getResource("modifier_crystal"))) {
           return false;
         }
         // found a crystal, make sure we have enough and the ID matches
-        ModifierId modifier = ModifierCrystalItem.getModifier(stack);
+        ModifierId modifier = ContentLookups.crystalModifier(stack);
         if (!match.equals(modifier)) {
           return false;
         }

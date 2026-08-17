@@ -11,10 +11,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidUtil;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.TransferUtil;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import net.minecraftforge.registries.ForgeRegistries;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.field.ContextKey;
@@ -58,7 +57,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
   @Override
   public int getFluidAmount(ICastingContainer inv) {
     Fluid fluid = inv.getFluid();
-    return inv.getStack().getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM)
+    return TransferUtil.getFluidHandlerItem(inv.getStack())
               .map(handler -> handler.fill(new FluidStack(fluid, this.fluidAmount), FluidAction.SIMULATE))
               .orElse(0);
   }
@@ -83,7 +82,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
     ItemStack stack = inv.getStack();
     Fluid fluid = inv.getFluid();
     return stack.getItem() == this.container.asItem()
-           && stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM)
+           && TransferUtil.getFluidHandlerItem(stack)
                    .filter(handler -> handler.fill(new FluidStack(fluid, this.fluidAmount), FluidAction.SIMULATE) > 0)
                    .isPresent();
   }
@@ -91,14 +90,13 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
   /** @deprecated use {@link ICastingRecipe#assemble(Container, RegistryAccess)} */
   @Override
   @Deprecated
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider access) {
     return new ItemStack(this.container);
   }
 
-  @Override
-  public ItemStack assemble(ICastingContainer inv, RegistryAccess access) {
+  public ItemStack assemble(ICastingContainer inv, net.minecraft.core.HolderLookup.Provider access) {
     ItemStack stack = inv.getStack().copy();
-    return stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).map(handler -> {
+    return TransferUtil.getFluidHandlerItem(stack).map(handler -> {
       handler.fill(new FluidStack(inv.getFluid(), this.fluidAmount, inv.getFluidTag()), FluidAction.EXECUTE);
       return handler.getContainer();
     }).orElse(stack);
@@ -128,7 +126,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
         .map(fluid -> {
           FluidStack fluidStack = new FluidStack(fluid, fluidAmount);
           ItemStack stack = new ItemStack(container);
-          stack = FluidUtil.getFluidHandler(stack).map(handler -> {
+          stack = TransferUtil.getFluidHandlerItem(stack).map(handler -> {
             handler.fill(fluidStack, FluidAction.EXECUTE);
             return handler.getContainer();
           }).orElse(stack);

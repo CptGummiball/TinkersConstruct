@@ -1,5 +1,6 @@
 package slimeknights.mantle.inventory;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -325,10 +326,33 @@ public class BaseContainerMenu<TILE extends BlockEntity> extends AbstractContain
     return ClientOnly.getTileEntity(buf, type);
   }
 
+  /**
+   * Gets a tile entity from a block position sent as menu-opening data; the Fabric
+   * counterpart of {@link #getTileEntityFromBuf} for {@code ExtendedScreenHandlerType}s
+   * whose data codec already decoded the position.
+   * @param pos     Block position from the opening data
+   * @param type    Tile entity class
+   * @param <TILE>  Tile entity type
+   * @return Tile entity, or null if unable to find
+   */
+  @Nullable
+  public static <TILE extends BlockEntity> TILE getTileEntityFromPos(@Nullable BlockPos pos, Class<TILE> type) {
+    if (pos == null) {
+      return null;
+    }
+    // only reached from client menu constructors, see getTileEntityFromBuf
+    return ClientOnly.getTileEntity(pos, type);
+  }
+
   private static class ClientOnly {
     @Nullable
     static <TILE extends BlockEntity> TILE getTileEntity(RegistryFriendlyByteBuf buf, Class<TILE> type) {
       return BlockEntityHelper.get(type, Minecraft.getInstance().level, buf.readBlockPos()).orElse(null);
+    }
+
+    @Nullable
+    static <TILE extends BlockEntity> TILE getTileEntity(BlockPos pos, Class<TILE> type) {
+      return BlockEntityHelper.get(type, Minecraft.getInstance().level, pos).orElse(null);
     }
   }
 }

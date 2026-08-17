@@ -2,15 +2,15 @@ package slimeknights.tconstruct.common.network;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.network.NetworkEvent.Context;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 
+/** Syncs a single slot of a table inventory to the client for in-world rendering */
 public class InventorySlotSyncPacket implements IThreadsafePacket {
 
   public final ItemStack itemStack;
@@ -23,15 +23,15 @@ public class InventorySlotSyncPacket implements IThreadsafePacket {
     this.pos = pos;
   }
 
-  public InventorySlotSyncPacket(FriendlyByteBuf buffer) {
-    this.itemStack = buffer.readItem();
+  public InventorySlotSyncPacket(RegistryFriendlyByteBuf buffer) {
+    this.itemStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
     this.slot = buffer.readShort();
     this.pos = buffer.readBlockPos();
   }
 
   @Override
-  public void encode(FriendlyByteBuf packetBuffer) {
-    packetBuffer.writeItem(this.itemStack);
+  public void encode(RegistryFriendlyByteBuf packetBuffer) {
+    ItemStack.OPTIONAL_STREAM_CODEC.encode(packetBuffer, this.itemStack);
     packetBuffer.writeShort(this.slot);
     packetBuffer.writeBlockPos(this.pos);
   }
@@ -47,14 +47,11 @@ public class InventorySlotSyncPacket implements IThreadsafePacket {
       Level world = Minecraft.getInstance().level;
       if (world != null) {
         BlockEntity te = world.getBlockEntity(packet.pos);
-        if (te != null) {
-          te.getCapability(ForgeCapabilities.ITEM_HANDLER)
-            .filter(cap -> cap instanceof IItemHandlerModifiable)
-            .ifPresent(cap -> {
-              ((IItemHandlerModifiable)cap).setStackInSlot(packet.slot, packet.itemStack);
-              //noinspection ConstantConditions
-              Minecraft.getInstance().levelRenderer.blockChanged(null, packet.pos, null, null, 0);
-            });
+        // tables are containers; update the slot directly instead of the Forge capability
+        if (te instanceof Container container) {
+          container.setItem(packet.slot, packet.itemStack);
+          //noinspection ConstantConditions
+          Minecraft.getInstance().levelRenderer.blockChanged(null, packet.pos, null, null, 0);
         }
       }
     }

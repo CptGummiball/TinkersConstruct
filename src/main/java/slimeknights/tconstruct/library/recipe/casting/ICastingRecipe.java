@@ -1,11 +1,11 @@
 package slimeknights.tconstruct.library.recipe.casting;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.recipe.ICommonRecipe;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import static slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getTemperature;
 
@@ -15,7 +15,7 @@ import static slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getT
 public interface ICastingRecipe extends ICommonRecipe<ICastingContainer> {
   @Override
   default ItemStack getToastSymbol() {
-    return new ItemStack(getType() == TinkerRecipeTypes.CASTING_TABLE.get() ? TinkerSmeltery.searedTable : TinkerSmeltery.searedBasin);
+    return ContentLookups.toastSymbol(getType() == TinkerRecipeTypes.CASTING_TABLE.get() ? "seared_table" : "seared_basin");
   }
 
   /**

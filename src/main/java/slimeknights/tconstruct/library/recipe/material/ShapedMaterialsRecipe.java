@@ -155,8 +155,7 @@ public class ShapedMaterialsRecipe extends ShapedRecipe implements MaterialsCraf
     return stack;
   }
 
-  @Override
-  public ItemStack assemble(CraftingContainer inventory, RegistryAccess registryAccess) {
+  public ItemStack assemble(CraftingContainer inventory, net.minecraft.core.HolderLookup.Provider registryAccess) {
     return assemble(super.assemble(inventory, registryAccess), inventory, parts, parts.size(), checkRepeats, extraMaterials);
   }
 

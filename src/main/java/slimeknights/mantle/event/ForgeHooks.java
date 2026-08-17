@@ -62,6 +62,18 @@ public final class ForgeHooks {
     return new float[] {distance, damageMultiplier};
   }
 
+  /** Crafting player context, mirroring Forge's hook; consumers read it for remainder logic */
+  private static final ThreadLocal<Player> CRAFTING_PLAYER = new ThreadLocal<>();
+
+  public static void setCraftingPlayer(@Nullable Player player) {
+    CRAFTING_PLAYER.set(player);
+  }
+
+  @Nullable
+  public static Player getCraftingPlayer() {
+    return CRAFTING_PLAYER.get();
+  }
+
   public static ItemStack getProjectile(LivingEntity entity, ItemStack weapon, ItemStack fallback) {
     // Vanilla's lookup already handles creative arrows and the projectile predicate;
     // Forge's version only added a hook for mods overriding ammo, which on Fabric is done

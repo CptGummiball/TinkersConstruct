@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.tables;
 
-import net.minecraft.data.DataGenerator;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
@@ -15,10 +14,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.registries.RegistryObject;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import slimeknights.mantle.registration.RegistryObject;
+import slimeknights.mantle.transfer.item.ItemStorageBridge;
 import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
 import slimeknights.mantle.recipe.helper.SimpleRecipeSerializer;
 import slimeknights.mantle.registration.object.ItemObject;
@@ -27,9 +26,6 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerModule;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.recipe.material.MaterialRecipe;
-import slimeknights.tconstruct.library.recipe.material.ShapedMaterialRecipe;
-import slimeknights.tconstruct.library.recipe.material.ShapedMaterialsRecipe;
-import slimeknights.tconstruct.library.recipe.material.ShapelessMaterialsRecipe;
 import slimeknights.tconstruct.library.recipe.partbuilder.ItemPartRecipe;
 import slimeknights.tconstruct.library.recipe.partbuilder.PartRecipe;
 import slimeknights.tconstruct.library.recipe.partbuilder.recycle.PartBuilderRecycle;
@@ -55,7 +51,6 @@ import slimeknights.tconstruct.tables.block.entity.table.CraftingStationBlockEnt
 import slimeknights.tconstruct.tables.block.entity.table.ModifierWorktableBlockEntity;
 import slimeknights.tconstruct.tables.block.entity.table.PartBuilderBlockEntity;
 import slimeknights.tconstruct.tables.block.entity.table.TinkerStationBlockEntity;
-import slimeknights.tconstruct.tables.data.TableRecipeProvider;
 import slimeknights.tconstruct.tables.item.AnvilBlockItem;
 import slimeknights.tconstruct.tables.item.TinkersChestBlockItem;
 import slimeknights.tconstruct.tables.menu.CraftingStationContainerMenu;
@@ -68,7 +63,7 @@ import slimeknights.tconstruct.tables.recipe.PartBuilderToolRecycle;
 import slimeknights.tconstruct.tables.recipe.TinkerStationDamagingRecipe;
 import slimeknights.tconstruct.tables.recipe.TinkerStationPartSwapping;
 import slimeknights.tconstruct.tables.recipe.TinkerStationRepairRecipe;
-import slimeknights.tconstruct.tools.TinkerToolParts;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -81,10 +76,10 @@ import java.util.function.Predicate;
 public final class TinkerTables extends TinkerModule {
   /** Creative tab for general items, or those that lack another tab */
   public static final RegistryObject<CreativeModeTab> tabTables = CREATIVE_TABS.register(
-    "tables", () -> CreativeModeTab.builder().title(TConstruct.makeTranslation("itemGroup", "tables"))
+    "tables", () -> FabricItemGroup.builder().title(TConstruct.makeTranslation("itemGroup", "tables"))
                                    .icon(() -> new ItemStack(TinkerTables.craftingStation))
                                    .displayItems(TinkerTables::addTabItems)
-                                   .withTabsBefore(TinkerCommons.tabGeneral.getId())
+                                   // PORT: Forge's withTabsBefore ordering has no Fabric equivalent
                                    .build());
   /*
    * Blocks
@@ -109,7 +104,8 @@ public final class TinkerTables extends TinkerModule {
   public static final ItemObject<TableBlock> tinkersAnvil, scorchedAnvil;
   static {
     Block.Properties METAL_TABLE = builder(MapColor.COLOR_GRAY, SoundType.ANVIL).pushReaction(PushReaction.BLOCK).requiresCorrectToolForDrops().strength(5.0F, 1200.0F).noOcclusion();
-    Function<Block, BlockItem> blockItem = block -> new AnvilBlockItem(block, ITEM_PROPS, TinkerToolParts.fakeStorageBlockItem, TinkerTags.Materials.COMPATABILITY_ALLOYS);
+    // ContentLookups seam: the matching fake storage block lives in the tools module
+    Function<Block, BlockItem> blockItem = block -> new AnvilBlockItem(block, ITEM_PROPS, () -> ContentLookups.materialItem("fake_storage_block"), TinkerTags.Materials.COMPATABILITY_ALLOYS);
     tinkersAnvil = BLOCKS.register("tinkers_anvil", () -> new TinkersAnvilBlock(METAL_TABLE, 6), blockItem);
     scorchedAnvil = BLOCKS.register("scorched_anvil", () -> new ScorchedAnvilBlock(METAL_TABLE, 6), blockItem);
   }
@@ -150,33 +146,33 @@ public final class TinkerTables extends TinkerModule {
   public static final RegistryObject<RecipeSerializer<FixedMaterialSwappingRecipe>> fixedMaterialSwapping = RECIPE_SERIALIZERS.register("fixed_material_swapping", () -> LoadableRecipeSerializer.of(FixedMaterialSwappingRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<PartSwappingOverrideRecipe>> partSwappingOverride = RECIPE_SERIALIZERS.register("part_swapping_override", () -> LoadableRecipeSerializer.of(PartSwappingOverrideRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<ToolMaterialSwappingRecipe>> toolMaterialSwapping = RECIPE_SERIALIZERS.register("tool_material_swapping", () -> LoadableRecipeSerializer.of(ToolMaterialSwappingRecipe.LOADER));
-  @Deprecated
-  public static final RegistryObject<RecipeSerializer<ShapedMaterialRecipe>> shapedMaterialRecipeSerializer = RECIPE_SERIALIZERS.register("crafting_shaped_material", ShapedMaterialRecipe.Serializer::new);
-  public static final RegistryObject<RecipeSerializer<ShapedMaterialsRecipe>> shapedMaterialsRecipeSerializer = RECIPE_SERIALIZERS.register("crafting_shaped_materials", ShapedMaterialsRecipe.Serializer::new);
-  public static final RegistryObject<RecipeSerializer<ShapelessMaterialsRecipe>> shapelessMaterialsRecipeSerializer = RECIPE_SERIALIZERS.register("crafting_shapeless_materials", ShapelessMaterialsRecipe.Serializer::new);
+  // PORT: shaped/shapeless material crafting serializers return with their 1.21
+  // ShapedRecipePattern rewrite (see unported.gradle)
   // part builder
   public static final RegistryObject<RecipeSerializer<PartRecipe>> partRecipeSerializer = RECIPE_SERIALIZERS.register("part_builder", () -> LoadableRecipeSerializer.of(PartRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<ItemPartRecipe>> itemPartBuilderSerializer = RECIPE_SERIALIZERS.register("item_part_builder", () -> LoadableRecipeSerializer.of(ItemPartRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<PartBuilderToolRecycle>> partBuilderToolRecycling = RECIPE_SERIALIZERS.register("part_builder_tool_recycling", () -> LoadableRecipeSerializer.of(PartBuilderToolRecycle.LOADER));
   public static final RegistryObject<RecipeSerializer<PartBuilderRecycle>> partBuilderDamageableRecycling = RECIPE_SERIALIZERS.register("part_builder_recycling", () -> LoadableRecipeSerializer.of(PartBuilderRecycle.LOADER));
   // repair - standard
-  public static final RegistryObject<SimpleRecipeSerializer<TinkerStationRepairRecipe>> tinkerStationRepairSerializer = RECIPE_SERIALIZERS.register("tinker_station_repair", () -> new SimpleRecipeSerializer<>(TinkerStationRepairRecipe::new));
+  public static final RegistryObject<SimpleRecipeSerializer<TinkerStationRepairRecipe>> tinkerStationRepairSerializer = RECIPE_SERIALIZERS.register("tinker_station_repair", () -> new SimpleRecipeSerializer<>(() -> new TinkerStationRepairRecipe(TConstruct.getResource("tinker_station_repair"))));
   public static final RegistryObject<SimpleRecipeSerializer<CraftingTableRepairKitRecipe>> craftingTableRepairSerializer = RECIPE_SERIALIZERS.register("crafting_table_repair", () -> new SimpleRecipeSerializer<>(CraftingTableRepairKitRecipe::new));
 
-  @SubscribeEvent
-  void commonSetup(final FMLCommonSetupEvent event) {
-    event.enqueueWork(() -> {
-      StationSlotLayoutLoader loader = StationSlotLayoutLoader.getInstance();
-      loader.registerRequiredLayout(tinkerStation.getId());
-      loader.registerRequiredLayout(tinkersAnvil.getId());
-      loader.registerRequiredLayout(scorchedAnvil.getId());
-    });
-  }
+  /** Wires layouts and inventory access; call once from the bootstrap. Data generation moved to phase 7. */
+  public static void init() {
+    StationSlotLayoutLoader loader = StationSlotLayoutLoader.getInstance();
+    loader.registerRequiredLayout(tinkerStation.getId());
+    loader.registerRequiredLayout(tinkersAnvil.getId());
+    loader.registerRequiredLayout(scorchedAnvil.getId());
 
-  @SubscribeEvent
-  void gatherData(final GatherDataEvent event) {
-    DataGenerator generator = event.getGenerator();
-    generator.addProvider(event.includeServer(), new TableRecipeProvider(generator.getPackOutput()));
+    // expose the table/chest inventories to hoppers and pipes; replaces the Forge
+    // item-handler capabilities on the block entities
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), craftingStationTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), tinkerStationTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), partBuilderTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), modifierWorktableTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), tinkersChestTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), partChestTile.get());
+    ItemStorage.SIDED.registerForBlockEntity((be, direction) -> new ItemStorageBridge(be.getItemHandler()), castChestTile.get());
   }
 
   /** Adds all relevant items to the creative tab, called in the general tab */
