@@ -5,11 +5,10 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
@@ -20,8 +19,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
-import net.minecraft.world.phys.HitResult;
 import slimeknights.mantle.block.InventoryBlock;
 import slimeknights.mantle.block.RetexturedBlock;
 import slimeknights.mantle.util.BlockEntityHelper;
@@ -60,7 +57,7 @@ public class SearedDuctBlock extends InventoryBlock {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable BlockGetter pLevel, List<Component> tooltip, TooltipFlag pFlag) {
+  public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag pFlag) {
     RetexturedHelper.addTooltip(stack, tooltip);
   }
 
@@ -71,7 +68,7 @@ public class SearedDuctBlock extends InventoryBlock {
   }
   
   @Override
-  public ItemStack getCloneItemStack(BlockState state, HitResult target, BlockGetter world, BlockPos pos, Player player) {
+  public ItemStack getCloneItemStack(net.minecraft.world.level.LevelReader world, BlockPos pos, BlockState state) {
     return RetexturedBlock.getPickBlock(world, pos, state);
   }
 
@@ -81,12 +78,6 @@ public class SearedDuctBlock extends InventoryBlock {
   @Override
   protected void createBlockStateDefinition(StateDefinition.Builder<Block,BlockState> builder) {
     builder.add(IN_STRUCTURE, FACING);
-  }
-
-  @Nullable
-  @Override
-  public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
-    return state.getValue(IN_STRUCTURE) ? BlockPathTypes.DAMAGE_FIRE : BlockPathTypes.OPEN;
   }
 
   @Nullable

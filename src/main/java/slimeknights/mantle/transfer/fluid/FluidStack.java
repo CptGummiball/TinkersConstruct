@@ -181,6 +181,11 @@ public class FluidStack {
     return isFluidEqual(other) && amount >= other.amount;
   }
 
+  /** True when the two stacks' tags match; Forge's static helper */
+  public static boolean areFluidStackTagsEqual(FluidStack a, FluidStack b) {
+    return java.util.Objects.equals(a.tag, b.tag);
+  }
+
   /* Serialisation — the on-disk shape matches Forge's so existing saves load unchanged */
 
   public CompoundTag writeToNBT(CompoundTag nbt) {

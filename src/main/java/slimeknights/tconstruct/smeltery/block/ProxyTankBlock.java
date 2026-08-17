@@ -4,7 +4,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -75,30 +77,40 @@ public class ProxyTankBlock extends Block implements EntityBlock {
 
   /* Inventory */
 
-  @Deprecated
   @Override
-  public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+  protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
     if (world.getBlockEntity(pos) instanceof ProxyTankBlockEntity tank) {
-      boolean clickedTank;
-      Direction direction = hit.getDirection();
-      if (direction == Direction.DOWN) {
-        // down is a solid flat spot, treat it all as items
-        clickedTank = false;
-      } else {
-        Vec3 location = hit.getLocation();
-        double x = location.x - pos.getX();
-        double z = location.z - pos.getZ();
-        // up is a window, corners are tanks and center item
-        clickedTank = (x < LOWER || x > UPPER) && (z < LOWER || z > UPPER);
-        // if you clicked a side tank, cancel that if we clicked too low
-        if (clickedTank && direction != Direction.UP) {
-          double y = location.y - pos.getY();
-          clickedTank = y > 0.25f;
-        }
-      }
-      tank.interact(player, hand, clickedTank);
+      tank.interact(player, hand, isTankClicked(pos, hit));
+    }
+    return ItemInteractionResult.sidedSuccess(world.isClientSide);
+  }
+
+  @Override
+  protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
+    if (world.getBlockEntity(pos) instanceof ProxyTankBlockEntity tank) {
+      tank.interact(player, InteractionHand.MAIN_HAND, isTankClicked(pos, hit));
     }
     return InteractionResult.SUCCESS;
+  }
+
+  /** Checks if the given hit location is on a tank portion of the block instead of the item portion */
+  private static boolean isTankClicked(BlockPos pos, BlockHitResult hit) {
+    Direction direction = hit.getDirection();
+    if (direction == Direction.DOWN) {
+      // down is a solid flat spot, treat it all as items
+      return false;
+    }
+    Vec3 location = hit.getLocation();
+    double x = location.x - pos.getX();
+    double z = location.z - pos.getZ();
+    // up is a window, corners are tanks and center item
+    boolean clickedTank = (x < LOWER || x > UPPER) && (z < LOWER || z > UPPER);
+    // if you clicked a side tank, cancel that if we clicked too low
+    if (clickedTank && direction != Direction.UP) {
+      double y = location.y - pos.getY();
+      clickedTank = y > 0.25f;
+    }
+    return clickedTank;
   }
 
   @Deprecated

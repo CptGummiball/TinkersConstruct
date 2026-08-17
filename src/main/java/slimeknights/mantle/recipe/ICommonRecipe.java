@@ -25,9 +25,17 @@ public interface ICommonRecipe<C extends IRecipeContainer> extends Recipe<Contai
     return matches(input.container(), level);
   }
 
+  /**
+   * Container-typed assemble, the 1.20 signature callers use directly; implementations
+   * with custom output override this. The vanilla input-typed surface below delegates here.
+   */
+  default ItemStack assemble(C container, HolderLookup.Provider registries) {
+    return getResultItem(registries).copy();
+  }
+
   @Override
   default ItemStack assemble(ContainerRecipeInput<C> input, HolderLookup.Provider registries) {
-    return getResultItem(registries).copy();
+    return assemble(input.container(), registries);
   }
 
   /** @deprecated Means nothing outside of crafting tables */

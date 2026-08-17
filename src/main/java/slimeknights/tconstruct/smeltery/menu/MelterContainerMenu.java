@@ -11,8 +11,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
 import slimeknights.mantle.fluid.FluidTransferHelper;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferDirection;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferResult;
@@ -53,7 +53,7 @@ public class MelterContainerMenu extends TriggeringBaseContainerMenu<MelterBlock
       if (world != null && world.getBlockState(down).is(TinkerTags.Blocks.FUEL_TANKS)) {
         BlockEntity te = world.getBlockEntity(down);
         if (te != null) {
-          hasFuelSlot = te.getCapability(ForgeCapabilities.ITEM_HANDLER).filter(handler -> {
+          hasFuelSlot = slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.ITEM_HANDLER).filter(handler -> {
             this.addSlot(new SmartItemHandlerSlot(handler, 0, 151, 32));
             return true;
           }).isPresent();
@@ -71,8 +71,8 @@ public class MelterContainerMenu extends TriggeringBaseContainerMenu<MelterBlock
     }
   }
 
-  public MelterContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, MelterBlockEntity.class));
+  public MelterContainerMenu(int id, Inventory inv, net.minecraft.core.BlockPos pos) {
+    this(id, inv, getTileEntityFromPos(pos, MelterBlockEntity.class));
   }
 
   @Override

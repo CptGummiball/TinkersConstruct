@@ -23,6 +23,7 @@ import slimeknights.tconstruct.shared.TinkerAttributes;
 import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.shared.TinkerMaterials;
+import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.tables.TinkerTables;
 import slimeknights.tconstruct.world.TinkerWorld;
 
@@ -84,6 +85,7 @@ public class TConstructBootstrap implements ModInitializer {
     // world: structures/features registered by class-init inside TinkerWorld's registrations
     TinkerWorld.init();
     TinkerTables.init();
+    TinkerSmeltery.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

@@ -423,6 +423,51 @@ errors, shipped at 0. Load-bearing decisions:
   aborts Lombok for the whole batch and surfaces as ~1300 bogus "constructor missing"
   errors on unrelated files. Found by gate bisection; the collision, not any of the
   reported files, was the root cause.
+
+### Phase 4, fifth slice: the smeltery module — **DONE, server boots clean (Done 0.684s)**
+
+The multiblock heart of the mod: seared/scorched sets, smeltery + foundry controllers,
+melter, alloyer, heater, casting table/basin, tanks, faucet, channel, drains/ducts/chutes,
+lanterns, fluid cannons, proxy tank, plus the six previously-parked casting recipes and
+`common/multiblock` + `library/fluid`. 333 errors at gate-in, shipped at 0. Load-bearing
+decisions:
+
+- **The capability shim** (`mantle/transfer/cap`): the smeltery's neighbor caches are built
+  on Forge's `LazyOptional` invalidation contract — drains hand out lazy views of the
+  controller tank and drop them via listeners when the structure changes. Fabric's lookup
+  API has no invalidation callback, so the shim keeps that exact contract internally
+  (`LazyOptional`, `Capability`, `ForgeCapabilities`, `ICapabilityProvider` on
+  `MantleBlockEntity`, `CapabilityHelper.get` replacing the Forge `BlockEntity` extension),
+  and only the outward face becomes Fabric: one namespace-guarded
+  `FluidStorage/ItemStorage.SIDED.registerFallback` bridges whatever any smeltery BE
+  exposes per side through the same `getCapability` methods. Forge-only listener-removal
+  optimizations were dropped (invalidate clears listeners in the shim anyway).
+- **Item fluid containers**: new `ItemFluidStorageBridge` presents the tag-driven
+  `IFluidHandlerItem`s (tank items, lanterns, cannons, copper can) as Fabric item storages
+  with `ContainerItemContext.exchange` semantics — so `FluidTransferHelper` and other mods
+  can fill/drain them. Tank stack-size limiting moved to the `MAX_STACK_SIZE` component,
+  maintained by the tank setters.
+- **1.21 removals handled here**: `handleUpdateTag` is gone — client sync-tag work moved
+  into `loadAdditional` (guarded by `level.isClientSide`); `onLoad` → `clearRemoved`;
+  `getPistonPushReaction` override → baked into per-block `Properties` (tank registrations
+  now build fresh `Properties` per block via suppliers); `AABB(BlockPos,BlockPos)` →
+  `encapsulatingFullBlocks`; `NbtUtils.readBlockPos` int-array form for error pos, last
+  fuel, and the multiblock position lists; `LevelEvent.PARTICLES_SHOOT` →
+  `PARTICLES_SHOOT_SMOKE`; melting inventory NBT now threads `HolderLookup.Provider`
+  (ItemStack save/parse).
+- **Recipe surface**: `ICommonRecipe` gained the container-first `assemble(C, Provider)`
+  default (the vanilla input-typed surface delegates to it), which fixed every
+  molding/casting assemble call in one place; `ICastingRecipe` declares `getId()` for the
+  active-recipe reload; potion casting reads the fluid's legacy `{Potion: id}` tag into
+  the `POTION_CONTENTS` component; alloy/melting lookups wrap in `ContainerRecipeInput`.
+- **Tool-part casts** register by name with `ContentLookups.materialItem` seams (21 casts);
+  their cost tooltips resolve once the tools module lands. The fluid cannon's projectile
+  shot is commented out until tools registers `FluidEffectProjectile`'s entity type.
+- **Pathfinding**: the `IN_STRUCTURE ? DAMAGE_FIRE : OPEN` Forge hook became a dynamic
+  `LandPathNodeTypesRegistry` provider registered for every seared/controller block.
+- **Parked**: `smeltery/client/**` + `SmelteryClientEvents` (phase 5), `smeltery/data/**`
+  (phase 7). Milk fluid: Forge's milk still does not exist on Fabric; milk-based recipes
+  wait for the data pass to decide between a TiC milk fluid and recipe substitution.
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

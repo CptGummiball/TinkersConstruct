@@ -13,6 +13,9 @@ import static slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getT
  * Base interface for all casting recipes
  */
 public interface ICastingRecipe extends ICommonRecipe<ICastingContainer> {
+  /** Recipe id, stored by the recipe implementations since 1.21 moved it off vanilla recipes; used to reload the active recipe from NBT */
+  net.minecraft.resources.ResourceLocation getId();
+
   @Override
   default ItemStack getToastSymbol() {
     return ContentLookups.toastSymbol(getType() == TinkerRecipeTypes.CASTING_TABLE.get() ? "seared_table" : "seared_basin");

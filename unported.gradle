@@ -193,13 +193,6 @@ slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierRepairRec
 slimeknights/tconstruct/library/recipe/worktable/AbstractSizedIngredientRecipeBuilder.java
 slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuilder.java
 
-# --- casting recipes bound to smeltery content (potions, tools); smeltery round ---
-slimeknights/tconstruct/library/recipe/casting/PotionCastingRecipe.java
-slimeknights/tconstruct/library/recipe/casting/TippingCastingRecipe.java
-slimeknights/tconstruct/library/recipe/casting/TipClearingCastingRecipe.java
-slimeknights/tconstruct/library/recipe/casting/container/ContainerFillingRecipe.java
-slimeknights/tconstruct/library/recipe/casting/material/ToolCastingRecipe.java
-slimeknights/tconstruct/library/recipe/casting/material/PartSwapCastingRecipe.java
 # --- vanilla shaped/shapeless material crafting: 1.21 rewrote ShapedRecipe around
 # ShapedRecipePattern; these three get their own rewrite pass ---
 slimeknights/tconstruct/library/recipe/material/ShapedMaterialRecipe.java
@@ -207,3 +200,7 @@ slimeknights/tconstruct/library/recipe/material/ShapedMaterialsRecipe.java
 slimeknights/tconstruct/library/recipe/material/ShapelessMaterialsRecipe.java
 slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
 slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
+# --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---
+slimeknights/tconstruct/smeltery/client/**
+slimeknights/tconstruct/smeltery/data/**
+slimeknights/tconstruct/smeltery/SmelteryClientEvents.java

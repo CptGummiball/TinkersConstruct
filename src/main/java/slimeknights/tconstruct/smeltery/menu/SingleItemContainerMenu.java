@@ -3,7 +3,7 @@ package slimeknights.tconstruct.smeltery.menu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
 import slimeknights.mantle.inventory.SmartItemHandlerSlot;
 import slimeknights.tconstruct.shared.inventory.TriggeringBaseContainerMenu;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
@@ -17,14 +17,14 @@ public class SingleItemContainerMenu extends TriggeringBaseContainerMenu<BlockEn
   public SingleItemContainerMenu(int id, @Nullable Inventory inv, @Nullable BlockEntity te) {
     super(TinkerSmeltery.singleItemContainer.get(), id, inv, te);
     if (te != null) {
-      te.getCapability(ForgeCapabilities.ITEM_HANDLER)
+      slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.ITEM_HANDLER)
         .ifPresent(handler -> this.addSlot(new SmartItemHandlerSlot(handler, 0, 80, 20)));
       this.addInventorySlots();
     }
   }
 
-  public SingleItemContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, BlockEntity.class));
+  public SingleItemContainerMenu(int id, Inventory inv, net.minecraft.core.BlockPos pos) {
+    this(id, inv, getTileEntityFromPos(pos, BlockEntity.class));
   }
 
   @Override

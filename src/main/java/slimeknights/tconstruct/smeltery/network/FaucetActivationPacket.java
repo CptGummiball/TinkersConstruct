@@ -3,9 +3,10 @@ package slimeknights.tconstruct.smeltery.network;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.tconstruct.smeltery.block.entity.FaucetBlockEntity;
 
 /** Sent to clients to activate the faucet animation clientside **/
@@ -17,13 +18,13 @@ public class FaucetActivationPacket extends FluidUpdatePacket {
     this.isPouring = isPouring;
   }
 
-  public FaucetActivationPacket(FriendlyByteBuf buffer) {
+  public FaucetActivationPacket(net.minecraft.network.RegistryFriendlyByteBuf buffer) {
     super(buffer);
     this.isPouring = buffer.readBoolean();
   }
 
   @Override
-  public void encode(FriendlyByteBuf packetBuffer) {
+  public void encode(RegistryFriendlyByteBuf packetBuffer) {
     super.encode(packetBuffer);
     packetBuffer.writeBoolean(isPouring);
   }

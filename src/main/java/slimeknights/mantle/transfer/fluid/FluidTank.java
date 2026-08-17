@@ -11,7 +11,7 @@ import java.util.function.Predicate;
  * <p>Behaviour is deliberately identical to the Forge original, including the partial-fill
  * semantics the smeltery's drain/fill logic relies on.
  */
-public class FluidTank implements IFluidHandler {
+public class FluidTank implements IFluidHandler, IFluidTank {
 
   protected Predicate<FluidStack> validator;
   protected FluidStack fluid = FluidStack.EMPTY;
@@ -46,6 +46,11 @@ public class FluidTank implements IFluidHandler {
 
   public int getFluidAmount() {
     return fluid.getAmount();
+  }
+
+  @Override
+  public boolean isFluidValid(FluidStack stack) {
+    return isFluidValid(0, stack);
   }
 
   public int getCapacity() {

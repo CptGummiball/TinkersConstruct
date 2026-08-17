@@ -99,4 +99,16 @@ public final class ForgeHooks {
       player, player.level(), hand, entity, new EntityHitResult(entity, vec.add(entity.position())));
     return result == InteractionResult.PASS ? null : result;
   }
+
+  /**
+   * Burn time of a stack as furnace-style fuel; Forge let items and the recipe type adjust
+   * this, Fabric's registry is item-keyed, which matches every use in this mod.
+   */
+  public static int getBurnTime(net.minecraft.world.item.ItemStack stack, @Nullable net.minecraft.world.item.crafting.RecipeType<?> recipeType) {
+    if (stack.isEmpty()) {
+      return 0;
+    }
+    Integer time = net.fabricmc.fabric.api.registry.FuelRegistry.INSTANCE.get(stack.getItem());
+    return time == null ? 0 : time;
+  }
 }

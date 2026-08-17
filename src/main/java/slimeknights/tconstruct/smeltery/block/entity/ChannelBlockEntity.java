@@ -11,14 +11,14 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
-import net.minecraftforge.fluids.capability.templates.EmptyFluidHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.cap.NonNullConsumer;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.EmptyFluidHandler;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.mantle.util.WeakConsumerWrapper;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
@@ -82,10 +82,7 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 		return this.tank.getFluid();
 	}
 
-	@Override
-	public AABB getRenderBoundingBox() {
-		return new AABB(worldPosition.getX(), worldPosition.getY() - 1, worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
-	}
+	// phase 5: Forge getRenderBoundingBox returns with the client render layer
 
 	/** Called when a capability invalidates to clear the given side */
 	private void invalidateSide(Direction side, LazyOptional<IFluidHandler> capability) {
@@ -133,7 +130,7 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
 		// must have a TE with a fluid handler
 		BlockEntity te = level.getBlockEntity(worldPosition.relative(side));
 		if (te != null) {
-			LazyOptional<IFluidHandler> handler = te.getCapability(ForgeCapabilities.FLUID_HANDLER, side.getOpposite());
+			LazyOptional<IFluidHandler> handler = slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.FLUID_HANDLER, side.getOpposite());
 			if (handler.isPresent()) {
 				handler.addListener(neighborConsumers.computeIfAbsent(side, s -> new WeakConsumerWrapper<>(this, (self, lazy) -> self.invalidateSide(s, lazy))));
 				return handler;
@@ -417,15 +414,15 @@ public class ChannelBlockEntity extends MantleBlockEntity implements IFluidPacke
   }
 
   @Override
-  protected void saveSynced(CompoundTag nbt) {
-    super.saveSynced(nbt);
+  protected void saveSynced(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(nbt, registries);
     nbt.putByteArray(TAG_IS_FLOWING, isFlowing);
     nbt.put(TAG_TANK, tank.writeToNBT(new CompoundTag()));
   }
 
 	@Override
-	public void load(CompoundTag nbt) {
-		super.load(nbt);
+	public void loadAdditional(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+		super.loadAdditional(nbt, registries);
 
 		// isFlowing
 		if (nbt.contains(TAG_IS_FLOWING)) {

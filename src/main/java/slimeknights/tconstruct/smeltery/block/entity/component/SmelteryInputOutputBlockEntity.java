@@ -10,14 +10,13 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.templates.EmptyFluidHandler;
-import net.minecraftforge.items.IItemHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.cap.NonNullConsumer;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.EmptyFluidHandler;
+import slimeknights.mantle.transfer.item.IItemHandler;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.mantle.util.RetexturedHelper;
@@ -49,6 +48,13 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
   @Nonnull
   @Getter
   private Block texture = Blocks.AIR;
+  /** Scratch tag satisfying the mantle interface; the texture is stored in its own NBT key instead */
+  private final CompoundTag persistentData = new CompoundTag();
+
+  @Override
+  public CompoundTag getPersistentData() {
+    return persistentData;
+  }
 
   protected SmelteryInputOutputBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Capability<T> capability, T emptyInstance) {
     super(type, pos, state);
@@ -98,7 +104,7 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
    * @return  Capability from parent, or empty if absent
    */
   protected LazyOptional<T> getCapability(BlockEntity parent) {
-    LazyOptional<T> handler = parent.getCapability(capability);
+    LazyOptional<T> handler = slimeknights.mantle.transfer.cap.CapabilityHelper.get(parent, capability);
     if (handler.isPresent()) {
       handler.addListener(listener);
 
@@ -140,12 +146,6 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
   /* Retexturing */
 
   @Override
-  @Nonnull
-  public ModelData getModelData() {
-    return RetexturedHelper.getModelData(getTexture());
-  }
-
-  @Override
   public String getTextureName() {
     return RetexturedHelper.getTextureName(texture);
   }
@@ -169,16 +169,16 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
   }
 
   @Override
-  protected void saveSynced(CompoundTag tags) {
-    super.saveSynced(tags);
+  protected void saveSynced(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(tags, registries);
     if (texture != Blocks.AIR) {
       tags.putString(TAG_TEXTURE, getTextureName());
     }
   }
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  public void loadAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(TAG_TEXTURE, Tag.TAG_STRING)) {
       texture = RetexturedHelper.getBlock(tags.getString(TAG_TEXTURE));
       RetexturedHelper.onTextureUpdated(this);

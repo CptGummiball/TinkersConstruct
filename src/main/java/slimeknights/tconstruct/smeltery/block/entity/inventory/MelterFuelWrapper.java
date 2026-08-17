@@ -2,9 +2,9 @@ package slimeknights.tconstruct.smeltery.block.entity.inventory;
 
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.IFluidTank;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidTank;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.tconstruct.library.recipe.fuel.IFluidContainer;
 import slimeknights.tconstruct.library.recipe.fuel.MeltingFuel;
 

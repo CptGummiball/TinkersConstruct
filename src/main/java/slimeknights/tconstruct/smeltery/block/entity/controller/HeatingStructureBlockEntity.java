@@ -22,14 +22,13 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.block.entity.NameableBlockEntity;
 import slimeknights.mantle.util.BlockEntityHelper;
@@ -37,7 +36,6 @@ import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.common.multiblock.IMasterLogic;
 import slimeknights.tconstruct.common.multiblock.IServantLogic;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
-import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.smeltery.block.controller.ControllerBlock;
 import slimeknights.tconstruct.smeltery.block.controller.SmelteryControllerBlock;
 import slimeknights.tconstruct.smeltery.block.entity.module.EntityMeltingModule;
@@ -129,6 +127,13 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   @Nonnull
   @Getter
   private Block texture = Blocks.AIR;
+  /** Scratch tag satisfying the mantle interface; the texture is stored in its own NBT key instead */
+  private final CompoundTag persistentData = new CompoundTag();
+
+  @Override
+  public CompoundTag getPersistentData() {
+    return persistentData;
+  }
 
   /* Client display */
   private final List<WeakReference<IDisplayFluidListener>> fluidDisplayListeners = new ArrayList<>();
@@ -309,8 +314,9 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   /* Load */
 
   @Override
-  public void onLoad() {
-    super.onLoad();
+  public void clearRemoved() {
+    // Forge's onLoad hook; clearRemoved is the vanilla call sites fire when the BE joins the chunk
+    super.clearRemoved();
     // just to clear out invalid references to the old master/no master, nothing should actually change behavior
     if (level != null && !level.isClientSide && structure != null) {
       structure.forEachContained(pos -> {
@@ -474,12 +480,6 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
     }
   }
 
-  @Nonnull
-  @Override
-  public ModelData getModelData() {
-    return RetexturedHelper.getModelDataBuilder(getTexture()).with(ModelProperties.FLUID_STACK, displayFluid).build();
-  }
-
   /**
    * Updates the fluid displayed in the block, only used client side
    * @param fluid  Fluid
@@ -488,7 +488,7 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
     if (level != null && level.isClientSide) {
       // update ourself
       this.displayFluid = fluid.copy();
-      this.requestModelDataUpdate();
+      // phase 5: Forge requestModelDataUpdate returns with the client model system
       BlockState state = getBlockState();
       level.sendBlockUpdated(worldPosition, state, state, 48);
       updateListeners(displayFluid);
@@ -505,15 +505,7 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
     this.setChangedFast();
   }
 
-  @Override
-  public AABB getRenderBoundingBox() {
-    if (structure != null) {
-      return structure.getBounds();
-    } else if (defaultBounds == null) {
-      defaultBounds = new AABB(worldPosition, worldPosition.offset(1, 1, 1));
-    }
-    return defaultBounds;
-  }
+  // phase 5: Forge's getRenderBoundingBox extension returns with the client render layer
 
   /* Heating helpers */
 
@@ -613,8 +605,8 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   }
 
   @Override
-  public void load(CompoundTag nbt) {
-    super.load(nbt);
+  public void loadAdditional(CompoundTag nbt, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(nbt, registries);
     if (nbt.contains(TAG_TANK, Tag.TAG_COMPOUND)) {
       tank.read(nbt.getCompound(TAG_TANK));
       FluidStack first = tank.getFluidInTank(0);
@@ -623,7 +615,7 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
       }
     }
     if (nbt.contains(TAG_INVENTORY, Tag.TAG_COMPOUND)) {
-      meltingInventory.readFromTag(nbt.getCompound(TAG_INVENTORY));
+      meltingInventory.readFromTag(nbt.getCompound(TAG_INVENTORY), registries);
     }
     if (nbt.contains(TAG_STRUCTURE, Tag.TAG_COMPOUND)) {
       setStructure(multiblock.readFromTag(nbt.getCompound(TAG_STRUCTURE), this.worldPosition));
@@ -631,10 +623,9 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
         fluidCapability = LazyOptional.of(() -> tank);
       }
     }
-    // only exists to be sent server to client in update packets
-    if (nbt.contains(TAG_ERROR_POS, Tag.TAG_COMPOUND)) {
-      this.errorPos = NbtUtils.readBlockPos(nbt.getCompound(TAG_ERROR_POS)).offset(this.worldPosition);
-    }
+    // only exists to be sent server to client in update packets; 1.21 stores block
+    // positions as int arrays, and both sides of this sync use the new helper
+    NbtUtils.readBlockPos(nbt, TAG_ERROR_POS).ifPresent(pos -> this.errorPos = pos.offset(this.worldPosition));
     fuelModule.readFromTag(nbt);
     if (nbt.contains(TAG_TEXTURE, Tag.TAG_STRING)) {
       texture = RetexturedHelper.getBlock(nbt.getString(TAG_TEXTURE));
@@ -643,9 +634,9 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   }
 
   @Override
-  public void saveAdditional(CompoundTag compound) {
+  public void saveAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
     // Tag that just writes to disk
-    super.saveAdditional(compound);
+    super.saveAdditional(compound, registries);
     if (structure != null) {
       compound.put(TAG_STRUCTURE, structure.writeToTag(this.worldPosition));
     }
@@ -653,20 +644,20 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   }
 
   @Override
-  public void saveSynced(CompoundTag compound) {
+  public void saveSynced(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
     // Tag that writes to disk and syncs to client
-    super.saveSynced(compound);
+    super.saveSynced(compound, registries);
     compound.put(TAG_TANK, tank.write(new CompoundTag()));
-    compound.put(TAG_INVENTORY, meltingInventory.writeToTag());
+    compound.put(TAG_INVENTORY, meltingInventory.writeToTag(registries));
     if (texture != Blocks.AIR) {
       compound.putString(TAG_TEXTURE, getTextureName());
     }
   }
 
   @Override
-  public CompoundTag getUpdateTag() {
+  public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
     // Tag that just syncs to client
-    CompoundTag nbt = super.getUpdateTag();
+    CompoundTag nbt = super.getUpdateTag(registries);
     if (structure != null) {
       nbt.put(TAG_STRUCTURE, structure.writeClientTag(this.worldPosition));
     }

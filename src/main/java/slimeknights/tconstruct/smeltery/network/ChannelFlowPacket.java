@@ -4,7 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.mantle.util.BlockEntityHelper;
 import slimeknights.tconstruct.smeltery.block.entity.ChannelBlockEntity;
@@ -27,7 +28,7 @@ public class ChannelFlowPacket implements IThreadsafePacket {
 	}
 
 	@Override
-	public void encode(FriendlyByteBuf buffer) {
+	public void encode(RegistryFriendlyByteBuf buffer) {
 		buffer.writeBlockPos(pos);
 		buffer.writeEnum(side);
 		buffer.writeBoolean(flow);

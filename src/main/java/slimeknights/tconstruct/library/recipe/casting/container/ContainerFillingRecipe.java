@@ -14,7 +14,7 @@ import net.minecraft.world.level.material.Fluid;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.transfer.TransferUtil;
 import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
@@ -96,7 +96,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
 
   public ItemStack assemble(ICastingContainer inv, net.minecraft.core.HolderLookup.Provider access) {
     ItemStack stack = inv.getStack().copy();
-    return TransferUtil.getFluidHandlerItem(stack).map(handler -> {
+    return slimeknights.mantle.transfer.fluid.FabricFluidHandlerItem.of(stack).map(handler -> {
       handler.fill(new FluidStack(inv.getFluid(), this.fluidAmount, inv.getFluidTag()), FluidAction.EXECUTE);
       return handler.getContainer();
     }).orElse(stack);
@@ -110,7 +110,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
   public List<DisplayCastingRecipe> getRecipes(RegistryAccess access) {
     if (displayRecipes == null) {
       List<ItemStack> casts = Collections.singletonList(new ItemStack(container));
-      displayRecipes = ForgeRegistries.FLUIDS.getValues().stream()
+      displayRecipes = BuiltInRegistries.FLUID.stream()
         .filter(fluid -> {
           // skip flowing fluids (redundant to source) and fluids with no bucket (probably internal)
           if (fluid.isSource(fluid.defaultFluidState())) {
@@ -126,7 +126,7 @@ public class ContainerFillingRecipe implements ICastingRecipe, IMultiRecipe<Disp
         .map(fluid -> {
           FluidStack fluidStack = new FluidStack(fluid, fluidAmount);
           ItemStack stack = new ItemStack(container);
-          stack = TransferUtil.getFluidHandlerItem(stack).map(handler -> {
+          stack = slimeknights.mantle.transfer.fluid.FabricFluidHandlerItem.of(stack).map(handler -> {
             handler.fill(fluidStack, FluidAction.EXECUTE);
             return handler.getContainer();
           }).orElse(stack);

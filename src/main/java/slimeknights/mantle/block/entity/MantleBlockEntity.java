@@ -11,10 +11,27 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import javax.annotation.Nullable;
 
-public class MantleBlockEntity extends BlockEntity {
+public class MantleBlockEntity extends BlockEntity implements slimeknights.mantle.transfer.cap.ICapabilityProvider {
 
   public MantleBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
     super(type, pos, state);
+  }
+
+  /* Capabilities: the shimmed Forge surface used by the smeltery's internal wiring.
+   * Outward-facing (hoppers, pipes) access is a Fabric storage registration instead. */
+
+  @Override
+  public <T> slimeknights.mantle.transfer.cap.LazyOptional<T> getCapability(slimeknights.mantle.transfer.cap.Capability<T> capability, @Nullable net.minecraft.core.Direction side) {
+    return slimeknights.mantle.transfer.cap.LazyOptional.empty();
+  }
+
+  /** Invalidates any handlers this block entity gave out; Forge fired this on removal */
+  public void invalidateCaps() {}
+
+  @Override
+  public void setRemoved() {
+    super.setRemoved();
+    invalidateCaps();
   }
 
   public boolean isClient() {

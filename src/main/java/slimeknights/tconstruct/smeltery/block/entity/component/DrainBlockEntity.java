@@ -5,10 +5,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.util.RetexturedHelper;
-import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.block.entity.component.SmelteryInputOutputBlockEntity.SmelteryFluidIO;
 import slimeknights.tconstruct.smeltery.block.entity.tank.IDisplayFluidListener;
@@ -30,18 +28,12 @@ public class DrainBlockEntity extends SmelteryFluidIO implements IDisplayFluidLi
     super(type, pos, state);
   }
 
-  @Nonnull
-  @Override
-  public ModelData getModelData() {
-    return RetexturedHelper.getModelDataBuilder(getTexture()).with(ModelProperties.FLUID_STACK, displayFluid).build();
-  }
-
   @Override
   public void notifyDisplayFluidUpdated(FluidStack fluid) {
     if (!fluid.isFluidEqual(displayFluid)) {
       // no need to copy as the fluid was copied by the caller
       displayFluid = fluid;
-      requestModelDataUpdate();
+      // phase 5: Forge requestModelDataUpdate returns with the client model system
       assert level != null;
       BlockState state = getBlockState();
       level.sendBlockUpdated(worldPosition, state, state, 48);
@@ -53,8 +45,8 @@ public class DrainBlockEntity extends SmelteryFluidIO implements IDisplayFluidLi
 
   // override instead of writeSynced to avoid writing master to the main tag twice
   @Override
-  public CompoundTag getUpdateTag() {
-    CompoundTag nbt = super.getUpdateTag();
+  public CompoundTag getUpdateTag(net.minecraft.core.HolderLookup.Provider registries) {
+    CompoundTag nbt = super.getUpdateTag(registries);
     writeMaster(nbt);
     return nbt;
   }

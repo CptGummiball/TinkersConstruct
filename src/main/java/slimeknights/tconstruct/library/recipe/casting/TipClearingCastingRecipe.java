@@ -65,7 +65,6 @@ public class TipClearingCastingRecipe extends PotionCastingRecipe {
         .toList();
       // list of tools with the potion set
       List<ItemStack> toolWithPotion = BuiltInRegistries.POTION.stream()
-        .filter(potion -> potion != Potions.EMPTY)
         .flatMap(potion -> {
           String id = Loadables.POTION.getString(potion);
           return tools.stream().map(stack -> {
@@ -75,8 +74,7 @@ public class TipClearingCastingRecipe extends PotionCastingRecipe {
           });
         }).toList();
       // list of tools without the potion set, want the sizes to match
-      List<ItemStack> toolWithoutPotion = BuiltInRegistries.POTION.getValues().stream()
-        .filter(potion -> potion != Potions.EMPTY)
+      List<ItemStack> toolWithoutPotion = BuiltInRegistries.POTION.stream()
         .flatMap(i -> tools.stream()).toList();
       displayRecipes = List.of(new DisplayCastingRecipe(getId(), getType(), toolWithPotion, fluid.getFluids(), toolWithoutPotion, coolingTime, true));
     }

@@ -145,3 +145,9 @@ slimeknights/mantle/util/sync/**
 slimeknights/tconstruct/common/network/InventorySlotSyncPacket.java
 slimeknights/tconstruct/library/recipe/**
 slimeknights/tconstruct/tables/**
+
+# --- Phase 4: smeltery module (multiblock, melter, alloyer, casting, tanks) ---
+slimeknights/tconstruct/smeltery/**
+slimeknights/tconstruct/common/multiblock/**
+slimeknights/tconstruct/library/fluid/**
+slimeknights/mantle/util/WeakConsumerWrapper.java

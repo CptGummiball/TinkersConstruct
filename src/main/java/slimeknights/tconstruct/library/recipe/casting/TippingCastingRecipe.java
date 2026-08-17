@@ -6,7 +6,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.item.alchemy.PotionUtils;
+
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.Level;
@@ -53,8 +53,8 @@ public class TippingCastingRecipe extends PotionCastingRecipe {
       // must also have a specific potion, it's what we are going to copy
       // but it can't match what is already on the stack
       CompoundTag fluidTag = inv.getFluidTag();
-      return fluidTag != null && fluidTag.contains(PotionUtils.TAG_POTION, Tag.TAG_STRING)
-        && !ModifierUtil.getPersistentString(stack, modifier).equals(fluidTag.getString(PotionUtils.TAG_POTION));
+      return fluidTag != null && fluidTag.contains(TAG_POTION, Tag.TAG_STRING)
+        && !ModifierUtil.getPersistentString(stack, modifier).equals(fluidTag.getString(TAG_POTION));
     }
     return false;
   }
@@ -63,7 +63,7 @@ public class TippingCastingRecipe extends PotionCastingRecipe {
     ItemStack result = inv.getStack().copy();
     CompoundTag tag = inv.getFluidTag();
     if (tag != null) {
-      ToolStack.from(result).getPersistentData().putString(modifier, tag.getString(PotionUtils.TAG_POTION));
+      ToolStack.from(result).getPersistentData().putString(modifier, tag.getString(TAG_POTION));
     }
     return result;
   }
@@ -78,8 +78,7 @@ public class TippingCastingRecipe extends PotionCastingRecipe {
       List<ItemStack> tools = Arrays.stream(bottle.getItems())
         .map(stack -> IDisplayModifierRecipe.withModifiers(IModifiableDisplay.getDisplayStack(stack), List.of(new ModifierEntry(modifier, 1))))
         .toList();
-      displayRecipes = BuiltInRegistries.POTION.getValues().stream()
-        .filter(potion -> potion != Potions.EMPTY)
+      displayRecipes = BuiltInRegistries.POTION.stream()
         .map(potion -> {
           // add the potion to the tool list
           String id = Loadables.POTION.getString(potion);
@@ -90,7 +89,7 @@ public class TippingCastingRecipe extends PotionCastingRecipe {
           }).toList();
           // add the potion to the fluid
           CompoundTag fluidNBT = new CompoundTag();
-          fluidNBT.putString(PotionUtils.TAG_POTION, id);
+          fluidNBT.putString(TAG_POTION, id);
           // create the recipe
           return new DisplayCastingRecipe(getId(), getType(), tools, fluid.getFluids().stream()
             .map(fluid -> new FluidStack(fluid.getFluid(), fluid.getAmount(), fluidNBT))

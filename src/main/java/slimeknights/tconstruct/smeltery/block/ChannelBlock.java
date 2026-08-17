@@ -6,6 +6,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
@@ -30,7 +31,7 @@ import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
 import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.mantle.util.BlockEntityHelper;
 import slimeknights.mantle.util.RegistryHelper;
@@ -151,7 +152,7 @@ public class ChannelBlock extends Block implements EntityBlock {
 	}
 
   @Override
-  public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
+  protected boolean isPathfindable(BlockState state, PathComputationType type) {
     return false;
   }
 
@@ -166,7 +167,7 @@ public class ChannelBlock extends Block implements EntityBlock {
 	 */
 	private static boolean isFluidHandler(LevelAccessor world, Direction side, BlockPos pos) {
 		BlockEntity te = world.getBlockEntity(pos);
-		return te != null && te.getCapability(ForgeCapabilities.FLUID_HANDLER, side).isPresent();
+		return te != null && slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.FLUID_HANDLER, side).isPresent();
 	}
 
 	/**
@@ -285,19 +286,17 @@ public class ChannelBlock extends Block implements EntityBlock {
 		return null;
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
-	public InteractionResult use(BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
+	protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level world, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
 		Direction hitFace = hit.getDirection();
 		if (world.getBlockState(pos.relative(hitFace)).canBeReplaced()) {
 			// if the player is holding a channel, skip unless we clicked the top
 			// they can shift click to place one on the top
-			ItemStack stack = player.getItemInHand(hand);
-			if (stack.getItem() == this.asItem()) {
-				return InteractionResult.PASS;
+			if (heldItem.getItem() == this.asItem()) {
+				return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
 			}
 			// if they are holding a gauge, set the side to in to make it easier to place a gauge on it
-			if (hitFace != Direction.DOWN && stack.getItem() instanceof BlockItem blockItem && RegistryHelper.contains(MantleTags.Blocks.ATTACHED_GAUGES, blockItem.getBlock())) {
+			if (hitFace != Direction.DOWN && heldItem.getItem() instanceof BlockItem blockItem && RegistryHelper.contains(MantleTags.Blocks.ATTACHED_GAUGES, blockItem.getBlock())) {
 				// for sides, need to toggle the property on
 				if (hitFace != Direction.UP) {
 					EnumProperty<ChannelConnection> prop = DIRECTION_MAP.get(hitFace);
@@ -307,11 +306,24 @@ public class ChannelBlock extends Block implements EntityBlock {
 						world.setBlockAndUpdate(pos, newState);
 					}
 				}
-				// pass to let them place it
-				return InteractionResult.PASS;
+				// skip the block interaction to let them place it
+				return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
 			}
 		}
+		if (interactToggleSide(state, world, pos, player, hit).consumesAction()) {
+			return ItemInteractionResult.sidedSuccess(world.isClientSide);
+		}
+		return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+	}
 
+	@Override
+	protected InteractionResult useWithoutItem(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
+		return interactToggleSide(state, world, pos, player, hit);
+	}
+
+	/** Shared logic between the two interaction methods, toggles the connection on the clicked side */
+	private InteractionResult interactToggleSide(BlockState state, Level world, BlockPos pos, Player player, BlockHitResult hit) {
+		Direction hitFace = hit.getDirection();
 		// default to using the clicked side, though null (is that valid?) and up act as down
 		Direction side = hitFace == Direction.UP ? Direction.DOWN : hitFace;
 		if (player.isShiftKeyDown() && side != Direction.DOWN) {

@@ -10,10 +10,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.item.IItemHandler;
 import slimeknights.mantle.block.entity.NameableBlockEntity;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
@@ -67,16 +67,16 @@ public class HeaterBlockEntity extends NameableBlockEntity {
   /* NBT */
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  public void loadAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(TAG_ITEM, Tag.TAG_COMPOUND)) {
-      itemHandler.readFromNBT(tags.getCompound(TAG_ITEM));
+      itemHandler.readFromNBT(tags.getCompound(TAG_ITEM), registries);
     }
   }
 
   @Override
-  public void saveAdditional(CompoundTag tags) {
-    super.saveAdditional(tags);
-    tags.put(TAG_ITEM, itemHandler.writeToNBT());
+  public void saveAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveAdditional(tags, registries);
+    tags.put(TAG_ITEM, itemHandler.writeToNBT(registries));
   }
 }

@@ -13,16 +13,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fluids.IFluidTank;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidType;
+import slimeknights.mantle.transfer.fluid.IFluidTank;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
 import slimeknights.tconstruct.common.multiblock.IMasterLogic;
-import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.library.fluid.FluidTankAnimated;
 import slimeknights.tconstruct.library.utils.NBTTags;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
@@ -110,20 +108,12 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
     holder.invalidate();
   }
 
-  @Nonnull
-  @Override
-  public ModelData getModelData() {
-    return ModelData.builder()
-                    .with(ModelProperties.FLUID_STACK, tank.getFluid())
-                    .with(ModelProperties.TANK_CAPACITY, tank.getCapacity()).build();
-  }
-
   /** Updates the light for this tank using {@link SearedTankBlock#LIGHT} */
   public static void updateLight(BlockEntity be, IFluidTank tank) {
     Level level = be.getLevel();
     if (level != null && !level.isClientSide) {
       FluidStack fluid = tank.getFluid();
-      int light = fluid.isEmpty() ? 0 : fluid.getFluid().getFluidType().getLightLevel(fluid);
+      int light = fluid.isEmpty() ? 0 : slimeknights.mantle.transfer.fluid.FluidType.of(fluid.getFluid()).getLightLevel();
       BlockState state = be.getBlockState();
       if (light != state.getValue(SearedTankBlock.LIGHT)) {
         level.setBlock(be.getBlockPos(), state.setValue(SearedTankBlock.LIGHT, light), Block.UPDATE_CLIENTS);
@@ -136,13 +126,13 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
     ITankBlockEntity.super.onTankContentsChanged();
     if (this.level != null) {
       updateLight(this, tank);
-      this.requestModelDataUpdate();
+      // phase 5: Forge requestModelDataUpdate returns with the client model system
     }
   }
 
   @Override
-  public void onLoad() {
-    super.onLoad();
+  public void clearRemoved() {
+    super.clearRemoved();
     if (level != null && !level.isClientSide) {
       BlockPos masterPos = getMasterPos();
       if (masterPos != null && level.getBlockEntity(masterPos) instanceof IMasterLogic master) {
@@ -182,15 +172,15 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
   }
 
   @Override
-  public void load(CompoundTag tag) {
+  public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
     tank.setCapacity(getCapacity(getBlockState().getBlock()));
     updateTank(tag.getCompound(NBTTags.TANK));
-    super.load(tag);
+    super.loadAdditional(tag, registries);
   }
 
   @Override
-  public void saveSynced(CompoundTag tag) {
-    super.saveSynced(tag);
+  public void saveSynced(CompoundTag tag, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(tag, registries);
     // want tank on the client on world load
     if (!tank.isEmpty()) {
       tag.put(NBTTags.TANK, tank.writeToNBT(new CompoundTag()));
