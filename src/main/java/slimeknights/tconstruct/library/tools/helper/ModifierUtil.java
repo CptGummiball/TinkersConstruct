@@ -178,9 +178,8 @@ public final class ModifierUtil {
     return "";
   }
 
-  /** Checks if a tool can perform the given action */
   /** Stack-level action check; Forge asked the stack directly, on Fabric modifiable tools answer and vanilla rods are the fallback */
-  private static boolean canCastFishingRod(ItemStack stack) {
+  public static boolean canCastFishingRod(ItemStack stack) {
     if (stack.is(TinkerTags.Items.MODIFIABLE)) {
       return canPerformAction(ToolStack.from(stack), ToolActions.FISHING_ROD_CAST);
     }

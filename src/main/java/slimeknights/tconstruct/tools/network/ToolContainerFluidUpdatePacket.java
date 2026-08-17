@@ -2,8 +2,8 @@ package slimeknights.tconstruct.tools.network;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.tools.menu.ToolContainerMenu;

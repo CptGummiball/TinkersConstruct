@@ -138,12 +138,9 @@ public class FluidCannonBlockEntity extends TankBlockEntity implements ITankInve
 
         // if we could not apply the fluid to the block, make a projectile provided its not blocked
         if (!targetState.isFaceSturdy(level, target, facing.getOpposite())) {
-          // PORT: fluid projectile shot disabled until the tools module registers
-          // FluidEffectProjectile's entity type; restore the block below with that round
-          /*
           // setup projectile
           int amount = Math.min(fluid.getAmount(), (int)(recipe.getAmount(fluid.getFluid()) * power));
-          FluidEffectProjectile projectile = new FluidEffectProjectile(level, worldPosition, facing, new FluidStack(fluid, amount), power);
+          slimeknights.tconstruct.tools.entity.FluidEffectProjectile projectile = new slimeknights.tconstruct.tools.entity.FluidEffectProjectile(level, worldPosition, facing, new FluidStack(fluid, amount), power);
 
           // setup projectile target - numbers based on arrow dispenser behavior
           projectile.shoot(facing.getStepX(), facing.getStepY() + 0.1f, facing.getStepZ(), block.getVelocity(), block.getInaccuracy());
@@ -156,7 +153,6 @@ public class FluidCannonBlockEntity extends TankBlockEntity implements ITankInve
           tank.setFluid(fluid);
           tank.onContentsChanged();
           level.levelEvent(LevelEvent.PARTICLES_SHOOT_SMOKE, worldPosition, facing.get3DDataValue());
-          */
           return;
         }
       }

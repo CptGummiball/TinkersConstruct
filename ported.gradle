@@ -151,3 +151,8 @@ slimeknights/tconstruct/smeltery/**
 slimeknights/tconstruct/common/multiblock/**
 slimeknights/tconstruct/library/fluid/**
 slimeknights/mantle/util/WeakConsumerWrapper.java
+
+# --- Phase 4: tools module (tools, armor, modifiers, tool parts, projectiles) ---
+slimeknights/tconstruct/tools/**
+slimeknights/tconstruct/common/network/UpdateNeighborsPacket.java
+slimeknights/mantle/util/AbstractProjectileDispenseBehavior.java

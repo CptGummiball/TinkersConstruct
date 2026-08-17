@@ -101,3 +101,34 @@ accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature p
 accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature placeHat (Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;Lnet/minecraft/core/BlockPos;IZ)V
 # Spawn placement data record constructor (used by the OR-merge helper)
 accessible method net/minecraft/world/entity/SpawnPlacements$Data <init> (Lnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/entity/SpawnPlacementType;Lnet/minecraft/world/entity/SpawnPlacements$SpawnPredicate;)V
+# ApplyBonusCount formula internals reused by the modifier/chrysophilite bonus functions (Forge AT)
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$Formula
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$BinomialWithBonusCount
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$OreDrops
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$UniformBonusCount
+accessible method net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$BinomialWithBonusCount <init> (IF)V
+# Thrown tool entities (ThrownTool extends ThrownTrident, ModifiableArrow extends Arrow):
+# trident/arrow internals the Forge build reached via AT. pickupItemStack replaced the
+# old tridentItem field in 1.20.5; life drives the custom despawn timers.
+accessible field net/minecraft/world/entity/projectile/ThrownTrident dealtDamage Z
+accessible field net/minecraft/world/entity/projectile/ThrownTrident ID_LOYALTY Lnet/minecraft/network/syncher/EntityDataAccessor;
+accessible field net/minecraft/world/entity/projectile/ThrownTrident ID_FOIL Lnet/minecraft/network/syncher/EntityDataAccessor;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow life I
+accessible field net/minecraft/world/entity/projectile/AbstractArrow pickupItemStack Lnet/minecraft/world/item/ItemStack;
+# setPierceLevel went private in 1.21; the pierce module sets it directly and
+# ModifiableArrow overrides it as an adder (accessible+extendable = public non-final)
+accessible method net/minecraft/world/entity/projectile/AbstractArrow setPierceLevel (B)V
+extendable method net/minecraft/world/entity/projectile/AbstractArrow setPierceLevel (B)V
+# CombatFishingHook reuses the vanilla bobber's retrieve/despawn internals
+accessible field net/minecraft/world/entity/projectile/FishingHook life I
+# ReduceEffectOnUnequipModule directly shortens running effect durations (Forge AT)
+accessible field net/minecraft/world/effect/MobEffectInstance duration I
+# HarvestModule reads crop age property bounds (Forge AT)
+accessible field net/minecraft/world/level/block/state/properties/IntegerProperty min I
+accessible field net/minecraft/world/level/block/state/properties/IntegerProperty max I
+# ExchangingModifier forces block replacement in its synthetic placement context (Forge AT)
+accessible field net/minecraft/world/item/context/BlockPlaceContext replaceClicked Z
+# Creative slot + modifier crystal check for "no container open" the same way Forge did
+accessible field net/minecraft/world/inventory/AbstractContainerMenu menuType Lnet/minecraft/world/inventory/MenuType;
+# BrushModule reuses the vanilla brush's dust particle spawning
+accessible method net/minecraft/world/item/BrushItem spawnDustParticles (Lnet/minecraft/world/level/Level;Lnet/minecraft/world/phys/BlockHitResult;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/HumanoidArm;)V

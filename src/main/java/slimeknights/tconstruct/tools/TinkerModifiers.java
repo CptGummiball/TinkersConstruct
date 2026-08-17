@@ -18,12 +18,7 @@ import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.storage.loot.functions.LootItemFunctionType;
 import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.RegisterEvent;
-import net.minecraftforge.registries.RegistryObject;
+import slimeknights.mantle.registration.RegistryObject;
 import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
 import slimeknights.mantle.recipe.helper.SimpleRecipeSerializer;
 import slimeknights.mantle.registration.object.EnumObject;
@@ -31,7 +26,6 @@ import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerEffect;
 import slimeknights.tconstruct.common.TinkerModule;
-import slimeknights.tconstruct.common.data.tags.ModifierTagProvider;
 import slimeknights.tconstruct.library.json.predicate.modifier.ModifierPredicate;
 import slimeknights.tconstruct.library.json.predicate.modifier.SingleModifierPredicate;
 import slimeknights.tconstruct.library.json.predicate.modifier.SlotTypeModifierPredicate;
@@ -97,7 +91,7 @@ import slimeknights.tconstruct.library.modifiers.fluid.general.AlternativesFluid
 import slimeknights.tconstruct.library.modifiers.fluid.general.AreaMobEffectFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.ConditionalFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.DropItemFluidEffect;
-import slimeknights.tconstruct.library.modifiers.fluid.general.ExplosionFluidEffect;
+// PORT (event layer): import slimeknights.tconstruct.library.modifiers.fluid.general.ExplosionFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.ScalingFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.SequenceFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.SetBlockFluidEffect;
@@ -138,7 +132,7 @@ import slimeknights.tconstruct.library.modifiers.modules.build.VolatileIntModule
 import slimeknights.tconstruct.library.modifiers.modules.capacity.CapacityBarModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.DamageToCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.DurabilityShieldModule;
-import slimeknights.tconstruct.library.modifiers.modules.capacity.EnergyAsCapacityModule;
+// PORT (energy step): import slimeknights.tconstruct.library.modifiers.modules.capacity.EnergyAsCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.LaunchCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.LootToCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.MeleeCapacityModule;
@@ -150,7 +144,7 @@ import slimeknights.tconstruct.library.modifiers.modules.combat.KnockbackModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.LootingModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.MeleeAttributeModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.MobEffectModule;
-import slimeknights.tconstruct.library.modifiers.modules.combat.ProjectileExplosionModule;
+// PORT (event layer): import slimeknights.tconstruct.library.modifiers.modules.combat.ProjectileExplosionModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.SlingForceModule;
 import slimeknights.tconstruct.library.modifiers.modules.display.DurabilityBarColorModule;
 import slimeknights.tconstruct.library.modifiers.modules.display.MaterialVariantColorModule;
@@ -186,27 +180,23 @@ import slimeknights.tconstruct.library.tools.capability.EntityModifierCapability
 import slimeknights.tconstruct.library.tools.capability.PersistentDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataCapability;
 import slimeknights.tconstruct.library.tools.capability.TinkerDataKeys;
-import slimeknights.tconstruct.library.tools.capability.fluid.TankModule;
-import slimeknights.tconstruct.library.tools.capability.fluid.ToolTankHelper;
-import slimeknights.tconstruct.library.tools.capability.inventory.InventoryMenuModule;
-import slimeknights.tconstruct.library.tools.capability.inventory.InventoryModule;
-import slimeknights.tconstruct.library.tools.capability.inventory.InventorySlotMenuModule;
+// PORT (capability step): import slimeknights.tconstruct.library.tools.capability.fluid.TankModule;
+// PORT (capability step): import slimeknights.tconstruct.library.tools.capability.fluid.ToolTankHelper;
+// PORT (capability step): import slimeknights.tconstruct.library.tools.capability.inventory.InventoryMenuModule;
+// PORT (capability step): import slimeknights.tconstruct.library.tools.capability.inventory.InventoryModule;
+// PORT (capability step): import slimeknights.tconstruct.library.tools.capability.inventory.InventorySlotMenuModule;
 import slimeknights.tconstruct.shared.TinkerEffects;
 import slimeknights.tconstruct.tables.TinkerTables;
-import slimeknights.tconstruct.tools.data.EnchantmentToModifierProvider;
-import slimeknights.tconstruct.tools.data.FluidEffectProvider;
-import slimeknights.tconstruct.tools.data.ModifierProvider;
-import slimeknights.tconstruct.tools.data.ModifierRecipeProvider;
 import slimeknights.tconstruct.tools.entity.CustomFireball;
 import slimeknights.tconstruct.tools.entity.FluidEffectProjectile;
 import slimeknights.tconstruct.tools.item.CreativeSlotItem;
 import slimeknights.tconstruct.tools.item.DragonScaleItem;
 import slimeknights.tconstruct.tools.item.ModifierCrystalItem;
-import slimeknights.tconstruct.tools.modifiers.EnergyHandlerModifier;
-import slimeknights.tconstruct.tools.modifiers.ModifierLootModifier;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.EnergyHandlerModifier;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.ModifierLootModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.armor.AmbidextrousModifier;
-import slimeknights.tconstruct.tools.modifiers.ability.fluid.BurstingModifier;
-import slimeknights.tconstruct.tools.modifiers.ability.fluid.WettingModifier;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.ability.fluid.BurstingModifier;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.ability.fluid.WettingModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.tool.DuelWieldingModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.tool.ExchangingModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.tool.OffhandAttackModifier;
@@ -248,11 +238,11 @@ import slimeknights.tconstruct.tools.modules.CraftCountModule;
 import slimeknights.tconstruct.tools.modules.DamageOnUnequipModule;
 import slimeknights.tconstruct.tools.modules.FovModule;
 import slimeknights.tconstruct.tools.modules.HeadlightModule;
-import slimeknights.tconstruct.tools.modules.MeltingModule;
-import slimeknights.tconstruct.tools.modules.OverburnModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.MeltingModule;
+// PORT (fluid capability step): import slimeknights.tconstruct.tools.modules.OverburnModule;
 import slimeknights.tconstruct.tools.modules.OvergrowthModule;
 import slimeknights.tconstruct.tools.modules.ReduceEffectOnUnequipModule;
-import slimeknights.tconstruct.tools.modules.SmeltingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.SmeltingModule;
 import slimeknights.tconstruct.tools.modules.TheOneProbeModule;
 import slimeknights.tconstruct.tools.modules.ZoomModule;
 import slimeknights.tconstruct.tools.modules.armor.DepthProtectionModule;
@@ -265,16 +255,16 @@ import slimeknights.tconstruct.tools.modules.armor.GlowWalkerModule;
 import slimeknights.tconstruct.tools.modules.armor.KineticModule;
 import slimeknights.tconstruct.tools.modules.armor.KnockbackCounterModule;
 import slimeknights.tconstruct.tools.modules.armor.LightspeedAttributeModule;
-import slimeknights.tconstruct.tools.modules.armor.MinimapModule;
+// PORT (capability step): import slimeknights.tconstruct.tools.modules.armor.MinimapModule;
 import slimeknights.tconstruct.tools.modules.armor.OvershieldModule;
 import slimeknights.tconstruct.tools.modules.armor.RecurrentProtectionModule;
 import slimeknights.tconstruct.tools.modules.armor.RestoreLostHealthModule;
-import slimeknights.tconstruct.tools.modules.armor.ShieldStrapModule;
-import slimeknights.tconstruct.tools.modules.armor.SleevesModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.armor.ShieldStrapModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.armor.SleevesModule;
 import slimeknights.tconstruct.tools.modules.armor.SoulSpeedModule;
 import slimeknights.tconstruct.tools.modules.armor.TeleportDodgeModule;
 import slimeknights.tconstruct.tools.modules.armor.ThornsModule;
-import slimeknights.tconstruct.tools.modules.armor.ToolBeltModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.armor.ToolBeltModule;
 import slimeknights.tconstruct.tools.modules.armor.UpdateHealthModule;
 import slimeknights.tconstruct.tools.modules.combat.BlockingModule;
 import slimeknights.tconstruct.tools.modules.combat.ChannelingModule;
@@ -284,7 +274,7 @@ import slimeknights.tconstruct.tools.modules.combat.FieryAttackModule;
 import slimeknights.tconstruct.tools.modules.combat.FreezingAttackModule;
 import slimeknights.tconstruct.tools.modules.combat.LifestealModule;
 import slimeknights.tconstruct.tools.modules.combat.SeveringModule;
-import slimeknights.tconstruct.tools.modules.combat.SpillingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.combat.SpillingModule;
 import slimeknights.tconstruct.tools.modules.combat.SweepingEdgeModule;
 import slimeknights.tconstruct.tools.modules.cosmetic.BannerModule;
 import slimeknights.tconstruct.tools.modules.cosmetic.DyeModule;
@@ -294,30 +284,30 @@ import slimeknights.tconstruct.tools.modules.durability.DurabilityAsCapacityModu
 import slimeknights.tconstruct.tools.modules.durability.ShareDurabilityModule;
 import slimeknights.tconstruct.tools.modules.durability.ToolDamageRangeModule;
 import slimeknights.tconstruct.tools.modules.interaction.BrushModule;
-import slimeknights.tconstruct.tools.modules.interaction.BucketModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.BucketModule;
 import slimeknights.tconstruct.tools.modules.interaction.ExtinguishCampfireModule;
 import slimeknights.tconstruct.tools.modules.interaction.FireballModule;
 import slimeknights.tconstruct.tools.modules.interaction.FishingModule;
 import slimeknights.tconstruct.tools.modules.interaction.HarvestModule;
 import slimeknights.tconstruct.tools.modules.interaction.PlaceFireModule;
 import slimeknights.tconstruct.tools.modules.interaction.PlaceGlowModule;
-import slimeknights.tconstruct.tools.modules.interaction.ShearsModule;
-import slimeknights.tconstruct.tools.modules.interaction.SlurpingModule;
-import slimeknights.tconstruct.tools.modules.interaction.SpittingModule;
-import slimeknights.tconstruct.tools.modules.interaction.SplashingModule;
-import slimeknights.tconstruct.tools.modules.interaction.TankInteractionModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.ShearsModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SlurpingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SpittingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SplashingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.TankInteractionModule;
 import slimeknights.tconstruct.tools.modules.interaction.ThrowingModule;
 import slimeknights.tconstruct.tools.modules.interaction.sling.SlingKnockbackModule;
 import slimeknights.tconstruct.tools.modules.interaction.sling.SlingLeapModule;
 import slimeknights.tconstruct.tools.modules.interaction.sling.SlingTeleportModule;
-import slimeknights.tconstruct.tools.modules.ranged.BulkQuiverModule;
-import slimeknights.tconstruct.tools.modules.ranged.RestrictAngleModule;
-import slimeknights.tconstruct.tools.modules.ranged.TrickQuiverModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.BulkQuiverModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.RestrictAngleModule;
+// PORT (capability step): import slimeknights.tconstruct.tools.modules.ranged.TrickQuiverModule;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.ProjectileFuseModule;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.ProjectileGravityModule;
-import slimeknights.tconstruct.tools.modules.ranged.ammo.SmashingModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.ammo.SmashingModule;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.TippedModule;
-import slimeknights.tconstruct.tools.modules.ranged.bow.QuiverInventoryModule;
+// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.bow.QuiverInventoryModule;
 import slimeknights.tconstruct.tools.modules.ranged.common.ArrowPierceModule;
 import slimeknights.tconstruct.tools.modules.ranged.common.ProjectileAttractMobsModule;
 import slimeknights.tconstruct.tools.modules.ranged.common.ProjectileBounceModule;
@@ -348,13 +338,7 @@ import static slimeknights.tconstruct.TConstruct.getResource;
 public final class TinkerModifiers extends TinkerModule {
   private static final ModifierDeferredRegister MODIFIERS = ModifierDeferredRegister.create(TConstruct.MOD_ID);
 
-  public TinkerModifiers() {
-    ModifierManager.INSTANCE.init();
-    DynamicModifier.init();
-    FluidEffectManager.INSTANCE.init();
-    MODIFIERS.register(FMLJavaModLoadingContext.get().getModEventBus());
-    TinkerDataKeys.init();
-  }
+  private TinkerModifiers() {}
 
   /*
    * Items
@@ -376,7 +360,7 @@ public final class TinkerModifiers extends TinkerModule {
 
   // entity
   public static final RegistryObject<EntityType<FluidEffectProjectile>> fluidSpitEntity = ENTITIES.register("fluid_spit", () ->
-    EntityType.Builder.<FluidEffectProjectile>of(FluidEffectProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10).setShouldReceiveVelocityUpdates(false));
+    EntityType.Builder.<FluidEffectProjectile>of(FluidEffectProjectile::new, MobCategory.MISC).sized(0.25F, 0.25F).clientTrackingRange(4).updateInterval(10));
   public static final RegistryObject<EntityType<CustomFireball>> fireball = ENTITIES.register("fireball", () -> EntityType.Builder.<CustomFireball>of(CustomFireball::new, MobCategory.MISC).sized(0.3125F, 0.3125F).clientTrackingRange(4).updateInterval(10));
 
   /*
@@ -388,8 +372,8 @@ public final class TinkerModifiers extends TinkerModule {
 
   // abilities
   public static final StaticModifier<ExchangingModifier> exchanging = MODIFIERS.register("exchanging", ExchangingModifier::new);
-  public static final StaticModifier<BurstingModifier> bursting = MODIFIERS.register("bursting", BurstingModifier::new);
-  public static final StaticModifier<WettingModifier> wetting = MODIFIERS.register("wetting", WettingModifier::new);
+  // PORT (fluid capability step): public static final StaticModifier<BurstingModifier> bursting = MODIFIERS.register("bursting", BurstingModifier::new);
+  // PORT (fluid capability step): public static final StaticModifier<WettingModifier> wetting = MODIFIERS.register("wetting", WettingModifier::new);
   // dual wielding
   public static final StaticModifier<OffhandAttackModifier> offhandAttack = MODIFIERS.register("offhand_attack", OffhandAttackModifier::new);
   public static final StaticModifier<DuelWieldingModifier> dualWielding = MODIFIERS.register("dual_wielding", DuelWieldingModifier::new);
@@ -434,9 +418,9 @@ public final class TinkerModifiers extends TinkerModule {
 
   // logic handlers - used as modifier traits
   /** Handles the fluid tank logic for any fluid using modifiers. */
-  public static final StaticModifier<Modifier> tankHandler = MODIFIERS.register("tank_handler", () -> ModuleHookMap.builder().addModule(new TankModule(ToolTankHelper.TANK_HELPER)).modifier().levelDisplay(ModifierLevelDisplay.NO_LEVELS).priority(300).build());
+  // PORT (fluid capability step): public static final StaticModifier<Modifier> tankHandler = MODIFIERS.register("tank_handler", () -> ModuleHookMap.builder().addModule(new TankModule(ToolTankHelper.TANK_HELPER)).modifier().levelDisplay(ModifierLevelDisplay.NO_LEVELS).priority(300).build());
   /** Handles the energy bar for Forge Energy using modifiers. */
-  public static final StaticModifier<Modifier> energyHandler = MODIFIERS.register("energy_handler", EnergyHandlerModifier::new);
+  // PORT (energy step): public static final StaticModifier<Modifier> energyHandler = MODIFIERS.register("energy_handler", EnergyHandlerModifier::new);
 
   // creative
   /** Handles adding extra modifier slots to a tool in creative */
@@ -717,7 +701,7 @@ public final class TinkerModifiers extends TinkerModule {
   public static final EnumObject<ToolType,TinkerEffect> insatiableEffect = MOB_EFFECTS.registerEnum("insatiable", new ToolType[] {ToolType.MELEE, ToolType.RANGED, ToolType.ARMOR}, type -> {
     TinkerEffect effect = new NoMilkEffect(MobEffectCategory.BENEFICIAL, 0x9261cc, true);
     if (type == ToolType.ARMOR) {
-      effect.addAttributeModifier(Attributes.ATTACK_DAMAGE, "cc6904f7-674a-4e6a-b992-4f3cb8edfef4", 1, AttributeModifier.Operation.ADDITION);
+      effect.addAttributeModifier(Attributes.ATTACK_DAMAGE, TConstruct.getResource("insatiable"), 1, AttributeModifier.Operation.ADD_VALUE);
     }
     return effect;
   });
@@ -733,9 +717,9 @@ public final class TinkerModifiers extends TinkerModule {
   public static final RegistryObject<RecipeSerializer<OverslimeModifierRecipe>> overslimeSerializer = RECIPE_SERIALIZERS.register("overslime_modifier", () -> LoadableRecipeSerializer.of(OverslimeModifierRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<OverslimeCraftingTableRecipe>> craftingOverslimeSerializer = RECIPE_SERIALIZERS.register("crafting_overslime_modifier", () -> LoadableRecipeSerializer.of(OverslimeCraftingTableRecipe.LOADER));
   public static final RegistryObject<RecipeSerializer<ModifierSalvage>> modifierSalvageSerializer = RECIPE_SERIALIZERS.register("modifier_salvage", () -> LoadableRecipeSerializer.of(ModifierSalvage.LOADER));
-  public static final RegistryObject<RecipeSerializer<ArmorDyeingRecipe>> armorDyeingSerializer = RECIPE_SERIALIZERS.register("armor_dyeing_modifier", () -> new SimpleRecipeSerializer<>(ArmorDyeingRecipe::new));
-  public static final RegistryObject<RecipeSerializer<BannerModifierRecipe>> bannerModifierSerializer = RECIPE_SERIALIZERS.register("banner_modifier", () -> new SimpleRecipeSerializer<>(BannerModifierRecipe::new));
-  public static final RegistryObject<RecipeSerializer<ArmorTrimRecipe>> armorTrimSerializer = RECIPE_SERIALIZERS.register("armor_trim_modifier", () -> new SimpleRecipeSerializer<>(ArmorTrimRecipe::new));
+  public static final RegistryObject<RecipeSerializer<ArmorDyeingRecipe>> armorDyeingSerializer = RECIPE_SERIALIZERS.register("armor_dyeing_modifier", () -> new SimpleRecipeSerializer<>(() -> new ArmorDyeingRecipe(TConstruct.getResource("armor_dyeing_modifier"))));
+  public static final RegistryObject<RecipeSerializer<BannerModifierRecipe>> bannerModifierSerializer = RECIPE_SERIALIZERS.register("banner_modifier", () -> new SimpleRecipeSerializer<>(() -> new BannerModifierRecipe(TConstruct.getResource("banner_modifier"))));
+  public static final RegistryObject<RecipeSerializer<ArmorTrimRecipe>> armorTrimSerializer = RECIPE_SERIALIZERS.register("armor_trim_modifier", () -> new SimpleRecipeSerializer<>(() -> new ArmorTrimRecipe(TConstruct.getResource("armor_trim_modifier"))));
   public static final RegistryObject<RecipeSerializer<TippedToolTransformRecipe>> tippedToolTransformRecipeSerializer = RECIPE_SERIALIZERS.register("tipped_tool_transform", () -> LoadableRecipeSerializer.of(TippedToolTransformRecipe.LOADER));
   // modifiers
   public static final RegistryObject<RecipeSerializer<ModifierRepairTinkerStationRecipe>> modifierRepair = RECIPE_SERIALIZERS.register("modifier_repair", () -> LoadableRecipeSerializer.of(ModifierRepairTinkerStationRecipe.LOADER));
@@ -768,19 +752,35 @@ public final class TinkerModifiers extends TinkerModule {
   /**
    * Loot
    */
-  public static final RegistryObject<Codec<ModifierLootModifier>> modifierLootModifier = GLOBAL_LOOT_MODIFIERS.register("modifier_hook", () -> ModifierLootModifier.CODEC);
-  public static final RegistryObject<LootItemConditionType> hasModifierLootCondition = LOOT_CONDITIONS.register("has_modifier", () -> new LootItemConditionType(new HasModifierLootCondition.ConditionSerializer()));
-  public static final RegistryObject<LootItemFunctionType> modifierBonusFunction = LOOT_FUNCTIONS.register("modifier_bonus", () -> new LootItemFunctionType(new ModifierBonusLootFunction.Serializer()));
-  public static final RegistryObject<LootItemConditionType> chrysophiliteLootCondition = LOOT_CONDITIONS.register("has_chrysophilite", () -> new LootItemConditionType(ChrysophiliteLootCondition.SERIALIZER));
-  public static final RegistryObject<LootItemFunctionType> chrysophiliteBonusFunction = LOOT_FUNCTIONS.register("chrysophilite_bonus", () -> new LootItemFunctionType(ChrysophiliteBonusFunction.SERIALIZER));
+  // PORT: Forge's global loot modifier (modifier_hook) has no Fabric registry; the modifier
+  // loot hook rewires through Fabric's LootTableEvents in the event-layer step
+  public static final RegistryObject<LootItemConditionType> hasModifierLootCondition = LOOT_CONDITIONS.register("has_modifier", () -> new LootItemConditionType(HasModifierLootCondition.CODEC));
+  public static final RegistryObject<LootItemFunctionType> modifierBonusFunction = LOOT_FUNCTIONS.register("modifier_bonus", () -> new LootItemFunctionType<>(ModifierBonusLootFunction.CODEC));
+  public static final RegistryObject<LootItemConditionType> chrysophiliteLootCondition = LOOT_CONDITIONS.register("has_chrysophilite", () -> new LootItemConditionType(ChrysophiliteLootCondition.CODEC));
+  public static final RegistryObject<LootItemFunctionType> chrysophiliteBonusFunction = LOOT_FUNCTIONS.register("chrysophilite_bonus", () -> new LootItemFunctionType<>(ChrysophiliteBonusFunction.CODEC));
 
   /*
    * Events
    */
 
-  @SubscribeEvent
-  void registerSerializers(RegisterEvent event) {
-    if (event.getRegistryKey() == Registries.RECIPE_SERIALIZER) {
+  /** Runtime wiring; called once from the bootstrap in Forge construction order. */
+  public static void init() {
+    // ran in the Forge mod constructor
+    ModifierManager.INSTANCE.init();
+    DynamicModifier.init();
+    FluidEffectManager.INSTANCE.init();
+    MODIFIERS.register(slimeknights.mantle.event.MinecraftForge.EVENT_BUS);
+    TinkerDataKeys.init();
+
+    // ran in common setup
+    TinkerDataCapability.register();
+    PersistentDataCapability.register();
+    EntityModifierCapability.register();
+    BlockItemProviderCapability.register();
+    // by default, we support modifying projectiles (arrows or fireworks mainly, but maybe other stuff). other entities may come in the future
+    EntityModifierCapability.registerEntityPredicate(entity -> entity instanceof Projectile);
+
+    {
       // combinations
       FluidEffect.BLOCK_EFFECTS.register(getResource("conditional"), ConditionalFluidEffect.Block.LOADER);
       FluidEffect.ENTITY_EFFECTS.register(getResource("conditional"), ConditionalFluidEffect.Entity.LOADER);
@@ -821,7 +821,7 @@ public final class TinkerModifiers extends TinkerModule {
       FluidEffect.BLOCK_EFFECTS.register(getResource("melt_block"), MeltBlockFluidEffect.LOADER);
       // shared
       FluidEffect.registerGeneral(getResource("drop_item"), DropItemFluidEffect.LOADER);
-      FluidEffect.registerGeneral(getResource("explosion"), ExplosionFluidEffect.LOADER);
+      // PORT (event layer): FluidEffect.registerGeneral(getResource("explosion"), ExplosionFluidEffect.LOADER);
       FluidEffect.registerGeneral(getResource("set_block"), SetBlockFluidEffect.LOADER);
       FluidEffect.registerGeneral(getResource("area_mob_effect"), AreaMobEffectFluidEffect.LOADER);
 
@@ -876,7 +876,7 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("conditional_power"), ConditionalPowerModule.LOADER);
       ModifierModule.LOADER.register(getResource("knockback"), KnockbackModule.LOADER);
       ModifierModule.LOADER.register(getResource("melee_attribute"), MeleeAttributeModule.LOADER);
-      ModifierModule.LOADER.register(getResource("projectile_explosion"), ProjectileExplosionModule.LOADER);
+      // PORT (event layer): ModifierModule.LOADER.register(getResource("projectile_explosion"), ProjectileExplosionModule.LOADER);
       ModifierModule.LOADER.register(getResource("sling_force"), SlingForceModule.LOADER);
       // mob effect
       ModifierModule.LOADER.register(getResource("mob_effect"), MobEffectModule.LOADER);
@@ -902,7 +902,7 @@ public final class TinkerModifiers extends TinkerModule {
       // capacity
       ModifierModule.LOADER.register(getResource("capacity_bar"), CapacityBarModule.LOADER);
       ModifierModule.LOADER.register(getResource("durability_as_capacity"), DurabilityAsCapacityModule.LOADER);
-      ModifierModule.LOADER.register(getResource("energy_as_capacity"), EnergyAsCapacityModule.LOADER);
+      // PORT (energy step): ModifierModule.LOADER.register(getResource("energy_as_capacity"), EnergyAsCapacityModule.LOADER);
       ModifierModule.LOADER.register(getResource("durability_shield"), DurabilityShieldModule.LOADER);
       ModifierModule.LOADER.register(getResource("loot_to_capacity"), LootToCapacityModule.LOADER);
       ModifierModule.LOADER.register(getResource("damage_to_capacity"), DamageToCapacityModule.LOADER);
@@ -914,14 +914,14 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("armor_level"), ArmorLevelModule.LOADER);
       ModifierModule.LOADER.register(getResource("max_armor_stat"), MaxArmorStatModule.LOADER);
       ModifierModule.LOADER.register(getResource("armor_stat"), ArmorStatModule.LOADER);
-      ModifierModule.LOADER.register(getResource("inventory"), InventoryModule.LOADER);
-      ModifierModule.LOADER.register(getResource("inventory_menu"), InventoryMenuModule.LOADER);
-      ModifierModule.LOADER.register(getResource("inventory_slot_menu"), InventorySlotMenuModule.INSTANCE.getLoader());
+      // PORT (capability step): ModifierModule.LOADER.register(getResource("inventory"), InventoryModule.LOADER);
+      // PORT (capability step): ModifierModule.LOADER.register(getResource("inventory_menu"), InventoryMenuModule.LOADER);
+      // PORT (capability step): ModifierModule.LOADER.register(getResource("inventory_slot_menu"), InventorySlotMenuModule.INSTANCE.getLoader());
 
       // special
-      ModifierModule.LOADER.register(getResource("smelting"), SmeltingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("smelting"), SmeltingModule.LOADER);
       ModifierModule.LOADER.register(getResource("autosmelt"), AutosmeltModule.LOADER);
-      ModifierModule.LOADER.register(getResource("melting"), MeltingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("melting"), MeltingModule.LOADER);
       ModifierModule.LOADER.register(getResource("glow_walker"), GlowWalkerModule.LOADER);
       ModifierModule.LOADER.register(getResource("fire_walker"), FireWalkerModule.LOADER);
       ModifierModule.LOADER.register(getResource("lightspeed_attribute"), LightspeedAttributeModule.LOADER);
@@ -944,14 +944,14 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("harvest"), HarvestModule.LOADER);
       ModifierModule.LOADER.register(getResource("place_glow"), PlaceGlowModule.LOADER);
       ModifierModule.LOADER.register(getResource("place_fire"), PlaceFireModule.LOADER);
-      ModifierModule.LOADER.register(getResource("bucket"), BucketModule.LOADER);
-      ModifierModule.LOADER.register(getResource("tank_interaction"), TankInteractionModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("bucket"), BucketModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("tank_interaction"), TankInteractionModule.LOADER);
       ModifierModule.LOADER.register(getResource("projectile_place_glow"), ProjectilePlaceGlowModule.LOADER);
-      ModifierModule.LOADER.register(getResource("shears"), ShearsModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("shears"), ShearsModule.LOADER);
       ModifierModule.LOADER.register(getResource("throwing"), ThrowingModule.LOADER);
-      ModifierModule.LOADER.register(getResource("spitting"), SpittingModule.LOADER);
-      ModifierModule.LOADER.register(getResource("splashing"), SplashingModule.LOADER);
-      ModifierModule.LOADER.register(getResource("slurping"), SlurpingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("spitting"), SpittingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("splashing"), SplashingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("slurping"), SlurpingModule.LOADER);
       ModifierModule.LOADER.register(getResource("fireball"), FireballModule.LOADER);
       // sling
       ModifierModule.LOADER.register(getResource("sling_leap"), SlingLeapModule.LOADER);
@@ -959,15 +959,15 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("sling_teleport"), SlingTeleportModule.LOADER);
       // overslime
       ModifierModule.LOADER.register(getResource("overgrowth"), OvergrowthModule.LOADER);
-      ModifierModule.LOADER.register(getResource("overburn"), OverburnModule.INSTANCE.getLoader());
+      // PORT (fluid capability step): ModifierModule.LOADER.register(getResource("overburn"), OverburnModule.INSTANCE.getLoader());
       ModifierModule.LOADER.register(getResource("overshield"), OvershieldModule.LOADER);
       // combat
       ModifierModule.LOADER.register(getResource("fiery_attack"), FieryAttackModule.LOADER);
       ModifierModule.LOADER.register(getResource("fiery_armor_attack"), FieryArmorAttackModule.LOADER);
       ModifierModule.LOADER.register(getResource("freezing_attack"), FreezingAttackModule.LOADER);
-      ModifierModule.LOADER.register(getResource("spilling"), SpillingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("spilling"), SpillingModule.LOADER);
       ModifierModule.LOADER.register(getResource("channeling"), ChannelingModule.LOADER);
-      ModifierModule.LOADER.register(getResource("smashing"), SmashingModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("smashing"), SmashingModule.LOADER);
       ModifierModule.LOADER.register(getResource("sweeping_edge"), SweepingEdgeModule.LOADER);
       ModifierModule.LOADER.register(getResource("severing"), SeveringModule.LOADER);
       ModifierModule.LOADER.register(getResource("blocking"), BlockingModule.LOADER);
@@ -978,10 +978,10 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("flame_barrier"), FlameBarrierModule.LOADER);
       ModifierModule.LOADER.register(getResource("kinetic"), KineticModule.LOADER);
       ModifierModule.LOADER.register(getResource("recurrent_protection"), RecurrentProtectionModule.LOADER);
-      ModifierModule.LOADER.register(getResource("shield_strap"), ShieldStrapModule.LOADER);
-      ModifierModule.LOADER.register(getResource("tool_belt"), ToolBeltModule.LOADER);
-      ModifierModule.LOADER.register(getResource("minimap"), MinimapModule.LOADER);
-      ModifierModule.LOADER.register(getResource("sleeves"), SleevesModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("shield_strap"), ShieldStrapModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("tool_belt"), ToolBeltModule.LOADER);
+      // PORT (capability step): ModifierModule.LOADER.register(getResource("minimap"), MinimapModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("sleeves"), SleevesModule.LOADER);
       ModifierModule.LOADER.register(getResource("soulspeed"), SoulSpeedModule.LOADER);
       ModifierModule.LOADER.register(getResource("restore_lost_health"), RestoreLostHealthModule.LOADER);
       ModifierModule.LOADER.register(getResource("update_health"), UpdateHealthModule.LOADER);
@@ -992,10 +992,10 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("freezing_counter"), FreezingCounterModule.LOADER);
       ModifierModule.LOADER.register(getResource("knockback_counter"), KnockbackCounterModule.LOADER);
       // ranged
-      ModifierModule.LOADER.register(getResource("restrict_projectile_angle"), RestrictAngleModule.LOADER);
-      ModifierModule.LOADER.register(getResource("bulk_quiver"), BulkQuiverModule.LOADER);
-      ModifierModule.LOADER.register(getResource("trick_quiver"), TrickQuiverModule.LOADER);
-      ModifierModule.LOADER.register(getResource("quiver_inventory"), QuiverInventoryModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("restrict_projectile_angle"), RestrictAngleModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("bulk_quiver"), BulkQuiverModule.LOADER);
+      // PORT (capability step): ModifierModule.LOADER.register(getResource("trick_quiver"), TrickQuiverModule.LOADER);
+      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("quiver_inventory"), QuiverInventoryModule.LOADER);
       ModifierModule.LOADER.register(getResource("infinity"), InfinityModule.LOADER);
       ModifierModule.LOADER.register(getResource("punch"), PunchModule.LOADER);
       ModifierModule.LOADER.register(getResource("reverse_punch"), ReversePunchModule.LOADER);
@@ -1068,32 +1068,11 @@ public final class TinkerModifiers extends TinkerModule {
       ProtectionVariable.LOADER.register(getResource("entity"), EntityProtectionVariable.LOADER);
 
       // tank helper
-      ToolTankHelper.LOADABLE.register(getResource("tank"), ToolTankHelper.TANK_HELPER);
-      ToolTankHelper.LOADABLE.register(getResource("smashing"), SmashingModule.TANK_HELPER);
+      // PORT: ToolTankHelper.LOADABLE tank helpers return with the tool fluid capability step
     }
   }
 
-  @SubscribeEvent
-  void commonSetup(final FMLCommonSetupEvent event) {
-    TinkerDataCapability.register();
-    PersistentDataCapability.register();
-    EntityModifierCapability.register();
-    BlockItemProviderCapability.register();
-    // by default, we support modifying projectiles (arrows or fireworks mainly, but maybe other stuff). other entities may come in the future
-    EntityModifierCapability.registerEntityPredicate(entity -> entity instanceof Projectile);
-  }
-
-  @SubscribeEvent
-  void gatherData(final GatherDataEvent event) {
-    DataGenerator generator = event.getGenerator();
-    PackOutput packOutput = generator.getPackOutput();
-    boolean server = event.includeServer();
-    generator.addProvider(server, new ModifierProvider(packOutput));
-    generator.addProvider(server, new ModifierRecipeProvider(packOutput));
-    generator.addProvider(server, new FluidEffectProvider(packOutput));
-    generator.addProvider(server, new ModifierTagProvider(packOutput, event.getExistingFileHelper()));
-    generator.addProvider(server, new EnchantmentToModifierProvider(packOutput));
-  }
+  // gatherData moved to phase 7 with the datagen providers
 
   /** Adds all relevant items to the creative tab, called by general */
   public static void addTabItems(ItemDisplayParameters itemDisplayParameters, CreativeModeTab.Output output) {

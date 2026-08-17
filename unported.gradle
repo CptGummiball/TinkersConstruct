@@ -83,8 +83,7 @@ slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
 # --- Content-bound loot extensions waiting on the tools module (phase 4): their getType()
 # reads TinkerTools loot-type statics. MapCodec rewrite pattern established with the
 # shared-module loot conditions.
-slimeknights/tconstruct/library/json/loot/AddToolDataFunction.java
-slimeknights/tconstruct/library/json/loot/ToolPartLootEntry.java
+# (tools round) AddToolDataFunction/ToolPartLootEntry gated in with the tools module
 
 # --- Waiting on the tool fluid capability step (ToolTankHelper) ---
 slimeknights/tconstruct/library/json/loot/equipment/MobEquipment.java
@@ -101,17 +100,8 @@ slimeknights/tconstruct/library/modifiers/modules/capacity/EnergyAsCapacityModul
 
 # --- Content-bound library files: compile once their content module gates in (phase 4) ---
 # SwappableModifierRecipe.VariantFormatter (recipe/modifiers/adding, full recipe-type tree).
-slimeknights/tconstruct/library/modifiers/modules/display/ModifierVariantNameModule.java
-# ModifierRecipeLookup pulls ModifierSalvage -> ITinkerStationRecipe -> TinkerRecipeTypes.
-slimeknights/tconstruct/library/json/predicate/modifier/SlotTypeModifierPredicate.java
-# tools module entities (ModifiableArrow, ThrownShuriken, ThrownTool) + EntityModifierCapability.
-slimeknights/tconstruct/library/tools/item/ModifiableArrowItem.java
-slimeknights/tconstruct/library/tools/item/ModifiableShurikenItem.java
-slimeknights/tconstruct/library/tools/item/ranged/ModifiableBowItem.java
-slimeknights/tconstruct/library/tools/item/ranged/ModifiableCrossbowItem.java
-# armor items: ToolInventoryCapability (capability step) + client armor model dispatch (phase 5).
-slimeknights/tconstruct/library/tools/item/armor/ModifiableArmorItem.java
-slimeknights/tconstruct/library/tools/item/armor/MultilayerArmorItem.java
+# (tools round) SlotTypeModifierPredicate gated in with the tools module
+# (tools round) modifiable item/armor classes gated in with the tools module
 
 # --- shared module: pieces deferred from the phase-4 gate-in ---
 # client work (phase 5)
@@ -130,7 +120,6 @@ slimeknights/tconstruct/shared/CommonsEvents.java
 slimeknights/tconstruct/shared/AchievementEvents.java
 # uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
 # the charge-bar icon overlay with phase 5
-slimeknights/tconstruct/tools/modifiers/effect/HelmetChargingEffect.java
 
 # --- fluids module: pieces deferred from the phase-4 gate-in ---
 # client render/tint handlers (phase 5)
@@ -204,3 +193,73 @@ slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 slimeknights/tconstruct/smeltery/client/**
 slimeknights/tconstruct/smeltery/data/**
 slimeknights/tconstruct/smeltery/SmelteryClientEvents.java
+# --- tools round parks ---
+# client rendering + models (phase 5)
+slimeknights/tconstruct/tools/client/**
+slimeknights/tconstruct/tools/ToolClientEvents.java
+slimeknights/tconstruct/tools/data/client/**
+slimeknights/tconstruct/tools/data/sprite/**
+# datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
+slimeknights/tconstruct/tools/data/ArmorModelProvider.java
+slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java
+slimeknights/tconstruct/tools/data/FluidEffectProvider.java
+slimeknights/tconstruct/tools/data/ModifierProvider.java
+slimeknights/tconstruct/tools/data/ModifierRecipeProvider.java
+slimeknights/tconstruct/tools/data/StationSlotLayoutProvider.java
+slimeknights/tconstruct/tools/data/ToolDefinitionDataProvider.java
+slimeknights/tconstruct/tools/data/ToolItemModelProvider.java
+slimeknights/tconstruct/tools/data/ToolsRecipeProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialRecipeProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
+slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
+# event-layer step: Forge gameplay event handlers (hurt/break-speed/jump/interaction)
+slimeknights/tconstruct/tools/logic/DoubleJumpHandler.java
+slimeknights/tconstruct/tools/logic/InteractionHandler.java
+slimeknights/tconstruct/tools/logic/ModifierEvents.java
+slimeknights/tconstruct/tools/logic/ToolEvents.java
+slimeknights/tconstruct/tools/logic/EquipmentChangeWatcher.java
+# --- tools round: modules bound to the tool fluid/inventory capability step ---
+slimeknights/tconstruct/tools/modules/SmeltingModule.java
+slimeknights/tconstruct/tools/modules/MeltingModule.java
+slimeknights/tconstruct/tools/modules/InventorySelectionModule.java
+slimeknights/tconstruct/tools/modules/interaction/SlurpingModule.java
+slimeknights/tconstruct/tools/modules/interaction/SplashingModule.java
+slimeknights/tconstruct/tools/modules/interaction/TankInteractionModule.java
+slimeknights/tconstruct/tools/modules/interaction/BucketModule.java
+slimeknights/tconstruct/tools/modules/interaction/SpittingModule.java
+slimeknights/tconstruct/tools/modules/combat/SpillingModule.java
+slimeknights/tconstruct/tools/modules/armor/ToolBeltModule.java
+slimeknights/tconstruct/tools/modules/armor/SleevesModule.java
+slimeknights/tconstruct/tools/modules/armor/ShieldStrapModule.java
+slimeknights/tconstruct/tools/modules/ranged/BulkQuiverModule.java
+slimeknights/tconstruct/tools/modules/ranged/ammo/SmashingModule.java
+slimeknights/tconstruct/tools/modules/ranged/bow/QuiverInventoryModule.java
+slimeknights/tconstruct/tools/modifiers/ability/fluid/**
+slimeknights/tconstruct/tools/menu/ToolContainerMenu.java
+# energy step (Team Reborn Energy compat)
+slimeknights/tconstruct/tools/modifiers/EnergyHandlerModifier.java
+# event-layer step: Forge-only hooks these modules build on
+slimeknights/tconstruct/tools/modules/interaction/ShearsModule.java
+slimeknights/tconstruct/tools/modules/ranged/RestrictAngleModule.java
+slimeknights/tconstruct/tools/modifiers/traits/DamageSpeedTradeModifier.java
+# Forge global loot modifier; rewires through LootTableEvents in the event layer
+slimeknights/tconstruct/tools/modifiers/ModifierLootModifier.java
+# phase-7 datagen builders
+slimeknights/tconstruct/tools/recipe/severing/SpecialSeveringRecipeBuilder.java
+slimeknights/tconstruct/tools/recipe/ToggleInteractionWorktableRecipeBuilder.java
+slimeknights/tconstruct/tools/recipe/ModifierSortingRecipeBuilder.java
+slimeknights/tconstruct/tools/recipe/ModifierRemovalRecipeBuilder.java
+slimeknights/tconstruct/tools/recipe/EnchantmentConvertingRecipeBuilder.java
+slimeknights/tconstruct/tools/modifiers/ability/tool/BucketingModifier.java
+slimeknights/tconstruct/tools/modules/ranged/TrickQuiverModule.java
+slimeknights/tconstruct/tools/modules/armor/MinimapModule.java
+slimeknights/tconstruct/tools/network/ToolContainerFluidUpdatePacket.java
+slimeknights/tconstruct/tools/modifiers/ability/armor/DoubleJumpModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/armor/ReflectingModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityModifier.java
+slimeknights/tconstruct/tools/modules/OverburnModule.java
+slimeknights/tconstruct/tools/modules/MeltingFluidEffectiveModule.java

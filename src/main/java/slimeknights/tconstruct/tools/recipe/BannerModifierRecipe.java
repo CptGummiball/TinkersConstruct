@@ -99,12 +99,8 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
       return RecipeResult.pass();
     }
 
-    // get the banner data
-    CompoundTag bannerData = BlockItem.getBlockEntityData(banner);
-    ListTag patterns = new ListTag();
-    if (bannerData != null) {
-      patterns = bannerData.getList("Patterns", Tag.TAG_COMPOUND);
-    }
+    // get the banner data; 1.21 stores patterns as a component
+    net.minecraft.world.level.block.entity.BannerPatternLayers patterns = banner.getOrDefault(net.minecraft.core.component.DataComponents.BANNER_PATTERNS, net.minecraft.world.level.block.entity.BannerPatternLayers.EMPTY);
 
     // apply the pattern
     BannerModule.copyPatterns(tool.getPersistentData(), key, dye, patterns);
@@ -176,7 +172,7 @@ public class BannerModifierRecipe implements ITinkerStationRecipe, IMultiRecipe<
       this.variant = Component.translatable("color.minecraft." + dye.getSerializedName());
 
       ModifierId key = RESULT.getId();
-      ListTag patterns = new ListTag();
+      net.minecraft.world.level.block.entity.BannerPatternLayers patterns = net.minecraft.world.level.block.entity.BannerPatternLayers.EMPTY;
       List<ModifierEntry> results = List.of(RESULT);
       toolWithModifier = tools.stream().map(stack -> IDisplayModifierRecipe.withModifiers(stack, DEFAULT_TOOL_STACK_SIZE, results, data -> BannerModule.copyPatterns(data, key, dye, patterns))).toList();
     }

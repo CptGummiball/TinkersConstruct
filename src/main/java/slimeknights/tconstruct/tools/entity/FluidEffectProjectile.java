@@ -26,12 +26,12 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.event.ForgeEventFactory;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.event.ForgeEventFactory;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.mantle.transfer.item.IItemHandlerModifiable;
 import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.library.modifiers.entity.ProjectileWithKnockback;
@@ -143,7 +143,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     Level level = level();
     if (this.cannon != null && level.isLoaded(this.cannon)) {
       BlockEntity cannonBE = level.getBlockEntity(this.cannon);
-      if (cannonBE != null && cannonBE.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(EmptyItemHandler.INSTANCE) instanceof IItemHandlerModifiable modifiable) {
+      if (cannonBE != null && slimeknights.mantle.transfer.cap.CapabilityHelper.get(cannonBE, ForgeCapabilities.ITEM_HANDLER).orElse(EmptyItemHandler.INSTANCE) instanceof IItemHandlerModifiable modifiable) {
         return modifiable;
       }
     }
@@ -194,9 +194,9 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
         EntityDimensions dimensions = getType().getDimensions();
         float factor = 0.01f;
         if (((BlockHitResult)hitResult).getDirection().getAxis() == Axis.Y) {
-          factor += dimensions.height;
+          factor += dimensions.height();
         } else {
-          factor += dimensions.width / 2;
+          factor += dimensions.width() / 2;
         }
         newLocation = hitResult.getLocation().add(velocity.normalize().scale(factor));
       } else {
@@ -206,7 +206,7 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
       // TODO: reduce when underwater without fins
       if (!this.isNoGravity()) {
         FluidStack fluid = getFluid();
-        velocity = velocity.add(0, fluid.getFluid().getFluidType().isLighterThanAir() ? 0.06 : -0.06, 0);
+        velocity = velocity.add(0, slimeknights.mantle.transfer.fluid.FluidType.of(fluid.getFluid()).isLighterThanAir() ? 0.06 : -0.06, 0);
       }
       this.setDeltaMovement(velocity);
       this.setPos(newLocation);
@@ -315,9 +315,9 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
   private static final String KEY_WATER_INERTIA = "water_inertia";
 
   @Override
-  protected void defineSynchedData() {
-    this.entityData.define(FLUID, FluidStack.EMPTY);
-    this.entityData.define(WATER_INERTIA, 0.6f);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    builder.define(FLUID, FluidStack.EMPTY);
+    builder.define(WATER_INERTIA, 0.6f);
   }
 
   @Override
@@ -355,11 +355,8 @@ public class FluidEffectProjectile extends Projectile implements ProjectileWithK
     this.power = nbt.getFloat(KEY_POWER);
     this.knockback = nbt.getFloat(KEY_KNOCKBACK);
     this.entityData.set(WATER_INERTIA, nbt.getFloat(KEY_WATER_INERTIA));
-    if (nbt.contains(KEY_CANNON)) {
-      this.cannon = NbtUtils.readBlockPos(nbt.getCompound(KEY_CANNON));
-    } else {
-      this.cannon = null;
-    }
+    // 1.21 readBlockPos takes the parent tag and key, returning empty when missing
+    this.cannon = NbtUtils.readBlockPos(nbt, KEY_CANNON).orElse(null);
     setFluid(FluidStack.loadFluidStackFromNBT(nbt.getCompound(KEY_FLUID)));
   }
 }

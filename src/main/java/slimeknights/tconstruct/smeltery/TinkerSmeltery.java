@@ -393,7 +393,7 @@ public final class TinkerSmeltery extends TinkerModule {
   public static final CastItemObject bootsPlatingCast = ITEMS.registerCast("boots_plating", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("boots_plating")));
   public static final CastItemObject mailleCast = ITEMS.registerCast("maille", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("maille")));
   // dummy cast creation items
-  public static final EnumObject<ArmorItem.Type,DummyMaterialItem> dummyPlating = ITEMS.registerEnum(ArmorItem.Type.values(), "plating_dummy", type -> new DummyMaterialItem(ITEM_PROPS));
+  public static final EnumObject<ArmorItem.Type,DummyMaterialItem> dummyPlating = ITEMS.registerEnum(slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial.HUMANOID_SLOTS, "plating_dummy", type -> new DummyMaterialItem(ITEM_PROPS));
 
 
   /*

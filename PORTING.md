@@ -468,6 +468,53 @@ decisions:
 - **Parked**: `smeltery/client/**` + `SmelteryClientEvents` (phase 5), `smeltery/data/**`
   (phase 7). Milk fluid: Forge's milk still does not exist on Fabric; milk-based recipes
   wait for the data pass to decide between a TiC milk fluid and recipe substitution.
+
+### Phase 4, sixth slice: the tools module — **DONE, server boots clean (Done 0.891s)**
+
+The largest content slice: every tool and armor item, all modifiers (~200 static +
+dynamic), tool parts (healing the 21 cast seams and the anvil item), the five projectile
+entities, and the module/predicate/loader registries. 322 gate-in errors, then a second
+341-error layer once the armor/entity classes unparked; shipped at 0. Key decisions:
+
+- **Roots eager**: TinkerModifiers → TinkerToolParts → TinkerTools init in Forge order;
+  registerSerializers/commonSetup bodies inlined; the modifier deferred register listens
+  on the shimmed `MinecraftForge.EVENT_BUS` (ModifierRegistrationEvent posts on datapack
+  load, unchanged).
+- **Eager-registration traps found at boot, not compile**: ToolDefinitions/ArmorDefinitions
+  read `TinkerTools.<item>.getId()` while TinkerTools' own class-init was registering that
+  item (Forge's deferred timing hid the cycle) — definitions now create from plain
+  resource locations. And 1.20.5 added `ArmorItem.Type.BODY`, overflowing every
+  4-slot armor array/loop — a shared `HUMANOID_SLOTS` constant now bounds registrations,
+  plating parts/casts/dummies, and the station menus.
+- **ArmorMaterial became a registry entry**: armor items take `Holder<ArmorMaterial>`,
+  resolved through the core slice's DummyArmorMaterial holder; attribute modifiers are
+  identified by `tconstruct:armor.<type>` resource locations instead of the vanilla UUID
+  map. ITinkerStationDisplay's attribute surface aligned to `Multimap<Holder<Attribute>,...>`.
+- **Entities on 1.21**: AbstractArrow ctors carry the firing weapon; vanilla arrows lost
+  setKnockback, so arrow/crystalshot implement Tinkers' own `ProjectileWithKnockback`;
+  thrown tools save via `pickupItemStack` (AW); unified `Portal` handling; item NBT in
+  entities threads `registryAccess()`. Access widener opens ThrownTrident/FishingHook/
+  AbstractArrow internals plus the `ApplyBonusCount` formula classes for the loot functions.
+- **Loot on MapCodecs**: modifier/chrysophilite bonus functions rebuild vanilla's
+  package-private formula dispatch on the widened formula classes, keeping the exact 1.20
+  JSON shape; conditions/functions/pool entries follow the MantleLoot pattern. Forge's
+  global loot modifier (`modifier_hook`) has no Fabric registry — rewires through
+  LootTableEvents in the event layer.
+- **Enchantments/components**: enchantment-converting recipes work on `ItemEnchantments`
+  holders; banner patterns via `BannerPatternLayers`; player heads via
+  `DataComponents.PROFILE`; armor dyeing on `c:dyes` tags and vanilla dye colors; tipped
+  arrows on `PotionContents`/potion holders.
+- **Deliberate deferrals**, all PORT-marked at their registration sites: tool
+  fluid/inventory/energy capability modules (tank, slurping/splashing/bucket, quivers,
+  tool belt, shield strap, minimap, overburn — the capability step), gameplay event
+  handlers (`tools/logic`, shears, double jump, reflecting, break-speed traits' event
+  bridge — the event layer; the shim bus keeps their listeners compiling), datagen
+  builders (phase 7), client extensions (armor models, crossbow/charge HUD — phase 5).
+- **New mantle shims**: `AbstractProjectileDispenseBehavior` (1.20.5 rebuilt dispensing
+  around ProjectileItem), `ForgeEventFactory.onArrowNock/onArrowLoose/onProjectileImpact`,
+  `LivingEntityUseItemEvent.Finish`, `LivingDropsEvent`.
+- The smeltery round's parked fluid-cannon projectile shot is restored now that
+  `fluid_spit` registers.
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

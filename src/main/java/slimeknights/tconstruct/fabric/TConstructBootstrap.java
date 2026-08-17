@@ -86,6 +86,9 @@ public class TConstructBootstrap implements ModInitializer {
     TinkerWorld.init();
     TinkerTables.init();
     TinkerSmeltery.init();
+    slimeknights.tconstruct.tools.TinkerModifiers.init();
+    slimeknights.tconstruct.tools.TinkerToolParts.init();
+    slimeknights.tconstruct.tools.TinkerTools.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

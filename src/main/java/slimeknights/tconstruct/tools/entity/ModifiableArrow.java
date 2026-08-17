@@ -31,7 +31,7 @@ import slimeknights.tconstruct.tools.TinkerTools;
 import javax.annotation.Nullable;
 
 /** Arrow with material variants */
-public class ModifiableArrow extends AbstractArrow implements ToolProjectile, ReusableProjectile {
+public class ModifiableArrow extends AbstractArrow implements ToolProjectile, ReusableProjectile, slimeknights.tconstruct.library.modifiers.entity.ProjectileWithKnockback {
   /** Key to sync the stack to the client */
   protected static final EntityDataAccessor<ItemStack> STACK = SynchedEntityData.defineId(ModifiableArrow.class, EntityDataSerializers.ITEM_STACK);
   /** Movement speed in water */
@@ -49,11 +49,11 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
   }
 
   public ModifiableArrow(Level level, double pX, double pY, double pZ) {
-    super(TinkerTools.materialArrow.get(), pX, pY, pZ, level);
+    super(TinkerTools.materialArrow.get(), pX, pY, pZ, level, ItemStack.EMPTY, null);
   }
 
   public ModifiableArrow(Level level, LivingEntity shooter) {
-    super(TinkerTools.materialArrow.get(), shooter, level);
+    super(TinkerTools.materialArrow.get(), shooter, level, ItemStack.EMPTY, null);
   }
 
 
@@ -62,6 +62,12 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
   @Override
   public ItemStack getPickupItem() {
     return stack.copy();
+  }
+
+  @Override
+  protected ItemStack getDefaultPickupItem() {
+    // we track our own stack; the vanilla pickup stack stays empty
+    return ItemStack.EMPTY;
   }
 
   /** Updates the stack on the arrow */
@@ -138,9 +144,25 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
 
   // need to replace some setters with adders so vanilla bows work with our logic
 
+  /** 1.21 removed vanilla arrow knockback (weapon enchantments drive it); we track our own for the punch modifier */
+  private float knockback = 0;
+
   @Override
-  public void setKnockback(int knockback) {
-    super.setKnockback(getKnockback() + knockback);
+  public void addKnockback(float amount) {
+    this.knockback += amount;
+  }
+
+  @Override
+  protected void doKnockback(LivingEntity target, net.minecraft.world.damagesource.DamageSource source) {
+    super.doKnockback(target, source);
+    // knockback logic based on the pre-1.21 arrow punch handling
+    if (knockback > 0) {
+      double resistance = Math.max(0, 1 - target.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.KNOCKBACK_RESISTANCE));
+      Vec3 push = this.getDeltaMovement().multiply(1, 0, 1).normalize().scale(knockback * 0.6 * resistance);
+      if (push.lengthSqr() > 0) {
+        target.push(push.x, 0.1, push.z);
+      }
+    }
   }
 
   @Override
@@ -205,10 +227,10 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
   /* Client */
 
   @Override
-  protected void defineSynchedData() {
-    super.defineSynchedData();
-    this.entityData.define(STACK, ItemStack.EMPTY);
-    this.entityData.define(WATER_INERTIA, 0.6f);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    super.defineSynchedData(builder);
+    builder.define(STACK, ItemStack.EMPTY);
+    builder.define(WATER_INERTIA, 0.6f);
   }
 
   @Override
@@ -231,7 +253,9 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
   @Override
   public void addAdditionalSaveData(CompoundTag tag) {
     super.addAdditionalSaveData(tag);
-    tag.put(KEY_STACK, this.stack.save(new CompoundTag()));
+    if (!this.stack.isEmpty()) {
+      tag.put(KEY_STACK, this.stack.save(this.registryAccess()));
+    }
     tag.putFloat(KEY_WATER_INERTIA, this.entityData.get(WATER_INERTIA));
     tag.putBoolean(KEY_DEALT_DAMAGE, dealtDamage);
     if (!this.tasks.isEmpty()) {
@@ -243,7 +267,7 @@ public class ModifiableArrow extends AbstractArrow implements ToolProjectile, Re
   public void readAdditionalSaveData(CompoundTag tag) {
     super.readAdditionalSaveData(tag);
     if (tag.contains(KEY_STACK, CompoundTag.TAG_COMPOUND)) {
-      setStack(ItemStack.of(tag.getCompound(KEY_STACK)));
+      setStack(ItemStack.parseOptional(this.registryAccess(), tag.getCompound(KEY_STACK)));
     }
     this.entityData.set(WATER_INERTIA, tag.getFloat(KEY_WATER_INERTIA));
     this.dealtDamage = tag.getBoolean(KEY_DEALT_DAMAGE);

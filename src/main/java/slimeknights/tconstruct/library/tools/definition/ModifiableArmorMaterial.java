@@ -25,6 +25,9 @@ public class ModifiableArmorMaterial extends DummyArmorMaterial {
     this.armorDefinitions = armorDefinitions;
   }
 
+  /** The four humanoid armor slots; 1.20.5 added BODY (animal armor) to the enum, which Tinkers armor does not use */
+  public static final ArmorItem.Type[] HUMANOID_SLOTS = {ArmorItem.Type.HELMET, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.LEGGINGS, ArmorItem.Type.BOOTS};
+
   /** Creates a modifiable armor material, creates tool definition for the selected slots */
   public static ModifiableArmorMaterial create(ResourceLocation id, Holder<SoundEvent> equipSound, ArmorItem.Type... slots) {
     ToolDefinition[] definitions = new ToolDefinition[4];
@@ -36,7 +39,7 @@ public class ModifiableArmorMaterial extends DummyArmorMaterial {
 
   /** Creates a modifiable armor material, creates tool definition for all four armor slots */
   public static ModifiableArmorMaterial create(ResourceLocation id, Holder<SoundEvent> equipSound) {
-    return create(id, equipSound, ArmorItem.Type.values());
+    return create(id, equipSound, HUMANOID_SLOTS);
   }
 
   /**

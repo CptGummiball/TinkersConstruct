@@ -41,11 +41,11 @@ public class CustomFireball extends Fireball implements ProjectileWithPower {
   }
 
   public CustomFireball(Level level, LivingEntity shooter, double xOffset, double yOffset, double zOffset) {
-    super(TinkerModifiers.fireball.get(), shooter, xOffset, yOffset, zOffset, level);
+    super(TinkerModifiers.fireball.get(), shooter, new net.minecraft.world.phys.Vec3(xOffset, yOffset, zOffset), level);
   }
 
   public CustomFireball(Level pLevel, double x, double y, double z, double xOffset, double yOffset, double zOffset) {
-    super(TinkerModifiers.fireball.get(), x, y, z, xOffset, yOffset, zOffset, pLevel);
+    super(TinkerModifiers.fireball.get(), x, y, z, new net.minecraft.world.phys.Vec3(xOffset, yOffset, zOffset), pLevel);
   }
 
 
@@ -68,7 +68,8 @@ public class CustomFireball extends Fireball implements ProjectileWithPower {
 
   @Override
   protected Component getTypeName() {
-    ItemStack stack = getItemRaw();
+    // 1.21 dropped getItemRaw; getItem returns the synched stack (fire charge by default)
+    ItemStack stack = getItem();
     if (!stack.isEmpty()) {
       return stack.getHoverName();
     }
@@ -97,8 +98,10 @@ public class CustomFireball extends Fireball implements ProjectileWithPower {
     if (!this.level().isClientSide) {
       Entity target = hit.getEntity();
       Entity owner = this.getOwner();
-      if (target.hurt(CombatHelper.damageSource(TinkerEffects.needsEnderferenceOverride(target) ? enderferenceType : damageType, this, owner), getDamage()) && owner instanceof LivingEntity livingOwner) {
-        this.doEnchantDamageEffects(livingOwner, target);
+      DamageSource source = CombatHelper.damageSource(TinkerEffects.needsEnderferenceOverride(target) ? enderferenceType : damageType, this, owner);
+      if (target.hurt(source, getDamage()) && owner instanceof LivingEntity && this.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+        // 1.21 folded post-hurt enchantment responses (thorns etc.) into doPostAttackEffects
+        net.minecraft.world.item.enchantment.EnchantmentHelper.doPostAttackEffects(serverLevel, target, source);
       }
     }
   }
