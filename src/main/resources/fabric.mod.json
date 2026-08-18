@@ -4,8 +4,12 @@
   "version": "${version}",
   "name": "Tinkers' Construct",
   "description": "A little of this, a little of that, a lot of tinkering, and a lot of tools. Fabric 1.21.1 port for the GummiCraft modpack.",
-  "authors": [ "Slime Knights" ],
-  "contributors": [ "CptGummiball (Fabric port)" ],
+  "authors": [
+    "Slime Knights"
+  ],
+  "contributors": [
+    "CptGummiball (Fabric port)"
+  ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/tinkers-construct",
     "sources": "https://github.com/CptGummiball/TinkersConstruct",
@@ -15,13 +19,22 @@
   "icon": "logo.png",
   "environment": "*",
   "entrypoints": {
-    "main": [ "slimeknights.tconstruct.fabric.TConstructBootstrap" ],
-    "client": [ "slimeknights.tconstruct.fabric.TConstructClientBootstrap" ],
-    "cardinal-components": [ "slimeknights.tconstruct.fabric.TinkerComponents" ]
+    "main": [
+      "slimeknights.tconstruct.fabric.TConstructBootstrap"
+    ],
+    "client": [
+      "slimeknights.tconstruct.fabric.TConstructClientBootstrap"
+    ],
+    "cardinal-components": [
+      "slimeknights.tconstruct.fabric.TinkerComponents"
+    ]
   },
   "mixins": [
     "tconstruct.mixins.json",
-    { "config": "tconstruct.client.mixins.json", "environment": "client" }
+    {
+      "config": "tconstruct.client.mixins.json",
+      "environment": "client"
+    }
   ],
   "accessWidener": "tconstruct.accesswidener",
   "custom": {
@@ -40,6 +53,7 @@
     "emi": "*",
     "jade": "*",
     "trinkets": "*",
-    "patchouli": "*"
+    "patchouli": "*",
+    "team_reborn_energy": ">=4.0.0"
   }
 }

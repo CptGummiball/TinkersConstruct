@@ -253,6 +253,11 @@ public final class TinkerTools extends TinkerModule {
 
     // PORT: EquipmentChangeWatcher (equipment-change event bridge) returns with the event layer
     ToolFluidCapability.register();
+    // energy is an optional integration: the pack ships it via its tech mods, but the mod
+    // stays loadable without one, so the storage class is only touched behind this guard
+    if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("team_reborn_energy")) {
+      slimeknights.tconstruct.library.tools.capability.ToolEnergyStorage.register();
+    }
     // PORT: the tool inventory and energy caps register here as their steps land;
     // BlockItemProviderModifierHook needs no wiring, it dispatches from the stack
     for (ConfigurableAction action : Config.COMMON.toolTweaks) {
@@ -278,7 +283,7 @@ public final class TinkerTools extends TinkerModule {
     // register tool stats that are not defined directly in the class; safer than static init registration
     ToolStats.register(OverslimeModule.OVERSLIME_STAT);
     ToolStats.register(ToolTankHelper.CAPACITY_STAT);
-    // PORT: ToolEnergyCapability.MAX_STAT returns with the energy step
+    ToolStats.register(slimeknights.tconstruct.library.tools.capability.ToolEnergyCapability.MAX_STAT);
     ToolStats.register(EdibleModule.HUNGER);
     ToolStats.register(EdibleModule.SATURATION);
 

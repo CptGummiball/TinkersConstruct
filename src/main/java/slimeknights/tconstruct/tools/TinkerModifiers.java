@@ -132,7 +132,7 @@ import slimeknights.tconstruct.library.modifiers.modules.build.VolatileIntModule
 import slimeknights.tconstruct.library.modifiers.modules.capacity.CapacityBarModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.DamageToCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.DurabilityShieldModule;
-// PORT (energy step): import slimeknights.tconstruct.library.modifiers.modules.capacity.EnergyAsCapacityModule;
+import slimeknights.tconstruct.library.modifiers.modules.capacity.EnergyAsCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.LaunchCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.LootToCapacityModule;
 import slimeknights.tconstruct.library.modifiers.modules.capacity.MeleeCapacityModule;
@@ -192,7 +192,7 @@ import slimeknights.tconstruct.tools.entity.FluidEffectProjectile;
 import slimeknights.tconstruct.tools.item.CreativeSlotItem;
 import slimeknights.tconstruct.tools.item.DragonScaleItem;
 import slimeknights.tconstruct.tools.item.ModifierCrystalItem;
-// PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.EnergyHandlerModifier;
+import slimeknights.tconstruct.tools.modifiers.EnergyHandlerModifier;
 // PORT (capability/event step): import slimeknights.tconstruct.tools.modifiers.ModifierLootModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.armor.AmbidextrousModifier;
 import slimeknights.tconstruct.tools.modifiers.ability.fluid.BurstingModifier;
@@ -420,7 +420,7 @@ public final class TinkerModifiers extends TinkerModule {
   /** Handles the fluid tank logic for any fluid using modifiers. */
   public static final StaticModifier<Modifier> tankHandler = MODIFIERS.register("tank_handler", () -> ModuleHookMap.builder().addModule(new TankModule(ToolTankHelper.TANK_HELPER)).modifier().levelDisplay(ModifierLevelDisplay.NO_LEVELS).priority(300).build());
   /** Handles the energy bar for Forge Energy using modifiers. */
-  // PORT (energy step): public static final StaticModifier<Modifier> energyHandler = MODIFIERS.register("energy_handler", EnergyHandlerModifier::new);
+  public static final StaticModifier<Modifier> energyHandler = MODIFIERS.register("energy_handler", EnergyHandlerModifier::new);
 
   // creative
   /** Handles adding extra modifier slots to a tool in creative */
@@ -904,7 +904,7 @@ public final class TinkerModifiers extends TinkerModule {
       // capacity
       ModifierModule.LOADER.register(getResource("capacity_bar"), CapacityBarModule.LOADER);
       ModifierModule.LOADER.register(getResource("durability_as_capacity"), DurabilityAsCapacityModule.LOADER);
-      // PORT (energy step): ModifierModule.LOADER.register(getResource("energy_as_capacity"), EnergyAsCapacityModule.LOADER);
+      ModifierModule.LOADER.register(getResource("energy_as_capacity"), EnergyAsCapacityModule.LOADER);
       ModifierModule.LOADER.register(getResource("durability_shield"), DurabilityShieldModule.LOADER);
       ModifierModule.LOADER.register(getResource("loot_to_capacity"), LootToCapacityModule.LOADER);
       ModifierModule.LOADER.register(getResource("damage_to_capacity"), DamageToCapacityModule.LOADER);

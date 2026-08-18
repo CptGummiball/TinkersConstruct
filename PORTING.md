@@ -810,6 +810,33 @@ gold and wither skeletons give necrotic bones.
 loot tables, loot modifiers, advancements and tags. The only remaining data failures in the
 whole port are the two milk-fluid recipes waiting on the phase-6 decision.
 
+### Energy step — **DONE, boot clean (Done 0.851s); phase 4 and every cross-cutting pass complete**
+
+Forge Energy has no Fabric counterpart, but the ecosystem has settled on Team Reborn's
+energy API — and the pack's own tech mod (Oritech) requires it — so that is what tool
+energy speaks now.
+
+- **Tinkers' own API is untouched.** The static helpers (`getEnergy`, `setEnergy`,
+  `addEnergy`, `checkEnergy`, the capacity stat) stay integer-based exactly as upstream
+  wrote them; modules calling them did not change at all. Only the outward face moved.
+- **The face is a separate class on purpose.** `ToolEnergyStorage` implements the energy
+  API; `ToolEnergyCapability` keeps the helpers and references nothing from it. That split
+  is what lets the mod still load with no energy mod installed — the storage class is only
+  touched behind a `isModLoaded` guard, matching how the port already handles Ceramics and
+  Twilight Forest. Declared as a *suggestion*, not a dependency.
+- **Semantics**: Forge was int + a simulate flag, Team Reborn is long + transactions.
+  Amounts widen and writes join the caller's transaction, publishing through
+  `ContainerItemContext.exchange` on a single-item copy — the same pattern the tool fluid
+  handler uses, which is what makes it transactional rather than merely simulated.
+- The other two files (`EnergyHandlerModifier`, `EnergyAsCapacityModule`) had no Forge
+  coupling at all; they were parked purely because the capability was.
+
+**Everything outside the client is now ported**: phase 4 content complete, and every
+cross-cutting pass — data migration, event layer, capabilities, enchantment registry,
+global loot modifiers, energy — is done. The datapack loads with zero errors in every
+category; the only remaining data failures in the whole port are the two milk-fluid recipes
+awaiting the phase-6 decision.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

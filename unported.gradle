@@ -73,8 +73,7 @@ slimeknights/mantle/item/ILecternBookItem.java
 # own code, so only the Forge cap imports moved to the mantle transfer.cap shim.
 # (tool inventory round) inventory/** gated in the same way; consumers reach the handler
 # through the static ToolInventoryCapability.getInventory instead of a stack capability.
-# Still Forge-coupled: Forge Energy, its own step.
-slimeknights/tconstruct/library/tools/capability/ToolEnergyCapability.java
+# (energy round) ToolEnergyCapability gated in on Team Reborn Energy.
 
 # THE LOMBOK KILLER still standing (DummyArmorMaterial, its twin, is redesigned onto a
 # registered Holder<ArmorMaterial>): extends ItemPredicate, a RECORD in 1.21. Lombok's
@@ -94,8 +93,6 @@ slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 # (gadgets round) ExplosionFluidEffect + ProjectileExplosionModule gated in alongside
 # CustomExplosion/EFLNExplosion; their loaders are registered again in TinkerModifiers.
 
-# --- Waiting on the energy step (Team Reborn Energy compat) ---
-slimeknights/tconstruct/library/modifiers/modules/capacity/EnergyAsCapacityModule.java
 
 # --- Content-bound library files: compile once their content module gates in (phase 4) ---
 # SwappableModifierRecipe.VariantFormatter (recipe/modifiers/adding, full recipe-type tree).
@@ -209,8 +206,6 @@ slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---
 # (tool inventory round) ToolContainerMenu gated in: the opening buffer became an
 # ExtendedScreenHandlerType payload, everything else is Tinkers' own slot math.
-# energy step (Team Reborn Energy compat)
-slimeknights/tconstruct/tools/modifiers/EnergyHandlerModifier.java
 # (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
 # (GLM round) the global loot modifier runtime lives in mantle/loot/modifier now.
 # phase-7 datagen builders
