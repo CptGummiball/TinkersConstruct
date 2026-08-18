@@ -12,12 +12,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.network.NetworkHooks;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingEvent;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent.RightClickBlock;
 import slimeknights.mantle.inventory.BaseContainerMenu;
+import slimeknights.mantle.network.NetworkHooks;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.Sounds;
 import slimeknights.tconstruct.common.TinkerTags;
@@ -25,11 +24,15 @@ import slimeknights.tconstruct.world.TinkerWorld;
 
 @SuppressWarnings("unused")
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Mod.EventBusSubscriber(modid = TConstruct.MOD_ID)
 public class CommonsEvents {
 
+  /** Registers event handlers; replaces Forge's {@code @EventBusSubscriber} scan with explicit shim-bus registration */
+  public static void init() {
+    MinecraftForge.EVENT_BUS.addListener(LivingEvent.LivingJumpEvent.class, CommonsEvents::onLivingJump);
+    MinecraftForge.EVENT_BUS.addListener(RightClickBlock.class, CommonsEvents::openSpectatorMenu);
+  }
+
   // Slimy block jump stuff
-  @SubscribeEvent
   static void onLivingJump(LivingEvent.LivingJumpEvent event) {
     if (event.getEntity() == null) {
       return;
@@ -51,8 +54,6 @@ public class CommonsEvents {
   }
 
   /** Handles opening our containers as the vanilla logic does not grant TE access */
-  @SuppressWarnings("deprecation")  // I don't feel like forge and its nullable keys
-  @SubscribeEvent
   static void openSpectatorMenu(RightClickBlock event) {
     Player player = event.getEntity();
     if (player.isSpectator()) {

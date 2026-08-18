@@ -1,7 +1,10 @@
 package slimeknights.mantle.event.entity.player;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.event.Cancelable;
 import slimeknights.mantle.event.Event;
@@ -82,6 +85,40 @@ public class PlayerEvent extends Event {
 
     public PlayerLoggedInEvent(Player player) {
       super(player);
+    }
+  }
+
+  /** Fired when a server player starts tracking another entity; bridged from Fabric's entity tracking events. */
+  public static class StartTracking extends PlayerEvent {
+    private final Entity target;
+
+    public StartTracking(Player player, Entity target) {
+      super(player);
+      this.target = target;
+    }
+
+    public Entity getTarget() {
+      return target;
+    }
+  }
+
+  /** Fired after a player crafts an item; posted through {@code ForgeEventFactory.firePlayerCraftingEvent}. */
+  public static class ItemCraftedEvent extends PlayerEvent {
+    private final ItemStack crafting;
+    private final Container craftMatrix;
+
+    public ItemCraftedEvent(Player player, ItemStack crafting, Container craftMatrix) {
+      super(player);
+      this.crafting = crafting;
+      this.craftMatrix = craftMatrix;
+    }
+
+    public ItemStack getCrafting() {
+      return crafting;
+    }
+
+    public Container getInventory() {
+      return craftMatrix;
     }
   }
 }

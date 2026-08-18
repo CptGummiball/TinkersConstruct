@@ -3,13 +3,13 @@ package slimeknights.tconstruct.tools.logic;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,22 +17,22 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.pattern.BlockInWorld;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.ForgeEventFactory;
-import net.minecraftforge.event.entity.living.ShieldBlockEvent;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.minecraftforge.eventbus.api.Event.Result;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import slimeknights.mantle.client.TooltipKey;
+import slimeknights.mantle.event.Event.Result;
+import slimeknights.mantle.event.EventPriority;
+import slimeknights.mantle.event.ForgeEventFactory;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingMiscEvents.ShieldBlockEvent;
+import slimeknights.mantle.event.entity.player.AttackEntityEvent;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent.EntityInteract;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent.LeftClickBlock;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
+import slimeknights.mantle.event.entity.player.PlayerInteractEvent.RightClickBlock;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
@@ -61,12 +61,20 @@ import java.util.function.Function;
 /**
  * This class handles interaction based event hooks
  */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.FORGE)
 public class InteractionHandler {
   public static final EquipmentSlot[] HAND_SLOTS = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND};
 
+  /** Registers event handlers; replaces Forge's {@code @EventBusSubscriber} scan with explicit shim-bus registration */
+  public static void init() {
+    MinecraftForge.EVENT_BUS.addListener(EntityInteract.class, InteractionHandler::beforeEntityInteract);
+    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, EntityInteract.class, InteractionHandler::afterEntityInteract);
+    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, RightClickBlock.class, InteractionHandler::chestplateInteractWithBlock);
+    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOW, false, AttackEntityEvent.class, InteractionHandler::onChestplateAttack);
+    MinecraftForge.EVENT_BUS.addListener(LeftClickBlock.class, InteractionHandler::leftClickBlock);
+    MinecraftForge.EVENT_BUS.addListener(ShieldBlockEvent.class, InteractionHandler::onBlock);
+  }
+
   /** Implements {@link EntityInteractionModifierHook#beforeEntityUse(IToolStackView, ModifierEntry, Player, Entity, InteractionHand, InteractionSource)} */
-  @SubscribeEvent
   static void beforeEntityInteract(EntityInteract event) {
     ItemStack stack = event.getItemStack();
     Player player = event.getEntity();
@@ -102,7 +110,6 @@ public class InteractionHandler {
   }
 
   /** Implements {@link EntityInteractionModifierHook#afterEntityUse(IToolStackView, ModifierEntry, Player, LivingEntity, InteractionHand, InteractionSource)} for chestplates */
-  @SubscribeEvent(priority = EventPriority.LOWEST)
   static void afterEntityInteract(EntityInteract event) {
     Player player = event.getEntity();
     if (event.getItemStack().isEmpty() && !player.isSpectator()) {
@@ -148,7 +155,8 @@ public class InteractionHandler {
     Player player = context.getPlayer();
     Level world = context.getLevel();
     BlockInWorld info = new BlockInWorld(world, context.getClickedPos(), false);
-    if (player != null && !player.getAbilities().mayBuild && !stack.hasAdventureModePlaceTagForBlock(BuiltInRegistries.BLOCK, info)) {
+    // PORT 1.21: hasAdventureModePlaceTagForBlock became canPlaceOnBlockInAdventureMode (adventure mode predicate component)
+    if (player != null && !player.getAbilities().mayBuild && !stack.canPlaceOnBlockInAdventureMode(info)) {
       return InteractionResult.PASS;
     }
 
@@ -166,8 +174,7 @@ public class InteractionHandler {
   }
 
   /** Implements modifier hooks for a chestplate right clicking a block with an empty hand */
-  @SubscribeEvent(priority = EventPriority.LOWEST)
-  static void chestplateInteractWithBlock(PlayerInteractEvent.RightClickBlock event) {
+  static void chestplateInteractWithBlock(RightClickBlock event) {
     // only handle chestplate interacts if the current hand is empty
     Player player = event.getEntity();
     if (event.getItemStack().isEmpty() && !player.isSpectator()) {
@@ -198,9 +205,21 @@ public class InteractionHandler {
         BlockPos pos = event.getPos();
         Result useBlock = event.getUseBlock();
         Level level = player.level();
+        // PORT: doesSneakBypassUse was a Forge item extension; its stack-level default is "empty stack bypasses sneak,
+        // item override false", so the vanilla-faithful check for the other hand is simply isEmpty()
         if (useBlock == Result.ALLOW || (useBlock != Result.DENY
-                                         && (!player.isSecondaryUseActive() || player.getItemInHand(Util.getOpposite(hand)).doesSneakBypassUse(level, pos, player)))) {
-          InteractionResult result = level.getBlockState(pos).use(level, player, hand, trace);
+                                         && (!player.isSecondaryUseActive() || player.getItemInHand(Util.getOpposite(hand)).isEmpty()))) {
+          // PORT 1.21: BlockState.use split into useItemOn/useWithoutItem; mirror the vanilla pipeline for our empty hand
+          BlockState state = level.getBlockState(pos);
+          InteractionResult result;
+          ItemInteractionResult itemResult = state.useItemOn(player.getItemInHand(hand), level, player, hand, trace);
+          if (itemResult.consumesAction()) {
+            result = itemResult.result();
+          } else if (itemResult == ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION && hand == InteractionHand.MAIN_HAND) {
+            result = state.useWithoutItem(level, player, trace);
+          } else {
+            result = InteractionResult.PASS;
+          }
           if (result.consumesAction()) {
             if (player instanceof ServerPlayer serverPlayer) {
               CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, ItemStack.EMPTY);
@@ -254,7 +273,6 @@ public class InteractionHandler {
   }
 
   /** Handles attacking using the chestplate */
-  @SubscribeEvent(priority = EventPriority.LOW)
   static void onChestplateAttack(AttackEntityEvent event) {
     // Carry On is dumb and fires the attack entity event when they are not attacking entities, causing us to punch instead
     // they should not be doing that, but the author has not done anything to fix it, so just use a hacky check
@@ -397,14 +415,14 @@ public class InteractionHandler {
   private static final ComputableDataKey<LastTick> LAST_TICK = TConstruct.createKey("last_tick", LastTick::new);
 
   /** Implements {@link slimeknights.tconstruct.library.modifiers.hook.interaction.BlockInteractionModifierHook} for weapons with left click */
-  @SubscribeEvent
   static void leftClickBlock(LeftClickBlock event) {
     if (event.getAction() != Action.START) {
       return;
     }
     // ensure we have not fired this tick
     Player player = event.getEntity();
-    if (player.getCapability(TinkerDataCapability.CAPABILITY).filter(data -> data.computeIfAbsent(LAST_TICK).update(player)).isEmpty()) {
+    // PORT: TinkerData is a plain weak-map store on Fabric rather than a Forge capability, so no optional wrapping
+    if (!TinkerDataCapability.getData(player).computeIfAbsent(LAST_TICK).update(player)) {
       return;
     }
     // must support interaction
@@ -478,7 +496,6 @@ public class InteractionHandler {
   }
 
   /** Implements shield stats */
-  @SubscribeEvent
   static void onBlock(ShieldBlockEvent event) {
     LivingEntity entity = event.getEntity();
     ItemStack activeStack = entity.getUseItem();

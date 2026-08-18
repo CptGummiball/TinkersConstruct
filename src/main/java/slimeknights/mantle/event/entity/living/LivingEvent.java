@@ -22,10 +22,20 @@ public class LivingEvent extends Event {
 
   /**
    * Mirror of Forge's {@code LivingEvent.LivingJumpEvent}: fired when a living entity jumps.
-   * Posted by the Fabric event bridge (LivingEntity jump hook) once the event layer lands.
+   * Posted by the event bridge's LivingEntity jump mixin.
    */
   public static class LivingJumpEvent extends LivingEvent {
     public LivingJumpEvent(LivingEntity entity) {
+      super(entity);
+    }
+  }
+
+  /**
+   * Mirror of Forge's {@code LivingEvent.LivingTickEvent}: fired at the start of a living
+   * entity's tick. Posted by the event bridge's LivingEntity tick mixin.
+   */
+  public static class LivingTickEvent extends LivingEvent {
+    public LivingTickEvent(LivingEntity entity) {
       super(entity);
     }
   }

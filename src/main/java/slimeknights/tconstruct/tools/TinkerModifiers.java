@@ -291,7 +291,7 @@ import slimeknights.tconstruct.tools.modules.interaction.FishingModule;
 import slimeknights.tconstruct.tools.modules.interaction.HarvestModule;
 import slimeknights.tconstruct.tools.modules.interaction.PlaceFireModule;
 import slimeknights.tconstruct.tools.modules.interaction.PlaceGlowModule;
-// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.ShearsModule;
+import slimeknights.tconstruct.tools.modules.interaction.ShearsModule;
 // PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SlurpingModule;
 // PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SpittingModule;
 // PORT (capability/event step): import slimeknights.tconstruct.tools.modules.interaction.SplashingModule;
@@ -301,7 +301,7 @@ import slimeknights.tconstruct.tools.modules.interaction.sling.SlingKnockbackMod
 import slimeknights.tconstruct.tools.modules.interaction.sling.SlingLeapModule;
 import slimeknights.tconstruct.tools.modules.interaction.sling.SlingTeleportModule;
 // PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.BulkQuiverModule;
-// PORT (capability/event step): import slimeknights.tconstruct.tools.modules.ranged.RestrictAngleModule;
+import slimeknights.tconstruct.tools.modules.ranged.RestrictAngleModule;
 // PORT (capability step): import slimeknights.tconstruct.tools.modules.ranged.TrickQuiverModule;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.ProjectileFuseModule;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.ProjectileGravityModule;
@@ -947,7 +947,7 @@ public final class TinkerModifiers extends TinkerModule {
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("bucket"), BucketModule.LOADER);
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("tank_interaction"), TankInteractionModule.LOADER);
       ModifierModule.LOADER.register(getResource("projectile_place_glow"), ProjectilePlaceGlowModule.LOADER);
-      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("shears"), ShearsModule.LOADER);
+      ModifierModule.LOADER.register(getResource("shears"), ShearsModule.LOADER);
       ModifierModule.LOADER.register(getResource("throwing"), ThrowingModule.LOADER);
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("spitting"), SpittingModule.LOADER);
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("splashing"), SplashingModule.LOADER);
@@ -992,7 +992,7 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("freezing_counter"), FreezingCounterModule.LOADER);
       ModifierModule.LOADER.register(getResource("knockback_counter"), KnockbackCounterModule.LOADER);
       // ranged
-      // PORT (capability/event step): ModifierModule.LOADER.register(getResource("restrict_projectile_angle"), RestrictAngleModule.LOADER);
+      ModifierModule.LOADER.register(getResource("restrict_projectile_angle"), RestrictAngleModule.LOADER);
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("bulk_quiver"), BulkQuiverModule.LOADER);
       // PORT (capability step): ModifierModule.LOADER.register(getResource("trick_quiver"), TrickQuiverModule.LOADER);
       // PORT (capability/event step): ModifierModule.LOADER.register(getResource("quiver_inventory"), QuiverInventoryModule.LOADER);

@@ -11,9 +11,9 @@ import net.minecraft.world.item.ItemStack;
 public class ForgeEventFactory {
   private ForgeEventFactory() {}
 
-  /** Fired after a player crafts an item in one of the tables; no-op until the event layer lands */
+  /** Fired after a player crafts an item in one of the tables; posts the shimmed crafting event */
   public static void firePlayerCraftingEvent(Player player, ItemStack crafted, Container craftMatrix) {
-    // no Fabric equivalent; kept as the hook point for the event-layer step
+    MinecraftForge.EVENT_BUS.post(new slimeknights.mantle.event.entity.player.PlayerEvent.ItemCraftedEvent(player, crafted, craftMatrix));
   }
 
   /**
@@ -45,6 +45,11 @@ public class ForgeEventFactory {
 
   /** Forge's explosion-detonate hook (lets listeners edit the affected entity list); no-op until the event layer lands. */
   public static void onExplosionDetonate(net.minecraft.world.level.Level level, net.minecraft.world.level.Explosion explosion, java.util.List<net.minecraft.world.entity.Entity> entities, double diameter) {
+    // no Fabric equivalent; kept as the hook point for the event-layer step
+  }
+
+  /** Forge's PlayerDestroyItemEvent post (fired when an item breaks in use); nothing in the port listens, kept as the hook point. */
+  public static void onPlayerDestroyItem(Player player, ItemStack stack, @javax.annotation.Nullable net.minecraft.world.InteractionHand hand) {
     // no Fabric equivalent; kept as the hook point for the event-layer step
   }
 }

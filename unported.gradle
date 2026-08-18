@@ -59,9 +59,9 @@ slimeknights/mantle/item/AbstractBookItem.java
 slimeknights/mantle/item/ILecternBookItem.java
 
 
-# --- library/utils: blocked on the Fabric event layer (a dedicated later step) ---
-# LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
-slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
+# --- library/utils ---
+# (event-layer round) SlimeBounceHandler gated in: LivingTick on the shim bus,
+# server stop via Fabric's SERVER_STOPPING lifecycle event.
 # (gadgets round) CustomExplosion gated in: the explosion hooks moved to the mantle
 # ForgeEventFactory shim, the knockback dampener to the 1.21 attribute.
 
@@ -111,10 +111,7 @@ slimeknights/tconstruct/shared/command/**
 slimeknights/tconstruct/shared/network/GeneratePartTexturesPacket.java
 # datagen providers (phase 7)
 slimeknights/tconstruct/shared/data/**
-# event-layer step: LivingJump/RightClickBlock (also needs TinkerWorld) and
-# ItemCrafted/LivingHurt advancement bridges
-slimeknights/tconstruct/shared/CommonsEvents.java
-slimeknights/tconstruct/shared/AchievementEvents.java
+# (event-layer round) CommonsEvents + AchievementEvents gated in on the shim bus
 # uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
 # the charge-bar icon overlay with phase 5
 
@@ -130,10 +127,8 @@ slimeknights/tconstruct/world/WorldClientEvents.java
 slimeknights/tconstruct/world/client/**
 # datagen providers (phase 7)
 slimeknights/tconstruct/world/data/**
-# event-layer step: LivingVisibility/LivingDrops head handling + wandering trader trades
-# (AncientToolItemListing also needs the tools module's ancient tools)
-slimeknights/tconstruct/world/WorldEvents.java
-slimeknights/tconstruct/world/logic/AncientToolItemListing.java
+# (event-layer round) WorldEvents + AncientToolItemListing gated in: shim visibility/drops
+# events, wandering trades via Fabric's TradeOfferHelper (pool 2 = Forge's rare list)
 
 # --- tables module: pieces deferred from the phase-4 gate-in ---
 # client screens/events (phase 5)
@@ -209,12 +204,6 @@ slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
 slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
-# event-layer step: Forge gameplay event handlers (hurt/break-speed/jump/interaction)
-slimeknights/tconstruct/tools/logic/DoubleJumpHandler.java
-slimeknights/tconstruct/tools/logic/InteractionHandler.java
-slimeknights/tconstruct/tools/logic/ModifierEvents.java
-slimeknights/tconstruct/tools/logic/ToolEvents.java
-slimeknights/tconstruct/tools/logic/EquipmentChangeWatcher.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---
 slimeknights/tconstruct/tools/modules/SmeltingModule.java
 slimeknights/tconstruct/tools/modules/MeltingModule.java
@@ -235,11 +224,12 @@ slimeknights/tconstruct/tools/modifiers/ability/fluid/**
 slimeknights/tconstruct/tools/menu/ToolContainerMenu.java
 # energy step (Team Reborn Energy compat)
 slimeknights/tconstruct/tools/modifiers/EnergyHandlerModifier.java
-# event-layer step: Forge-only hooks these modules build on
-slimeknights/tconstruct/tools/modules/interaction/ShearsModule.java
-slimeknights/tconstruct/tools/modules/ranged/RestrictAngleModule.java
-slimeknights/tconstruct/tools/modifiers/traits/DamageSpeedTradeModifier.java
-# Forge global loot modifier; rewires through LootTableEvents in the event layer
+# (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
+# Forge global loot modifiers have no Fabric equivalent at all: the whole GLM subsystem
+# (21 shipped entries - lustrous ore bonuses, tasty bacon, wither bone, chrysophilite)
+# needs its own runtime - loader, mantle:add_entry/replace_item modifiers, the
+# mantle:contains_item/inverted modifier-conditions, and a LootTable#getRandomItems seam.
+# Deferred to its own round; nothing else depends on it.
 slimeknights/tconstruct/tools/modifiers/ModifierLootModifier.java
 # phase-7 datagen builders
 slimeknights/tconstruct/tools/recipe/severing/SpecialSeveringRecipeBuilder.java
@@ -251,6 +241,9 @@ slimeknights/tconstruct/tools/modifiers/ability/tool/BucketingModifier.java
 slimeknights/tconstruct/tools/modules/ranged/TrickQuiverModule.java
 slimeknights/tconstruct/tools/modules/armor/MinimapModule.java
 slimeknights/tconstruct/tools/network/ToolContainerFluidUpdatePacket.java
+# (event-layer round) deprecated legacy classes with zero references; their behavior is
+# datapack modules now (double_jump/reflecting/shears loaders are registered again), so
+# they stay parked rather than being ported to an API nothing calls.
 slimeknights/tconstruct/tools/modifiers/ability/armor/DoubleJumpModifier.java
 slimeknights/tconstruct/tools/modifiers/ability/armor/ReflectingModifier.java
 slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifier.java

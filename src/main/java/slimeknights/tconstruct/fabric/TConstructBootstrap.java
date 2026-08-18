@@ -81,6 +81,10 @@ public class TConstructBootstrap implements ModInitializer {
     TagEmptyCondition.SERIALIZER.register();
     TagCombinationCondition.SERIALIZER.register();
 
+    // Sound events; Forge registered these through its deferred register. Data files
+    // reference them by id (fluid effects above all), so they must exist before datapack load.
+    slimeknights.tconstruct.common.Sounds.registerSounds();
+
     // Content modules, in the Forge build's construction order. Touching each class runs its
     // registrations (eager registers); init() replaces that module's event handlers.
     TinkerAttributes.init();
@@ -96,6 +100,19 @@ public class TConstructBootstrap implements ModInitializer {
     slimeknights.tconstruct.tools.TinkerToolParts.init();
     slimeknights.tconstruct.tools.TinkerTools.init();
     slimeknights.tconstruct.gadgets.TinkerGadgets.init();
+
+    // Event layer: the Fabric-callback side of the bridge, then every gameplay handler's
+    // listener registration on the shim bus (their events post from the bridge mixins).
+    slimeknights.tconstruct.fabric.events.TinkerEventBridge.init();
+    slimeknights.tconstruct.tools.logic.ToolEvents.init();
+    slimeknights.tconstruct.tools.logic.ModifierEvents.init();
+    slimeknights.tconstruct.tools.logic.EquipmentChangeWatcher.init();
+    slimeknights.tconstruct.tools.logic.DoubleJumpHandler.init();
+    slimeknights.tconstruct.tools.logic.InteractionHandler.init();
+    slimeknights.tconstruct.shared.CommonsEvents.init();
+    slimeknights.tconstruct.shared.AchievementEvents.init();
+    slimeknights.tconstruct.world.WorldEvents.init();
+    slimeknights.tconstruct.library.utils.SlimeBounceHandler.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

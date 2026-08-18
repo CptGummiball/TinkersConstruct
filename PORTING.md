@@ -648,6 +648,61 @@ plus a small runtime layer:
   enchantment pass), 4 `tank_capacity` (fluid capability step); the 39 tag errors are
   downstream of those.
 
+### Event layer — **DONE, server boots clean (Done 0.768s), 23 mixins apply, 0 failures**
+
+Forge's event bus was the spine of Tinkers' gameplay: mining speed, the damage pipeline,
+jumps, shield blocks, projectile impacts, equipment changes. Fabric has callbacks for a
+handful of those and nothing for the rest. The port keeps the handlers' source shape and
+supplies the events underneath:
+
+- **15 new shim events** joined the existing ones under `mantle/event/`: the three damage
+  stages plus death (`LivingDamageEvents`), fall, knockback, the misc family
+  (`LivingMiscEvents`: visibility, experience drop, get-projectile, equipment change,
+  shield block), `ProjectileImpactEvent` (with Forge's `ImpactResult`), the
+  `PlayerInteractEvent` family, `AttackEntityEvent`, `CriticalHitEvent`,
+  `BlockEvent.BreakEvent`, `MobEffectEvent.Applicable`, plus `PlayerEvent.StartTracking`
+  and `ItemCraftedEvent`. Each surface is cut to exactly what the handlers consume.
+- **The bridge is two-sided.** Fabric callbacks (`UseBlock`, `UseEntity`, `AttackBlock`,
+  `AttackEntity`, entity tracking) post through `TinkerEventBridge`, which translates
+  cancellation back into each callback's return contract. Everything else comes from
+  **23 mixins**, one per vanilla class, every injection point javap-verified against the
+  mapped jar before it was written.
+- **Notable seams**: the damage pipeline is three distinct injections (`hurt` entry,
+  `actuallyHurt` for the pre-armor amount, post-armor/magic for the final amount, each
+  cancelable like Forge's); shield blocking redirects the block check *and* the shield
+  damage so `setShieldTakesDamage(false)` works; break speed pairs a `getDestroySpeed`
+  return injection with a `getDestroyProgress` position stash, because half the mining
+  modifiers need the block position Forge's overload carried; critical hits combine a
+  variable injection on the crit flag with a constant injection on vanilla's 1.5×;
+  equipment changes read vanilla's own last-item accessors before they update.
+- **Handlers ported 1:1**, `@SubscribeEvent` becoming explicit `init()` registrations that
+  preserve every original priority: ToolEvents, ModifierEvents, EquipmentChangeWatcher,
+  DoubleJumpHandler, InteractionHandler (516 lines of interaction logic), CommonsEvents,
+  AchievementEvents, WorldEvents, SlimeBounceHandler.
+- **1.21 API work inside the handlers**: `getDamageProtection` became server-level and
+  float-valued; `hurtAndBreak` takes an equipment slot instead of a break-consumer;
+  fire resistance is a data component; effects are holder-keyed; `doPostHurtEffects` +
+  `doPostDamageEffects` collapsed into `doPostAttackEffects`; gravity moved to an
+  attribute. Fabric has no `FakePlayer` in the Forge sense, so the checks became
+  "is this exactly a `ServerPlayer`".
+- **The shim bus dispatches on exact class**, so the enderference teleport listener
+  registers for all 13 concrete teleport events rather than a base type — otherwise
+  blocking would silently miss sling and ender-slime teleports.
+- **Wandering trades** moved to Fabric's `TradeOfferHelper` (pool 2 mirrors Forge's rare
+  list); **shearing** now runs on vanilla's `Shearable` interface (entities spawn their own
+  drops, so the fortune bonus no longer applies — Forge-only behavior, noted at the site);
+  **looting** is posted from `getEnchantmentLevel`, the single 1.21 funnel every drop path
+  uses — without that seam every looting modifier reads zero.
+- **Also fixed here**: `Sounds.registerSounds()` was never called, so sound-referencing
+  data failed to parse. Two fluid effects and two recipes still fail on the enchantment
+  datapack registry (that pass), and `restrict_projectile_angle` + `shears` loaders are
+  registered again (dynamic modifier failures 39 → 34).
+- **Deliberately deferred**: the global-loot-modifier subsystem (21 entries — lustrous ore
+  bonuses, tasty bacon, wither bone, chrysophilite) has no Fabric equivalent and needs its
+  own runtime; it is parked with a full description of what that runtime requires. The four
+  legacy ability-modifier classes stay parked: zero references, their behavior is datapack
+  modules now.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

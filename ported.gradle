@@ -164,3 +164,6 @@ slimeknights/tconstruct/gadgets/**
 slimeknights/mantle/recipe/MantleRecipes.java
 slimeknights/mantle/recipe/crafting/ShapedFallbackRecipe.java
 slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipe.java
+
+# --- Event-layer round ---
+slimeknights/mantle/util/Lazy.java

@@ -159,3 +159,21 @@ accessible field net/minecraft/world/item/crafting/ShapelessRecipe result Lnet/m
 accessible field net/minecraft/world/item/crafting/ShapedRecipe pattern Lnet/minecraft/world/item/crafting/ShapedRecipePattern;
 accessible field net/minecraft/world/item/crafting/ShapedRecipe result Lnet/minecraft/world/item/ItemStack;
 accessible field net/minecraft/world/item/crafting/ShapedRecipePattern data Ljava/util/Optional;
+# Event bridge (LivingEntityEventsMixin): the equipment-change event reads the last-seen
+# armor stack per slot the same way the Forge patch did; getLastHandItem is widened above.
+accessible method net/minecraft/world/entity/LivingEntity getLastArmorItem (Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;
+# Gameplay event handlers (tools/logic round):
+# LivingEntity.lastPos — livingWalk boot-modifier hook reads the previous block position
+# (vanilla updates it later in aiStep); the Forge build read the same field via its AT.
+accessible field net/minecraft/world/entity/LivingEntity lastPos Lnet/minecraft/core/BlockPos;
+# Projectile/arrow internals for the reflecting shield + enderference arrow reimplementation
+# in ModifierEvents.projectileImpact, all reached through the Forge AT before.
+accessible field net/minecraft/world/entity/projectile/Projectile leftOwner Z
+accessible field net/minecraft/world/entity/projectile/AbstractArrow soundEvent Lnet/minecraft/sounds/SoundEvent;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow piercingIgnoreEntityIds Lit/unimi/dsi/fastutil/ints/IntOpenHashSet;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow piercedAndKilledEntities Ljava/util/List;
+accessible method net/minecraft/world/entity/projectile/AbstractArrow doPostHurtEffects (Lnet/minecraft/world/entity/LivingEntity;)V
+accessible method net/minecraft/world/entity/projectile/AbstractArrow getPickupItem ()Lnet/minecraft/world/item/ItemStack;
+# BeehiveBlock bee-release internals used by the kama's hive harvest (public in 1.20, private now)
+accessible method net/minecraft/world/level/block/BeehiveBlock hiveContainsBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Z
+accessible method net/minecraft/world/level/block/BeehiveBlock angerNearbyBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V

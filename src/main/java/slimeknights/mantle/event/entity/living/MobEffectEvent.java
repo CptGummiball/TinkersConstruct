@@ -25,6 +25,28 @@ public class MobEffectEvent extends LivingEvent {
     return effectInstance;
   }
 
+  /**
+   * Fired to decide whether an effect may be applied; set the result to DENY to grant
+   * immunity. Posted by the event bridge's {@code canBeAffected} mixin.
+   */
+  public static class Applicable extends MobEffectEvent {
+    public Applicable(LivingEntity entity, MobEffectInstance instance) {
+      super(entity, instance);
+    }
+
+    @Override
+    public boolean hasResult() {
+      return true;
+    }
+
+    @Override
+    public MobEffectInstance getEffectInstance() {
+      MobEffectInstance instance = super.getEffectInstance();
+      assert instance != null; // Applicable always carries the instance being tested
+      return instance;
+    }
+  }
+
   /** Fired when a new effect instance is added or an existing one is upgraded */
   public static class Added extends MobEffectEvent {
     @Nullable

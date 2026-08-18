@@ -10,10 +10,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.IForgeShearable;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.Shearable;
 import slimeknights.mantle.item.ToolAction;
 import slimeknights.mantle.item.ToolActions;
-import net.minecraftforge.eventbus.api.Event.Result;
+import slimeknights.mantle.event.Event.Result;
 import slimeknights.mantle.data.loadable.primitive.FloatLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.tconstruct.library.events.TinkerToolEvent.ToolShearEvent;
@@ -95,11 +97,11 @@ public record ShearsModule(float flatBonus, float perLevelBonus, float expandedB
     if (result != Result.DEFAULT) {
       return result == Result.ALLOW;
     }
-    // fallback to forge shearable
-    if (entity instanceof IForgeShearable target && target.isShearable(itemStack, world, entity.blockPosition())) {
+    // fallback to the vanilla shearable interface (what Fabric mods implement); unlike
+    // Forge's IForgeShearable the entity spawns its own drops and ignores the fortune bonus
+    if (entity instanceof Shearable target && target.readyForShearing()) {
       if (!world.isClientSide) {
-        target.onSheared(player, itemStack, world, entity.blockPosition(), fortune)
-          .forEach(stack -> ModifierUtil.dropItem(entity, stack));
+        target.shear(SoundSource.PLAYERS);
       }
       return true;
     }
@@ -117,7 +119,8 @@ public record ShearsModule(float flatBonus, float perLevelBonus, float expandedB
     // use looting instead of fortune, as that is our hook with entity access
     // modifier can always use tags or the nullable parameter to distinguish if needed
     LootingContext context = new LootingContext(player, target, null, Util.getSlotType(hand));
-    int looting = LootingModifierHook.getLooting(tool, context, player.getItemInHand(hand).getEnchantmentLevel(Enchantments.MOB_LOOTING));
+    int looting = LootingModifierHook.getLooting(tool, context, net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
+      player.level().registryAccess().registryOrThrow(Registries.ENCHANTMENT).getHolderOrThrow(Enchantments.LOOTING), player.getItemInHand(hand)));
     looting = ArmorLootingModifierHook.getLooting(tool, context, looting);
     Level world = player.getCommandSenderWorld();
     if (shearEntity(stack, tool, world, player, target, looting)) {

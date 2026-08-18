@@ -4,11 +4,21 @@
   "package": "slimeknights.tconstruct.fabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "BlockEventsMixin",
+    "BlockStateBaseEventsMixin",
     "DefaultAttributesMixin",
+    "EnchantmentHelperLootingMixin",
+    "EnderManEventsMixin",
+    "EntityDropsMixin",
+    "LivingEntityEventsMixin",
+    "PlayerEventsMixin",
+    "ProjectileEventsMixin",
     "RecipeManagerConditionsMixin",
     "RecipeManagerIdMixin",
     "ReloadableServerResourcesMixin",
-    "ServerAdvancementManagerConditionsMixin"
+    "ServerAdvancementManagerConditionsMixin",
+    "ServerPlayerEventsMixin",
+    "ServerPlayerGameModeEventsMixin"
   ],
   "injectors": { "defaultRequire": 1 }
 }
