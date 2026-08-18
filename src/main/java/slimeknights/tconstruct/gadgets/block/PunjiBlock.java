@@ -6,7 +6,6 @@ import net.minecraft.core.Direction.Axis;
 import net.minecraft.core.Direction.AxisDirection;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -21,12 +20,10 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -51,11 +48,8 @@ public class PunjiBlock extends Block {
                                             .setValue(WATERLOGGED, false));
   }
 
-  @Nullable
-  @Override
-  public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
-    return BlockPathTypes.DAMAGE_OTHER;
-  }
+  // 1.21: the Forge path-type override is gone; TinkerGadgets registers DAMAGE_OTHER
+  // through Fabric's LandPathNodeTypesRegistry instead
 
   @SuppressWarnings("deprecation")
   @Deprecated

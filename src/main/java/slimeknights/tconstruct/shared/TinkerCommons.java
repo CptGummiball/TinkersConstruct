@@ -245,8 +245,8 @@ public final class TinkerCommons extends TinkerModule {
 
     // slimeballs are in world
 
-    // PORT phase 4: TinkerGadgets.addTabItems and TinkerModifiers.addTabItems return here
-    // when the gadgets/tools modules gate in
+    slimeknights.tconstruct.gadgets.TinkerGadgets.addTabItems(itemDisplayParameters, output);
     TinkerMaterials.addTabItems(itemDisplayParameters, output);
+    slimeknights.tconstruct.tools.TinkerModifiers.addTabItems(itemDisplayParameters, output);
   }
 }

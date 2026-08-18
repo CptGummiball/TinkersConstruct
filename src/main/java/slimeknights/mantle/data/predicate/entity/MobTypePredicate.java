@@ -25,11 +25,15 @@ public record MobTypePredicate(TagKey<EntityType<?>> type) implements LivingEnti
     new NamedComponentRegistry<>("Unknown mob type");
 
   static {
-    // Names match Forge's MobType constants so existing JSON keeps parsing.
-    MOB_TYPES.register(slimeknights.mantle.Mantle.commonResource("undead"), EntityTypeTags.UNDEAD);
-    MOB_TYPES.register(slimeknights.mantle.Mantle.commonResource("arthropod"), EntityTypeTags.ARTHROPOD);
-    MOB_TYPES.register(slimeknights.mantle.Mantle.commonResource("illager"), EntityTypeTags.ILLAGER);
-    MOB_TYPES.register(slimeknights.mantle.Mantle.commonResource("water"), EntityTypeTags.AQUATIC);
+    // Upstream registered the MobType constants under the minecraft namespace
+    // (bare `new ResourceLocation("undead")`), and the shipped JSON says
+    // "mobs": "minecraft:undead" — so these must live there too.
+    // PORT: upstream also had minecraft:undefined -> MobType.UNDEFINED; there is no
+    // tag for "no category", and no shipped data references it.
+    MOB_TYPES.register(net.minecraft.resources.ResourceLocation.withDefaultNamespace("undead"), EntityTypeTags.UNDEAD);
+    MOB_TYPES.register(net.minecraft.resources.ResourceLocation.withDefaultNamespace("arthropod"), EntityTypeTags.ARTHROPOD);
+    MOB_TYPES.register(net.minecraft.resources.ResourceLocation.withDefaultNamespace("illager"), EntityTypeTags.ILLAGER);
+    MOB_TYPES.register(net.minecraft.resources.ResourceLocation.withDefaultNamespace("water"), EntityTypeTags.AQUATIC);
   }
 
   /** Loader for a mob type predicate */

@@ -132,3 +132,21 @@ accessible field net/minecraft/world/item/context/BlockPlaceContext replaceClick
 accessible field net/minecraft/world/inventory/AbstractContainerMenu menuType Lnet/minecraft/world/inventory/MenuType;
 # BrushModule reuses the vanilla brush's dust particle spawning
 accessible method net/minecraft/world/item/BrushItem spawnDustParticles (Lnet/minecraft/world/level/Level;Lnet/minecraft/world/phys/BlockHitResult;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/HumanoidArm;)V
+# CustomExplosion/EFLNExplosion (gadgets round): the subclasses read the vanilla
+# explosion's private state directly, as the Forge build did via patched access.
+# 1.21 removed getPosition()/getDamageSource(); center() covers position, the
+# damageSource field read replaces the removed getter.
+accessible field net/minecraft/world/level/Explosion fire Z
+accessible field net/minecraft/world/level/Explosion level Lnet/minecraft/world/level/Level;
+accessible field net/minecraft/world/level/Explosion x D
+accessible field net/minecraft/world/level/Explosion y D
+accessible field net/minecraft/world/level/Explosion z D
+accessible field net/minecraft/world/level/Explosion source Lnet/minecraft/world/entity/Entity;
+accessible field net/minecraft/world/level/Explosion radius F
+accessible field net/minecraft/world/level/Explosion damageCalculator Lnet/minecraft/world/level/ExplosionDamageCalculator;
+accessible field net/minecraft/world/level/Explosion damageSource Lnet/minecraft/world/damagesource/DamageSource;
+# FancyItemFrameEntity: setRotation(int, boolean) is private in vanilla but the fancy
+# frames override it for 16-step/capped rotation; extendable rewrites the internal
+# invokespecial so the override is actually virtual. DATA_ROTATION is written raw.
+extendable method net/minecraft/world/entity/decoration/ItemFrame setRotation (IZ)V
+accessible field net/minecraft/world/entity/decoration/ItemFrame DATA_ROTATION Lnet/minecraft/network/syncher/EntityDataAccessor;

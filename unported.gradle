@@ -62,8 +62,8 @@ slimeknights/mantle/item/ILecternBookItem.java
 # --- library/utils: blocked on the Fabric event layer (a dedicated later step) ---
 # LivingTickEvent/PlayerLoggedOut have no direct Fabric equivalents; needs the event layer.
 slimeknights/tconstruct/library/utils/SlimeBounceHandler.java
-# ForgeEventFactory explosion hooks; belongs with the event layer.
-slimeknights/tconstruct/library/utils/CustomExplosion.java
+# (gadgets round) CustomExplosion gated in: the explosion hooks moved to the mantle
+# ForgeEventFactory shim, the knockback dampener to the 1.21 attribute.
 
 # --- Core-slice deferrals ---
 # Forge capability system (entity data, tool fluid/energy caps). Ports onto Cardinal
@@ -89,11 +89,8 @@ slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
 slimeknights/tconstruct/library/json/loot/equipment/MobEquipment.java
 slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 
-# --- Waiting on the event-layer step ---
-# Both construct CustomExplosion (utils, also event-layer); ProjectileExplosionModule
-# additionally needs gadgets' EFLNExplosion.
-slimeknights/tconstruct/library/modifiers/fluid/general/ExplosionFluidEffect.java
-slimeknights/tconstruct/library/modifiers/modules/combat/ProjectileExplosionModule.java
+# (gadgets round) ExplosionFluidEffect + ProjectileExplosionModule gated in alongside
+# CustomExplosion/EFLNExplosion; their loaders are registered again in TinkerModifiers.
 
 # --- Waiting on the energy step (Team Reborn Energy compat) ---
 slimeknights/tconstruct/library/modifiers/modules/capacity/EnergyAsCapacityModule.java
@@ -263,3 +260,16 @@ slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifie
 slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityModifier.java
 slimeknights/tconstruct/tools/modules/OverburnModule.java
 slimeknights/tconstruct/tools/modules/MeltingFluidEffectiveModule.java
+
+# --- Phase 4 gadgets round: parked pieces ---
+# Client-only (phase 5): frame/shuriken renderers + model/color event wiring.
+slimeknights/tconstruct/gadgets/GadgetClientEvents.java
+slimeknights/tconstruct/gadgets/client/**
+# Datagen (phase 7).
+slimeknights/tconstruct/gadgets/data/**
+# Forge attach-capability glue; superseded by the static PiggybackHandler tracker.
+slimeknights/tconstruct/gadgets/capability/PiggybackCapability.java
+# Dead code upstream (never registered) AND Forge-only: onMinecartPass is a Forge Block
+# extension with no Fabric hook, and the cart-side item capability needs an entity
+# storage bridge. If it ever becomes content, wire via an AbstractMinecart mixin.
+slimeknights/tconstruct/gadgets/block/DropperRailBlock.java

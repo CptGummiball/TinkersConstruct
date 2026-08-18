@@ -37,4 +37,14 @@ public class ForgeEventFactory {
   public static boolean onProjectileImpact(net.minecraft.world.entity.projectile.Projectile projectile, net.minecraft.world.phys.HitResult hitResult) {
     return false;
   }
+
+  /** Forge's explosion-start cancel hook; false means not cancelled. */
+  public static boolean onExplosionStart(net.minecraft.world.level.Level level, net.minecraft.world.level.Explosion explosion) {
+    return false;
+  }
+
+  /** Forge's explosion-detonate hook (lets listeners edit the affected entity list); no-op until the event layer lands. */
+  public static void onExplosionDetonate(net.minecraft.world.level.Level level, net.minecraft.world.level.Explosion explosion, java.util.List<net.minecraft.world.entity.Entity> entities, double diameter) {
+    // no Fabric equivalent; kept as the hook point for the event-layer step
+  }
 }

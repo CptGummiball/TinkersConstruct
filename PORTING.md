@@ -515,6 +515,72 @@ entities, and the module/predicate/loader registries. 322 gate-in errors, then a
   `LivingEntityUseItemEvent.Finish`, `LivingDropsEvent`.
 - The smeltery round's parked fluid-cannon projectile shot is restored now that
   `fluid_spit` registers.
+
+### Phase 4, seventh slice: the gadgets module — **DONE, server boots clean (Done 0.885s)** — phase 4 content complete
+
+The last content module: punji sticks, seven food cakes, six fancy item frames, the
+piggyback pack + carry effect, and the four legacy throwables (glowball, EFLN, two
+shurikens) with their entities. Smallest error mountain of the port: **3 compile errors**
+(one root cause — `BlockSource` moved to `net.minecraft.core.dispenser`), because every
+signature was javap-verified before editing. Key decisions:
+
+- **CustomExplosion unparked with the round** (EFLN needs it): the 1.21 explosion
+  carries particles + sound in its constructor, `center()`/`radius()` replace
+  `getPosition()`/the radius getter, `getDamageSource()` is gone (AW field read),
+  and the blast-protection knockback dampener became the
+  `EXPLOSION_KNOCKBACK_RESISTANCE` attribute. The Forge per-entity block-resistance
+  hooks in EFLNExplosion collapse into the vanilla `ExplosionDamageCalculator`
+  (identical numbers; vanilla wraps the source entity in one). `ClientboundExplodePacket`
+  takes interaction + particles + sound now. `ignoreExplosion(Explosion)` forces the
+  default entity predicate to be per-instance instead of a static constant.
+  **ExplosionFluidEffect + ProjectileExplosionModule unparked alongside** — their
+  loaders (`tconstruct:explosion`, `tconstruct:projectile_explosion`) register again.
+- **Forge spawn-data surface deleted, not shimmed**: ThrowableItemProjectile syncs its
+  item through entity data since 1.20.5, and the item frame's pos/direction ride the
+  vanilla spawn packet; `IEntityAdditionalSpawnData`/`NetworkHooks` had nothing left to
+  carry.
+- **Fancy frames' special rotation survives via `extendable`**: vanilla's
+  `ItemFrame.setRotation(int, boolean)` is private; the AW `extendable` entry rewrites
+  the internal invokespecial so the 16-step/diamond-capped override is actually virtual
+  again. `DATA_ROTATION` opened for the raw write.
+- **Piggyback capability → weak map**: the Forge capability never serialized (it only
+  deduplicates passenger resync packets), so a `WeakHashMap<Player, List<UUID>>` in
+  `PiggybackHandler` replaces the whole attach ceremony; UUID values so entries never
+  pin their keys. `PiggybackCapability` parked as superseded glue. Carry effect on the
+  1.21 surface (`shouldApplyEffectTickThisTick`, boolean `applyEffectTick`,
+  resource-location attribute key, `ADD_MULTIPLIED_TOTAL`); its HUD icons are a phase-5
+  PORT note.
+- **Cakes on the 1.21 food/use surface**: `FoodProperties` record accessors +
+  `PossibleEffect` (probability moved into the record), use split into
+  `useItemOn`/`useWithoutItem` — eating deliberately outranks candle placement, as
+  upstream's full `use` override did. Composting via Fabric's
+  `CompostingChanceRegistry`, punji's `DAMAGE_OTHER` via `LandPathNodeTypesRegistry`.
+- **Frame ghost items**: `stack.getTag()` → `DataComponents.ENTITY_DATA` CustomData,
+  `updateCustomEntityTag` takes the component now. Frame pick is vanilla `getPickResult()`
+  (the Forge HitResult overload is gone).
+- **DropperRailBlock parked twice over**: never registered upstream (dead code) *and*
+  `onMinecartPass` is a Forge Block extension with no Fabric hook — if it ever becomes
+  content it needs an AbstractMinecart mixin plus an entity item-storage bridge.
+- **Bonus heal — Mantle's predicate vocabulary**: upstream Mantle's `@Mod` class
+  registered the `mantle:` named predicate loaders (can_protect, fire_immune, mob_type,
+  eyes_in_water, …); the vendored port had dropped that wiring, so every dynamic
+  modifier JSON touching them failed to parse. New `MantlePredicates.init()` replicates
+  the upstream table verbatim (fetched from the 1.20 branch) from the bootstrap
+  (`fluid_type`/`may_have_transfer` skipped with PORT notes — Forge-capability-bound,
+  unreferenced by data). MobTypePredicate's names moved from `c:` to the `minecraft:`
+  namespace upstream data actually speaks. **Dynamic modifier failures: 107 → 75.**
+- **The remaining 75 dynamic-modifier parse failures are all named later passes**:
+  37 × legacy attribute-operation names (`addition`/`multiply_base`/`multiply_total` →
+  1.21 renamed the enum; heals in the data migration pass), 12 × enchantment loadable
+  (enchantments are a datapack registry now; needs registry-access-aware parsing),
+  22 × parked capability/event module loaders (inventory, shears, quiver, overburn, …),
+  4 × `tconstruct:tank_capacity` (fluid capability step). Tag/redirect errors in the
+  log are downstream of these.
+
+**Phase 4 is content-complete**: shared ✓ fluids ✓ world ✓ tables ✓ smeltery ✓ tools ✓
+gadgets ✓. Next up are the cross-cutting passes: event layer, capability step, data
+migration (recipes load!), then client, compat, datagen + docs.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

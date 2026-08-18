@@ -156,3 +156,6 @@ slimeknights/mantle/util/WeakConsumerWrapper.java
 slimeknights/tconstruct/tools/**
 slimeknights/tconstruct/common/network/UpdateNeighborsPacket.java
 slimeknights/mantle/util/AbstractProjectileDispenseBehavior.java
+
+# --- Phase 4: gadgets module (punji, cakes, item frames, throwables, piggyback) ---
+slimeknights/tconstruct/gadgets/**

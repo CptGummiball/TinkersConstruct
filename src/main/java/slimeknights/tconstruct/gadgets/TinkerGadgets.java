@@ -1,22 +1,20 @@
 package slimeknights.tconstruct.gadgets;
 
-import net.minecraft.data.DataGenerator;
+import net.fabricmc.fabric.api.registry.CompostingChanceRegistry;
+import net.fabricmc.fabric.api.registry.LandPathNodeTypesRegistry;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.CreativeModeTab.ItemDisplayParameters;
 import net.minecraft.world.item.CreativeModeTab.Output;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Item.Properties;
-import net.minecraft.world.level.block.ComposterBlock;
 import net.minecraft.world.level.block.DispenserBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.world.level.pathfinder.PathType;
+import slimeknights.mantle.registration.RegistryObject;
 import slimeknights.mantle.registration.object.EnumObject;
 import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.tconstruct.common.TinkerModule;
@@ -24,8 +22,6 @@ import slimeknights.tconstruct.gadgets.block.FoodCakeBlock;
 import slimeknights.tconstruct.gadgets.block.FoodCakeBlock.EffectCombination;
 import slimeknights.tconstruct.gadgets.block.InvertedCakeBlock;
 import slimeknights.tconstruct.gadgets.block.PunjiBlock;
-import slimeknights.tconstruct.gadgets.capability.PiggybackCapability;
-import slimeknights.tconstruct.gadgets.data.GadgetRecipeProvider;
 import slimeknights.tconstruct.gadgets.entity.EFLNEntity;
 import slimeknights.tconstruct.gadgets.entity.FancyItemFrameEntity;
 import slimeknights.tconstruct.gadgets.entity.FrameType;
@@ -42,12 +38,16 @@ import slimeknights.tconstruct.gadgets.item.ShurikenItem;
 import slimeknights.tconstruct.shared.TinkerFood;
 import slimeknights.tconstruct.world.block.FoliageType;
 
+import java.util.function.Supplier;
+
 /**
  * Contains any special tools unrelated to the base tools.
  * TODO: consider merging this into commons, the distinction of what is a gadget is getting pretty narrow.
  */
 @SuppressWarnings("unused")
 public final class TinkerGadgets extends TinkerModule {
+  private TinkerGadgets() {}
+
   /* Block base properties */
 
   /*
@@ -81,14 +81,15 @@ public final class TinkerGadgets extends TinkerModule {
   public static final EnumObject<FoliageType,FoodCakeBlock> cake;
   public static final ItemObject<FoodCakeBlock> magmaCake;
   static {
-    BlockBehaviour.Properties CAKE = builder(SoundType.WOOL).forceSolidOn().strength(0.5F).sound(SoundType.WOOL).pushReaction(PushReaction.DESTROY);
+    // fresh properties per block; 1.21 dislikes sharing one builder across registrations
+    Supplier<BlockBehaviour.Properties> CAKE = () -> builder(SoundType.WOOL).forceSolidOn().strength(0.5F).sound(SoundType.WOOL).pushReaction(PushReaction.DESTROY);
     cake = BLOCKS.registerEnum(FoliageType.values(), "cake", type -> {
       if (type == FoliageType.ICHOR) {
-        return new InvertedCakeBlock(CAKE, TinkerFood.ICHOR_CAKE, EffectCombination.BLOCK);
+        return new InvertedCakeBlock(CAKE.get(), TinkerFood.ICHOR_CAKE, EffectCombination.BLOCK);
       }
-      return new FoodCakeBlock(CAKE, TinkerFood.getCake(type), type == FoliageType.ENDER ? EffectCombination.ADD : EffectCombination.BLOCK);
+      return new FoodCakeBlock(CAKE.get(), TinkerFood.getCake(type), type == FoliageType.ENDER ? EffectCombination.ADD : EffectCombination.BLOCK);
     }, UNSTACKABLE_BLOCK_ITEM);
-    magmaCake = BLOCKS.register("magma_cake", () -> new FoodCakeBlock(CAKE, TinkerFood.MAGMA_CAKE, EffectCombination.BLOCK), UNSTACKABLE_BLOCK_ITEM);
+    magmaCake = BLOCKS.register("magma_cake", () -> new FoodCakeBlock(CAKE.get(), TinkerFood.MAGMA_CAKE, EffectCombination.BLOCK), UNSTACKABLE_BLOCK_ITEM);
   }
 
   // Shurikens
@@ -100,45 +101,35 @@ public final class TinkerGadgets extends TinkerModule {
     EntityType.Builder.<FancyItemFrameEntity>of(
       FancyItemFrameEntity::new, MobCategory.MISC)
       .sized(0.5F, 0.5F)
-      .setTrackingRange(10)
-      .setUpdateInterval(Integer.MAX_VALUE)
-      .setCustomClientFactory((spawnEntity, world) -> new FancyItemFrameEntity(TinkerGadgets.itemFrameEntity.get(), world))
-      .setShouldReceiveVelocityUpdates(false)
+      .clientTrackingRange(10)
+      .updateInterval(Integer.MAX_VALUE)
   );
   @Deprecated
   public static final RegistryObject<EntityType<GlowballEntity>> glowBallEntity = ENTITIES.register("glow_ball", () ->
     EntityType.Builder.<GlowballEntity>of(GlowballEntity::new, MobCategory.MISC)
       .sized(0.25F, 0.25F)
-      .setTrackingRange(4)
-      .setUpdateInterval(10)
-      .setCustomClientFactory((spawnEntity, world) -> new GlowballEntity(TinkerGadgets.glowBallEntity.get(), world))
-      .setShouldReceiveVelocityUpdates(true)
+      .clientTrackingRange(4)
+      .updateInterval(10)
   );
   @Deprecated
   public static final RegistryObject<EntityType<EFLNEntity>> eflnEntity = ENTITIES.register("efln_ball", () ->
     EntityType.Builder.<EFLNEntity>of(EFLNEntity::new, MobCategory.MISC)
       .sized(0.25F, 0.25F)
-      .setTrackingRange(4)
-      .setUpdateInterval(10)
-      .setCustomClientFactory((spawnEntity, world) -> new EFLNEntity(TinkerGadgets.eflnEntity.get(), world))
-      .setShouldReceiveVelocityUpdates(true));
+      .clientTrackingRange(4)
+      .updateInterval(10));
   @Deprecated
   public static final RegistryObject<EntityType<QuartzShurikenEntity>> quartzShurikenEntity = ENTITIES.register("quartz_shuriken", () ->
     EntityType.Builder.<QuartzShurikenEntity>of(QuartzShurikenEntity::new, MobCategory.MISC)
       .sized(0.25F, 0.25F)
-      .setTrackingRange(4)
-      .setUpdateInterval(10)
-      .setCustomClientFactory((spawnEntity, world) -> new QuartzShurikenEntity(TinkerGadgets.quartzShurikenEntity.get(), world))
-      .setShouldReceiveVelocityUpdates(true)
+      .clientTrackingRange(4)
+      .updateInterval(10)
   );
   @Deprecated
   public static final RegistryObject<EntityType<FlintShurikenEntity>> flintShurikenEntity = ENTITIES.register("flint_shuriken", () ->
     EntityType.Builder.<FlintShurikenEntity>of(FlintShurikenEntity::new, MobCategory.MISC)
       .sized(0.25F, 0.25F)
-      .setTrackingRange(4)
-      .setUpdateInterval(10)
-      .setCustomClientFactory((spawnEntity, world) -> new FlintShurikenEntity(TinkerGadgets.flintShurikenEntity.get(), world))
-      .setShouldReceiveVelocityUpdates(true)
+      .clientTrackingRange(4)
+      .updateInterval(10)
   );
 
   /*
@@ -146,27 +137,22 @@ public final class TinkerGadgets extends TinkerModule {
    */
   public static final RegistryObject<CarryPotionEffect> carryEffect = MOB_EFFECTS.register("carry", CarryPotionEffect::new);
 
-  /*
-   * Events
+  /**
+   * Fabric setup: everything Forge ran in commonSetup/enqueueWork. Registration itself
+   * already happened eagerly when this class initialized.
    */
-  @SubscribeEvent
-  void commonSetup(final FMLCommonSetupEvent event) {
-    PiggybackCapability.register();
-    event.enqueueWork(() -> {
-      cake.forEach(block -> ComposterBlock.add(1.0f, block));
-      ComposterBlock.add(1.0f, magmaCake.get());
+  public static void init() {
+    // punji sticks hurt to walk over; the Forge path-type override became a Fabric registry
+    LandPathNodeTypesRegistry.register(punji.get(), PathType.DAMAGE_OTHER, null);
 
-      DispenserBlock.registerBehavior(glowBall, new ShootProjectileDispenserBehavior(glowBallEntity.get()));
-      DispenserBlock.registerBehavior(efln, new ShootProjectileDispenserBehavior(eflnEntity.get()));
-      DispenserBlock.registerBehavior(flintShuriken, new ShootProjectileDispenserBehavior(flintShurikenEntity.get()));
-      DispenserBlock.registerBehavior(quartzShuriken, new ShootProjectileDispenserBehavior(quartzShurikenEntity.get()));
-    });
-  }
+    // cakes compost fully
+    cake.forEach(block -> CompostingChanceRegistry.INSTANCE.add(block, 1.0f));
+    CompostingChanceRegistry.INSTANCE.add(magmaCake.get(), 1.0f);
 
-  @SubscribeEvent
-  void gatherData(final GatherDataEvent event) {
-    DataGenerator generator = event.getGenerator();
-    generator.addProvider(event.includeServer(), new GadgetRecipeProvider(generator.getPackOutput()));
+    DispenserBlock.registerBehavior(glowBall, new ShootProjectileDispenserBehavior(glowBallEntity.get()));
+    DispenserBlock.registerBehavior(efln, new ShootProjectileDispenserBehavior(eflnEntity.get()));
+    DispenserBlock.registerBehavior(flintShuriken, new ShootProjectileDispenserBehavior(flintShurikenEntity.get()));
+    DispenserBlock.registerBehavior(quartzShuriken, new ShootProjectileDispenserBehavior(quartzShurikenEntity.get()));
   }
 
   /** Adds all relevant items to the creative tab, called by general tab */

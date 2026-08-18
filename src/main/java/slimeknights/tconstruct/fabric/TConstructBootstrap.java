@@ -66,6 +66,11 @@ public class TConstructBootstrap implements ModInitializer {
     CustomIngredientSerializer.register(PotionIngredient.SERIALIZER);
     CustomIngredientSerializer.register(PotionDisplayIngredient.SERIALIZER);
 
+    // Mantle's named predicate vocabulary (mantle:can_protect and friends); the dynamic
+    // modifier JSONs parse against these on datapack load. Upstream Mantle's mod class
+    // registered them during the recipe-serializer register event.
+    slimeknights.mantle.data.predicate.MantlePredicates.init();
+
     // Tinkers' own recipe conditions; data files reference them, so they must parse
     // before the first datapack load. Forge registered these through CraftingHelper.
     TagDifferencePresentCondition.register();
@@ -89,6 +94,7 @@ public class TConstructBootstrap implements ModInitializer {
     slimeknights.tconstruct.tools.TinkerModifiers.init();
     slimeknights.tconstruct.tools.TinkerToolParts.init();
     slimeknights.tconstruct.tools.TinkerTools.init();
+    slimeknights.tconstruct.gadgets.TinkerGadgets.init();
 
     // Further modules are wired in as each one finishes porting; see PORTING.md.
   }

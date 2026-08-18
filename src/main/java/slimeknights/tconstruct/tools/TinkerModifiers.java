@@ -91,7 +91,7 @@ import slimeknights.tconstruct.library.modifiers.fluid.general.AlternativesFluid
 import slimeknights.tconstruct.library.modifiers.fluid.general.AreaMobEffectFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.ConditionalFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.DropItemFluidEffect;
-// PORT (event layer): import slimeknights.tconstruct.library.modifiers.fluid.general.ExplosionFluidEffect;
+import slimeknights.tconstruct.library.modifiers.fluid.general.ExplosionFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.ScalingFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.SequenceFluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.general.SetBlockFluidEffect;
@@ -144,7 +144,7 @@ import slimeknights.tconstruct.library.modifiers.modules.combat.KnockbackModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.LootingModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.MeleeAttributeModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.MobEffectModule;
-// PORT (event layer): import slimeknights.tconstruct.library.modifiers.modules.combat.ProjectileExplosionModule;
+import slimeknights.tconstruct.library.modifiers.modules.combat.ProjectileExplosionModule;
 import slimeknights.tconstruct.library.modifiers.modules.combat.SlingForceModule;
 import slimeknights.tconstruct.library.modifiers.modules.display.DurabilityBarColorModule;
 import slimeknights.tconstruct.library.modifiers.modules.display.MaterialVariantColorModule;
@@ -821,7 +821,7 @@ public final class TinkerModifiers extends TinkerModule {
       FluidEffect.BLOCK_EFFECTS.register(getResource("melt_block"), MeltBlockFluidEffect.LOADER);
       // shared
       FluidEffect.registerGeneral(getResource("drop_item"), DropItemFluidEffect.LOADER);
-      // PORT (event layer): FluidEffect.registerGeneral(getResource("explosion"), ExplosionFluidEffect.LOADER);
+      FluidEffect.registerGeneral(getResource("explosion"), ExplosionFluidEffect.LOADER);
       FluidEffect.registerGeneral(getResource("set_block"), SetBlockFluidEffect.LOADER);
       FluidEffect.registerGeneral(getResource("area_mob_effect"), AreaMobEffectFluidEffect.LOADER);
 
@@ -876,7 +876,7 @@ public final class TinkerModifiers extends TinkerModule {
       ModifierModule.LOADER.register(getResource("conditional_power"), ConditionalPowerModule.LOADER);
       ModifierModule.LOADER.register(getResource("knockback"), KnockbackModule.LOADER);
       ModifierModule.LOADER.register(getResource("melee_attribute"), MeleeAttributeModule.LOADER);
-      // PORT (event layer): ModifierModule.LOADER.register(getResource("projectile_explosion"), ProjectileExplosionModule.LOADER);
+      ModifierModule.LOADER.register(getResource("projectile_explosion"), ProjectileExplosionModule.LOADER);
       ModifierModule.LOADER.register(getResource("sling_force"), SlingForceModule.LOADER);
       // mob effect
       ModifierModule.LOADER.register(getResource("mob_effect"), MobEffectModule.LOADER);
