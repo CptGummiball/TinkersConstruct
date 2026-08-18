@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "tconstruct:seared_bricks_wall",
+  "key": {
+    "B": {
+      "item": "tconstruct:seared_bricks"
+    }
+  },
+  "pattern": [
+    "BBB",
+    "BBB"
+  ],
+  "result": {
+    "id": "tconstruct:seared_bricks_wall",
+    "count": 6
+  },
+  "show_notification": true
+}

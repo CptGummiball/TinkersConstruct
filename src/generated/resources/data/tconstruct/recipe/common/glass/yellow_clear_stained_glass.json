@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "group": "tconstruct:stained_clear_glass",
+  "key": {
+    "#": {
+      "item": "tconstruct:clear_glass"
+    },
+    "X": {
+      "tag": "c:dyes/yellow"
+    }
+  },
+  "pattern": [
+    "###",
+    "#X#",
+    "###"
+  ],
+  "result": {
+    "id": "tconstruct:yellow_clear_stained_glass",
+    "count": 8
+  },
+  "show_notification": true
+}

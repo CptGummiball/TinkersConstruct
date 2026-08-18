@@ -150,3 +150,12 @@ accessible field net/minecraft/world/level/Explosion damageSource Lnet/minecraft
 # invokespecial so the override is actually virtual. DATA_ROTATION is written raw.
 extendable method net/minecraft/world/entity/decoration/ItemFrame setRotation (IZ)V
 accessible field net/minecraft/world/entity/decoration/ItemFrame DATA_ROTATION Lnet/minecraft/network/syncher/EntityDataAccessor;
+# ShapelessMaterialsRecipe re-serializes the shapeless result the same way the shaped
+# extensions below read theirs.
+accessible field net/minecraft/world/item/crafting/ShapelessRecipe result Lnet/minecraft/world/item/ItemStack;
+# Shaped recipe extensions (mantle retextured/fallback + Tinkers material recipes):
+# subclasses re-serialize the base recipe, so they read its package-private state, and
+# the "texture"/"parts" symbol strings resolve against the pattern's retained key map.
+accessible field net/minecraft/world/item/crafting/ShapedRecipe pattern Lnet/minecraft/world/item/crafting/ShapedRecipePattern;
+accessible field net/minecraft/world/item/crafting/ShapedRecipe result Lnet/minecraft/world/item/ItemStack;
+accessible field net/minecraft/world/item/crafting/ShapedRecipePattern data Ljava/util/Optional;

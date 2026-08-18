@@ -1,0 +1,31 @@
+{
+  "type": "tconstruct:modifier",
+  "allow_crystal": true,
+  "inputs": [
+    {
+      "fabric:type": "fabric:difference",
+      "base": {
+        "tag": "c:heads"
+      },
+      "subtracted": {
+        "item": "minecraft:dragon_head"
+      }
+    },
+    {
+      "tag": "c:slimeballs"
+    }
+  ],
+  "level": 1,
+  "result": "tconstruct:recapitated",
+  "tools": {
+    "fabric:type": "fabric:all",
+    "ingredients": [
+      {
+        "tag": "tconstruct:modifiable/bonus_slots"
+      },
+      {
+        "tag": "tconstruct:modifiable/skulls"
+      }
+    ]
+  }
+}

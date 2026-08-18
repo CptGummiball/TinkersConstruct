@@ -159,3 +159,8 @@ slimeknights/mantle/util/AbstractProjectileDispenseBehavior.java
 
 # --- Phase 4: gadgets module (punji, cakes, item frames, throwables, piggyback) ---
 slimeknights/tconstruct/gadgets/**
+
+# --- Data migration round: recipe-layer additions ---
+slimeknights/mantle/recipe/MantleRecipes.java
+slimeknights/mantle/recipe/crafting/ShapedFallbackRecipe.java
+slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipe.java

@@ -35,6 +35,8 @@ public class MantleLoot {
   public static LootItemConditionType TAG_EMPTY;
   /** Entry type for {@link TagPreferenceLootEntry} */
   public static LootPoolEntryType TAG_PREFERENCE;
+  /** Function type for {@link slimeknights.mantle.loot.function.RetexturedLootFunction} */
+  public static net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<slimeknights.mantle.loot.function.RetexturedLootFunction> RETEXTURED_FUNCTION;
 
   /** Registers the loot types; call once from the bootstrap */
   public static void register() {
@@ -44,6 +46,7 @@ public class MantleLoot {
     TAG_FILLED = condition("tag_filled", tagConditionCodec(TagFilledCondition::new));
     TAG_EMPTY = condition("tag_empty", tagConditionCodec(TagEmptyCondition::new));
     TAG_PREFERENCE = Registry.register(BuiltInRegistries.LOOT_POOL_ENTRY_TYPE, Mantle.getResource("tag_preference"), new LootPoolEntryType(TagPreferenceLootEntry.CODEC));
+    RETEXTURED_FUNCTION = Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Mantle.getResource("fill_retextured_block"), new net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<>(slimeknights.mantle.loot.function.RetexturedLootFunction.CODEC));
   }
 
   /** Registers a loot condition type */

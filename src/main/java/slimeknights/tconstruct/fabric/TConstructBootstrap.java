@@ -55,6 +55,7 @@ public class TConstructBootstrap implements ModInitializer {
 
     // Mantle infrastructure: packet channel plus the fluid container transfer loader.
     MantleNetwork.registerPackets();
+    slimeknights.mantle.recipe.MantleRecipes.init();
     FluidContainerTransferManager.INSTANCE.init();
     // transfer types referenced by the shipped data files; Forge Mantle registered these in
     // its mod constructor

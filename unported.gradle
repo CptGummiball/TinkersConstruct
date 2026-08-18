@@ -179,11 +179,8 @@ slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierRepairRec
 slimeknights/tconstruct/library/recipe/worktable/AbstractSizedIngredientRecipeBuilder.java
 slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuilder.java
 
-# --- vanilla shaped/shapeless material crafting: 1.21 rewrote ShapedRecipe around
-# ShapedRecipePattern; these three get their own rewrite pass ---
-slimeknights/tconstruct/library/recipe/material/ShapedMaterialRecipe.java
-slimeknights/tconstruct/library/recipe/material/ShapedMaterialsRecipe.java
-slimeknights/tconstruct/library/recipe/material/ShapelessMaterialsRecipe.java
+# --- tables-module recipe builders, same FinishedRecipe/RecipeOutput rework as the
+# datagen builders above (phase 7) ---
 slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
 slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "#": {
+      "tag": "c:ingots/cobalt"
+    },
+    ".": {
+      "tag": "c:nuggets/cobalt"
+    }
+  },
+  "pattern": [
+    "#.#",
+    ". .",
+    "#.#"
+  ],
+  "result": {
+    "id": "tconstruct:cobalt_platform",
+    "count": 4
+  },
+  "show_notification": true
+}

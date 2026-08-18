@@ -87,11 +87,9 @@ sourceSets {
             // Forge-only metadata; Fabric uses fabric.mod.json + accesswidener
             exclude 'META-INF/mods.toml'
             exclude 'META-INF/accesstransformer.cfg'
-            // Datapack-registry entries referencing content whose registration code is not
-            // ported yet. Vanilla treats these as fatal registry errors. worldgen/** was
-            // restored with the world module (phase 4); trim materials return with tools:
-            //   trim_material/** -> TinkerMaterials + tools (phase 4)
-            exclude 'data/tconstruct/trim_material'
+            // (data migration round) worldgen/** returned with the world module and
+            // trim_material/** with the data pass — its ingredient items exist since the
+            // tools module and the 1.20 JSON shape still parses on 1.21.1.
         }
     }
     // Tests exercise the Forge/1.20.1 tree and are ported alongside it; gate them the

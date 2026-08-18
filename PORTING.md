@@ -581,6 +581,73 @@ signature was javap-verified before editing. Key decisions:
 gadgets ✓. Next up are the cross-cutting passes: event layer, capability step, data
 migration (recipes load!), then client, compat, datagen + docs.
 
+### Data migration pass — **DONE: 3375 recipes, 1815 advancements, 0 loot errors (Done 0.879s)**
+
+The 5.5k shipped JSONs moved from the 1.20 Forge dialect to 1.21 Fabric. Before this pass
+zero Tinkers recipes loaded (1.21 reads `recipe/`, the data said `recipes/`); after it the
+full tree parses except two known deferrals. One migration script (idempotent, scratchpad)
+plus a small runtime layer:
+
+- **Folder renames** across every namespace and both resource roots: `recipes`→`recipe`,
+  `advancements`→`advancement`, `loot_tables`→`loot_table`, `structures`→`structure`,
+  `tags/{blocks,items,fluids,entity_types}`→singular.
+- **`forge:` tags → `c:`** (the 1.21 common-tag convention both loaders share): the whole
+  `data/forge/tags` tree moved into `data/c` (no collisions), and every `"#forge:` /
+  `"tag": "forge:` reference rewrote — this is what makes cross-mod GummiCraft materials
+  visible to recipes. `data/forge/loot_modifiers` stays for the event layer's GLM step.
+- **Conditions stay Forge-shaped, evaluated at load**: rather than rewriting 1021
+  conditional recipes and 416 conditional advancements to Fabric's resource conditions,
+  mixins on `RecipeManager`/`ServerAdvancementManager` apply the existing
+  `ConditionHelper` dialect before parsing — including unwrapping `forge:conditional`
+  recipes (66) and Forge's conditional-advancement wrapper (3). The condition context is
+  the real tag data: a `ReloadableServerResources` mixin publishes the `TagManager`
+  through `DataConditionContext` (vanilla loads tags before recipes/advancements).
+- **The recipe-ID problem, solved for JSON**: ~1700 recipes' loadables require
+  `ContextKey.ID`; 1.21 codecs never see the id, and `RecipeManager#fromJson` turned out
+  to be dead code (apply parses inline — found via probe stack, not assumption). A
+  `@Redirect` on the loop's single `Map.Entry#getValue()` call publishes each id through
+  `CurrentRecipeId` (ThreadLocal), and `LoadableRecipeSerializer` feeds it into the
+  context. Result: 1722 parse failures → 2. The network path still has no id — client
+  phase concern, noted on `CurrentRecipeId`.
+- **Vanilla-family formats**: crafting results `{"item"}` → `{"id"}` (321), cooking
+  result strings → stacks (22), stonecutting result+count → stack (20), advancement
+  icons item→id with the SNBT moved into `minecraft:custom_data` (41).
+- **Custom ingredients**: `"type"` → `"fabric:type"` for the seven Tinkers/Mantle custom
+  ingredient ids (parent-key guard keeps `tconstruct:material`/`block_tag` recipe ROOTS
+  untouched — the ids double as recipe types). Forge compound ingredients became Fabric
+  built-ins: `forge:intersection`→`fabric:all` (95), `forge:difference` (60, same
+  fields). **Hard-won rule**: vanilla 1.21 ingredient *arrays* hold plain item/tag values
+  only — a custom entry inside one never dispatches (Forge's loader allowed it). Arrays
+  containing customs are wrapped in `fabric:any` (38) — but NOT `inputs`/`ingredients`
+  keys, which are lists of *full* ingredients where customs are legal (first attempt
+  broke 15 modifier recipes; unwrapped again).
+- **Mantle recipe layer was never gated in**: `MantleRecipes` + `crafting_shaped_retextured`
+  (15 recipes) + `crafting_shaped_fallback` ported onto `ShapedRecipePattern`/codecs and
+  registered from the bootstrap; the unshipped mantle cooking overrides stay out (never
+  vendored, no data uses them). The **ShapedMaterial family** (travelers gear, anvils —
+  11 recipes) was unparked and rewritten the same way (subagent; instance-identity dedup
+  because Fabric custom ingredients all compare equal under 1.21's `Ingredient#equals`).
+- **Loot**: `minecraft:copy_nbt`→`copy_custom_data` (19; targets match the port's
+  TagCompat custom-data reads), `forge:can_tool_perform_action(shears_dig)`→
+  `match_tool #c:shears` (13), `looting_enchant`→`enchanted_count_increase` with explicit
+  looting enchantment (5), and mantle's `fill_retextured_block` loot function was written
+  fresh (never vendored) so retextured tables/drains drop with their texture.
+- **Attribute operations**: `addition`/`multiply_base`/`multiply_total` →
+  `add_value`/`add_multiplied_*` (53), keyed on the sibling `attribute` field so Tinkers'
+  own stat-boost ops with the same names stay untouched. Dynamic modifier failures
+  75 → 39.
+- Odds and ends: `minecraft:scute`→`turtle_scute` (1.20.5 rename), slime dirt joined
+  `minecraft:dirt`, tinkers chest joined `minecraft:dyeable`, `trim_material` jar exclude
+  lifted (1.20 shape still parses on 1.21.1; ingredients exist since tools), MobType
+  predicate names moved to the `minecraft:` namespace data speaks, `MantlePredicates`
+  gap-fill from the gadgets round carried the rest.
+- **Remaining, all named**: 2 recipes + 2 tag warnings reference a **milk fluid** that
+  does not exist on Fabric (skeleton melting, cheese) — phase 6 decides (pack mod or own
+  fluid). 39 dynamic modifiers still fail: 22 parked capability/event module loaders,
+  12 enchantment-loadable (datapack-registry enchantments need registry-aware parsing —
+  enchantment pass), 4 `tank_capacity` (fluid capability step); the 39 tag errors are
+  downstream of those.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

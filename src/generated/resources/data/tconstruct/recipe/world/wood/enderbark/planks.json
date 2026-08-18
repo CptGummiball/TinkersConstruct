@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "group": "planks",
+  "ingredients": [
+    {
+      "tag": "tconstruct:enderbark_logs"
+    }
+  ],
+  "result": {
+    "id": "tconstruct:enderbark_planks",
+    "count": 4
+  }
+}

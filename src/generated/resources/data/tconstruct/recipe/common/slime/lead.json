@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "conditions": [
+    {
+      "type": "tconstruct:config",
+      "prop": "slime_recipe_fix"
+    }
+  ],
+  "key": {
+    "O": {
+      "tag": "c:slimeballs"
+    },
+    "~": {
+      "item": "minecraft:string"
+    }
+  },
+  "pattern": [
+    "~~ ",
+    "~O ",
+    "  ~"
+  ],
+  "result": {
+    "id": "minecraft:lead",
+    "count": 2
+  },
+  "show_notification": true
+}

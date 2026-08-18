@@ -27,10 +27,11 @@ import java.util.function.Supplier;
  * are still logged with the loadable's identity before rethrowing, since netty otherwise
  * swallows the context.
  *
- * <p><b>{@link ContextKey#ID} is no longer populated.</b> 1.20 handed the recipe id to the
- * serializer; 1.21 keeps it on {@code RecipeHolder} and the serializer never sees it. Recipes
- * that need their id must receive it from their holder — see "the recipe-ID problem" in
- * PORTING.md.
+ * <p>{@link ContextKey#ID} is populated on the JSON path only: the RecipeManager mixin
+ * publishes the id being parsed through {@link CurrentRecipeId} and {@link #contextBuilder()}
+ * picks it up, restoring the 1.20 contract for the ~1700 loadables that declare the id as a
+ * required context field. The network path still has no id — see "the recipe-ID problem" in
+ * PORTING.md and the note on {@link CurrentRecipeId}.
  */
 public class LoadableRecipeSerializer<T extends Recipe<?>> implements RecipeSerializer<T> {
 
@@ -68,11 +69,16 @@ public class LoadableRecipeSerializer<T extends Recipe<?>> implements RecipeSeri
     return new Deprecated<>(loadable, replacement);
   }
 
-  /** Builds the parsing context. The recipe id is deliberately absent; see the class javadoc. */
+  /** Builds the parsing context; the id is present during JSON loading, absent on the network */
   protected TypedMapBuilder contextBuilder() {
-    return TypedMapBuilder.builder()
+    TypedMapBuilder builder = TypedMapBuilder.builder()
       .put(ContextKey.DEBUG, "Recipe via " + loadable)
       .put(SERIALIZER, this);
+    net.minecraft.resources.ResourceLocation id = CurrentRecipeId.get();
+    if (id != null) {
+      builder.put(ContextKey.ID, id);
+    }
+    return builder;
   }
 
   private TypedMap buildContext() {
