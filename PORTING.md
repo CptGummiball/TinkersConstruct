@@ -777,6 +777,39 @@ The datapack now loads with **zero** modifier, fluid-effect, loot-table, advance
 errors. The only remaining data failures are the two milk-fluid recipes awaiting the phase-6
 decision.
 
+### Global loot modifiers — **DONE, all 21 entries load (Done 0.858s)**
+
+Forge's global-loot-modifier mechanism has no Fabric counterpart at all, so the whole thing
+is reimplemented in `mantle/loot/modifier`: modifiers post-process the output of *every*
+loot roll, which is how lustrous grants ore bonuses, tasty drops bacon, chrysophilite adds
+gold and wither skeletons give necrotic bones.
+
+- **Loading** reads Forge's own index (`data/forge/loot_modifiers/global_loot_modifiers.json`)
+  and each named entry, so the shipped data and any pack overriding it keep working
+  untouched. Every pack's copy of the index is read and combined, honoring `replace` — the
+  same additive behavior Forge had.
+- **Timing was the one real trap.** Loading from the resource-reload phase failed on
+  `Missing tag`: the entries embed entity and block predicates whose tags are only bound
+  once the reload completes. The loader therefore runs off the server lifecycle
+  (`SERVER_STARTED` + `END_DATA_PACK_RELOAD`), the same hooks the modifier manager already
+  uses to resolve its enchantment mappings.
+- **Applying** hooks the single private `LootTable#getRandomItems(LootContext)` that every
+  public overload funnels through, so block drops, entity drops and chest generation are
+  all covered by one seam — the same place Forge patched.
+- **Three modifier types** (`mantle:add_entry`, `mantle:replace_item`,
+  `tconstruct:modifier_hook`) plus the loot-modifier conditions `mantle:contains_item` and
+  `mantle:inverted`, which differ from vanilla loot conditions in that they see the loot the
+  table already produced — that is what "only add a nugget if the ore did not drop" needs.
+- **Two never-vendored conditions** turned up and were written fresh: `mantle:block_tag`
+  (18 uses — vanilla can only match one block, the ore bonuses need "any iron ore" across
+  mods) and `forge:loot_table_id`, which reads the rolling table from the manager.
+- One more `looting_enchant` → `enchanted_count_increase` rename, in the loot-modifier
+  folder the earlier sweep did not walk.
+
+**The datapack now loads completely clean**: zero errors across modifiers, fluid effects,
+loot tables, loot modifiers, advancements and tags. The only remaining data failures in the
+whole port are the two milk-fluid recipes waiting on the phase-6 decision.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

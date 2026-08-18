@@ -212,12 +212,7 @@ slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # energy step (Team Reborn Energy compat)
 slimeknights/tconstruct/tools/modifiers/EnergyHandlerModifier.java
 # (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
-# Forge global loot modifiers have no Fabric equivalent at all: the whole GLM subsystem
-# (21 shipped entries - lustrous ore bonuses, tasty bacon, wither bone, chrysophilite)
-# needs its own runtime - loader, mantle:add_entry/replace_item modifiers, the
-# mantle:contains_item/inverted modifier-conditions, and a LootTable#getRandomItems seam.
-# Deferred to its own round; nothing else depends on it.
-slimeknights/tconstruct/tools/modifiers/ModifierLootModifier.java
+# (GLM round) the global loot modifier runtime lives in mantle/loot/modifier now.
 # phase-7 datagen builders
 slimeknights/tconstruct/tools/recipe/severing/SpecialSeveringRecipeBuilder.java
 slimeknights/tconstruct/tools/recipe/ToggleInteractionWorktableRecipeBuilder.java

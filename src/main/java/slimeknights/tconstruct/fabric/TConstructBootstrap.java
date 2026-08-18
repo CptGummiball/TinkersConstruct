@@ -75,6 +75,12 @@ public class TConstructBootstrap implements ModInitializer {
     // registered them during the recipe-serializer register event.
     slimeknights.mantle.data.predicate.MantlePredicates.init();
 
+    // Global loot modifiers: Forge's mechanism reimplemented, loaded from the same index.
+    slimeknights.mantle.loot.modifier.GlobalLootManager.init();
+    slimeknights.mantle.loot.modifier.IGlobalLootModifier.register(
+      slimeknights.tconstruct.tools.modifiers.ModifierLootModifier.ID,
+      slimeknights.tconstruct.tools.modifiers.ModifierLootModifier.CODEC);
+
     // Tinkers' own recipe conditions; data files reference them, so they must parse
     // before the first datapack load. Forge registered these through CraftingHelper.
     TagDifferencePresentCondition.register();
