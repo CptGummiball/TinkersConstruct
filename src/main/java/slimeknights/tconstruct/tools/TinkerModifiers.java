@@ -766,10 +766,12 @@ public final class TinkerModifiers extends TinkerModule {
   /** Runtime wiring; called once from the bootstrap in Forge construction order. */
   public static void init() {
     // ran in the Forge mod constructor
+    // the deferred register must be listening before the manager fires its registration
+    // event; on Forge that event came later in startup, here it fires from init() directly
+    MODIFIERS.register(slimeknights.mantle.event.MinecraftForge.EVENT_BUS);
     ModifierManager.INSTANCE.init();
     DynamicModifier.init();
     FluidEffectManager.INSTANCE.init();
-    MODIFIERS.register(slimeknights.mantle.event.MinecraftForge.EVENT_BUS);
     TinkerDataKeys.init();
 
     // ran in common setup

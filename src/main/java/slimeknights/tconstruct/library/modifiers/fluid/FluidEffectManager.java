@@ -76,7 +76,13 @@ public class FluidEffectManager extends SimpleJsonResourceReloadListener impleme
 
   /** Creates context for modifier parsing */
   public static TypedMapBuilder contextBuilder(ResourceLocation key) {
-    return TypedMapBuilder.builder().put(ContextKey.ID, key).put(ContextKey.DEBUG, "Fluid Effect " + key);
+    TypedMapBuilder builder = TypedMapBuilder.builder().put(ContextKey.ID, key).put(ContextKey.DEBUG, "Fluid Effect " + key);
+    // datapack-registry loadables (enchantments) cannot resolve without registry access
+    net.minecraft.core.HolderLookup.Provider registries = slimeknights.mantle.data.DatapackRegistries.current();
+    if (registries != null) {
+      builder.put(ContextKey.REGISTRY_ACCESS, registries);
+    }
+    return builder;
   }
 
   @Override

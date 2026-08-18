@@ -274,7 +274,13 @@ public class ModifierManager extends SimpleJsonResourceReloadListener implements
 
   /** Creates context for modifier parsing */
   public static TypedMapBuilder contextBuilder(ResourceLocation modifier) {
-    return TypedMapBuilder.builder().put(ContextKey.ID, modifier).put(ContextKey.DEBUG, "Modifier " + modifier);
+    TypedMapBuilder builder = TypedMapBuilder.builder().put(ContextKey.ID, modifier).put(ContextKey.DEBUG, "Modifier " + modifier);
+    // datapack-registry loadables (enchantments) cannot resolve without registry access
+    net.minecraft.core.HolderLookup.Provider registries = slimeknights.mantle.data.DatapackRegistries.current();
+    if (registries != null) {
+      builder.put(ContextKey.REGISTRY_ACCESS, registries);
+    }
+    return builder;
   }
 
   /** @deprecated use {@link #contextBuilder(ResourceLocation)} */

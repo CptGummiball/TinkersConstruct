@@ -14,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import slimeknights.mantle.recipe.condition.DataConditionContext;
 
 /**
- * Publishes the datapack load's tag manager as the condition context, standing in for the
- * Forge patch that handed reload listeners an {@code ICondition.IContext}.
+ * Publishes the ambient state of a datapack load that Forge handed to reload listeners
+ * directly: the tag manager (as the recipe/advancement condition context) and the registry
+ * access that datapack-registry loadables need to resolve entries such as enchantments.
  */
 @Mixin(ReloadableServerResources.class)
 public class ReloadableServerResourcesMixin {
@@ -24,5 +25,6 @@ public class ReloadableServerResourcesMixin {
   @Inject(method = "<init>", at = @At("TAIL"))
   private void tconstruct$publishConditionContext(RegistryAccess.Frozen registryAccess, FeatureFlagSet enabledFeatures, Commands.CommandSelection commandSelection, int functionCompilationLevel, CallbackInfo ci) {
     DataConditionContext.setup(this.tagManager);
+    slimeknights.mantle.data.DatapackRegistries.setup(registryAccess);
   }
 }

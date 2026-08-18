@@ -741,6 +741,42 @@ bulk is Tinkers' own hook machinery and ported unchanged.
   a single root cause** — enchantments became a datapack registry and the loadable needs
   registry-aware parsing. That is one focused pass, not thirteen.
 
+### Enchantment registry pass — **DONE: the datapack load is now error-free (Done 0.816s)**
+
+Started as one focused fix and turned up two latent bugs that had been quietly costing
+content since the tools module landed.
+
+- **The stated goal**: 1.21 moved enchantments into a datapack registry, so the loadable
+  that resolves them needs registry access at parse time. The infrastructure was already
+  there (`DynamicRegistryLoadable`, `ContextKey.REGISTRY_ACCESS`) — nobody was filling it.
+  A new `DatapackRegistries` holder is published from the same `ReloadableServerResources`
+  mixin that already publishes the tag manager, and the modifier + fluid-effect managers
+  put it into their parse contexts. **13 modifier failures → 0.**
+- **Map keys never got the context.** Two fluid effects still failed afterwards, on
+  `enchantments's key` — `MapLoadable` threaded the parse context into map *values* but
+  called the context-free overload for *keys*. One-line fix, and it would have bitten every
+  future map-keyed registry entry.
+- **No static modifier was ever registered.** The remaining tag errors pointed at modifiers
+  that plainly existed in `TinkerModifiers`. The cause: `ModifierManager.init()` fires the
+  registration event immediately (on Forge it came later in startup), but the deferred
+  register only started listening three lines *below* that call — so the event fired into
+  an empty bus and all 46 static modifiers silently vanished. Swapping the two lines took
+  the modifier registry from **122 to 168 entries** and modifier tags from 39 to 55.
+  Overslime, parrying, dual wielding, exchanging, enderporting and friends exist again.
+- **Convention tags are named differently on Fabric.** The data round moved `forge:` tags
+  to the `c:` namespace, but Fabric's conventional names are mostly plural
+  (`c:stone` → `c:stones`, likewise cobblestone/gravel/gunpowder/leather/obsidian/string,
+  and `c:sandstone` → `c:sandstone/blocks`). Only one surfaced as a tag error; the rest sat
+  in **recipes**, which silently never match when their tag does not exist — string,
+  gunpowder, obsidian and traveler's-armor leather recipes were all dead. Fixed across 22
+  files after diffing every `c:` tag the data uses against Fabric's convention jar. The 472
+  other unmatched `c:` tags are deliberate cross-mod hooks (Mekanism armors and the like)
+  that stay empty until those mods are present.
+
+The datapack now loads with **zero** modifier, fluid-effect, loot-table, advancement or tag
+errors. The only remaining data failures are the two milk-fluid recipes awaiting the phase-6
+decision.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

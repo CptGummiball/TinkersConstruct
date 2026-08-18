@@ -58,7 +58,8 @@ public class MapLoadable<K, V> implements Loadable<Map<K,V>> {
     for (Entry<String, JsonElement> entry : json.entrySet()) {
       String entryKey = entry.getKey();
       builder.put(
-        keyLoadable.parseString(entryKey, mapKey),
+        // keys need the context too: datapack-registry loadables (enchantments) resolve through it
+        keyLoadable.parseString(entryKey, mapKey, context),
         valueLoadable.convert(entry.getValue(), entryKey, context));
     }
     return build(builder);
