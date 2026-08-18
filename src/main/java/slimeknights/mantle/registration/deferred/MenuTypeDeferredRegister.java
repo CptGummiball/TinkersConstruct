@@ -3,6 +3,7 @@ package slimeknights.mantle.registration.deferred;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
@@ -39,5 +40,23 @@ public class MenuTypeDeferredRegister extends DeferredRegisterWrapper<MenuType<?
     return register.register(name, () -> new ExtendedScreenHandlerType<>(
       (windowId, inventory, pos) -> factory.create(windowId, inventory, pos),
       StreamCodec.of((buffer, pos) -> buffer.writeBlockPos(pos), buffer -> buffer.readBlockPos())));
+  }
+
+  /** Factory for a menu opened with a custom typed payload */
+  public interface DataFactory<C extends AbstractContainerMenu, D> {
+    C create(int windowId, net.minecraft.world.entity.player.Inventory inventory, D data);
+  }
+
+  /**
+   * Registers a menu whose opening data is not a block position. Used by the tool inventory menu,
+   * the one menu opened from a held item rather than a block, which syncs the tool's inventory slot
+   * plus the configured sync payload.
+   * @param name     Menu name
+   * @param codec    Codec for the opening data
+   * @param factory  Menu factory
+   * @return  Registry object containing the menu type
+   */
+  public <C extends AbstractContainerMenu, D> RegistryObject<MenuType<C>> register(String name, StreamCodec<? super RegistryFriendlyByteBuf,D> codec, DataFactory<C,D> factory) {
+    return register.register(name, () -> new ExtendedScreenHandlerType<>(factory::create, codec));
   }
 }

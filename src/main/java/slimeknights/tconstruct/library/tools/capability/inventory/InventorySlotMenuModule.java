@@ -47,7 +47,8 @@ public enum InventorySlotMenuModule implements ModifierModule, SlotStackModifier
         // mostly is an issue for inventoryMenu itself
         // so resume updates on the container we are about to open
         player.containerMenu.resumeRemoteUpdates();
-        ToolInventoryCapability.tryOpenContainer(slot.getItem(), slotTool, slotTool.getDefinition(), player, slot.getSlotIndex());
+        // getSlotIndex() was Forge's alias for the vanilla accessor
+        ToolInventoryCapability.tryOpenContainer(slot.getItem(), slotTool, slotTool.getDefinition(), player, slot.getContainerSlot());
         // then suppress updates on the new container after opening
         player.containerMenu.suppressRemoteUpdates();
       }

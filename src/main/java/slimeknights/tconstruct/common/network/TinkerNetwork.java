@@ -10,6 +10,12 @@ import net.minecraft.world.level.LevelAccessor;
 import slimeknights.mantle.network.NetworkDirection;
 import slimeknights.mantle.network.NetworkWrapper;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.tools.network.EntityMovementChangePacket;
+import slimeknights.tconstruct.tools.network.InteractWithAirPacket;
+import slimeknights.tconstruct.tools.network.PushBlockRowPacket;
+import slimeknights.tconstruct.tools.network.SyncProjectileModifiersPacket;
+import slimeknights.tconstruct.tools.network.TinkerControlPacket;
+import slimeknights.tconstruct.tools.network.ToolContainerFluidUpdatePacket;
 
 import javax.annotation.Nullable;
 
@@ -49,9 +55,20 @@ public class TinkerNetwork extends NetworkWrapper {
     }
     instance = new TinkerNetwork();
 
-    // Packets register with their owning module's bootstrap as each module is ported:
-    // shared/gadgets/tables/tools/modifiers/smeltery. See the class javadoc.
     instance.registerPacket(SyncPersistentDataPacket.class, SyncPersistentDataPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(InventorySlotSyncPacket.class, InventorySlotSyncPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateNeighborsPacket.class, UpdateNeighborsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+
+    // tools
+    instance.registerPacket(EntityMovementChangePacket.class, EntityMovementChangePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(SyncProjectileModifiersPacket.class, SyncProjectileModifiersPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(PushBlockRowPacket.class, PushBlockRowPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(ToolContainerFluidUpdatePacket.class, ToolContainerFluidUpdatePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    // these two are enum singletons; their values ride the buffer rather than a constructor
+    instance.registerPacket(InteractWithAirPacket.class, InteractWithAirPacket::read, NetworkDirection.PLAY_TO_SERVER);
+    instance.registerPacket(TinkerControlPacket.class, buffer -> buffer.readEnum(TinkerControlPacket.class), NetworkDirection.PLAY_TO_SERVER);
+
+    // PORT: the part-texture generation packet stays with the client phase.
   }
 
   /**

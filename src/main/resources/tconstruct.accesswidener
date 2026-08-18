@@ -177,3 +177,7 @@ accessible method net/minecraft/world/entity/projectile/AbstractArrow getPickupI
 # BeehiveBlock bee-release internals used by the kama's hive harvest (public in 1.20, private now)
 accessible method net/minecraft/world/level/block/BeehiveBlock hiveContainsBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Z
 accessible method net/minecraft/world/level/block/BeehiveBlock angerNearbyBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V
+# CraftingMenu.slotChangedCraftingGrid — the tool inventory menu's optional crafting grid
+# recomputes its result through vanilla's helper, which is protected static (Forge's patch
+# left it callable). 1.21 also appended a nullable "last matched recipe" hint parameter.
+accessible method net/minecraft/world/inventory/CraftingMenu slotChangedCraftingGrid (Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/inventory/CraftingContainer;Lnet/minecraft/world/inventory/ResultContainer;Lnet/minecraft/world/item/crafting/RecipeHolder;)V

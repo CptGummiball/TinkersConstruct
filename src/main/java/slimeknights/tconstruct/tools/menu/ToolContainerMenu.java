@@ -1,7 +1,8 @@
 package slimeknights.tconstruct.tools.menu;
 
 import lombok.Getter;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -14,7 +15,6 @@ import net.minecraft.world.inventory.ResultSlot;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.TransientCraftingContainer;
 import net.minecraft.world.item.ItemStack;
-import slimeknights.mantle.transfer.cap.ForgeCapabilities;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.transfer.item.IItemHandler;
 import slimeknights.mantle.transfer.item.IItemHandlerModifiable;
@@ -25,6 +25,7 @@ import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferResult
 import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.mantle.inventory.SmartItemHandlerSlot;
 import slimeknights.tconstruct.common.TinkerTags;
+import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.common.config.Config.ToolSyncType;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.fluid.SimpleFluidTank;
@@ -33,6 +34,7 @@ import slimeknights.tconstruct.library.tools.capability.inventory.ToolInventoryC
 import slimeknights.tconstruct.library.tools.capability.inventory.ToolInventoryCapability.CraftingType;
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
+import slimeknights.tconstruct.library.tools.nbt.TagCompat;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.tools.TinkerTools;
 import slimeknights.tconstruct.tools.network.ToolContainerFluidUpdatePacket;
@@ -89,14 +91,65 @@ public class ToolContainerMenu extends AbstractContainerMenu {
     this(type, id, playerInventory, stack, handler, slotIndex, CraftingType.fromStack(stack), ModifierUtil.checkVolatileFlag(stack, ToolInventoryCapability.INCLUDE_OFFHAND));
   }
 
+  /**
+   * Data synced to the client when this menu opens.
+   *
+   * <p>Forge wrote these fields straight into the menu opening packet and read them back in the
+   * client factory. Fabric's {@link net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType}
+   * takes one typed value instead, so the identical conditional wire format lives in
+   * {@link #STREAM_CODEC} and the factory receives the parsed record.
+   */
+  public record OpeningData(int slotIndex, ToolSyncType syncType, ItemStack stack, int size, CraftingType craftingType, boolean includeOffhand) {
+    public static final StreamCodec<RegistryFriendlyByteBuf,OpeningData> STREAM_CODEC = StreamCodec.of(
+      (buffer, data) -> {
+        buffer.writeVarInt(data.slotIndex);
+        buffer.writeEnum(data.syncType);
+        if (data.syncType == ToolSyncType.FULL_STACK) {
+          ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, data.stack);
+        } else if (data.syncType == ToolSyncType.MINIMAL) {
+          buffer.writeVarInt(data.size);
+          buffer.writeEnum(data.craftingType);
+          buffer.writeBoolean(data.includeOffhand);
+        }
+      },
+      buffer -> {
+        int slotIndex = buffer.readVarInt();
+        ToolSyncType syncType = buffer.readEnum(ToolSyncType.class);
+        ItemStack stack = ItemStack.EMPTY;
+        int size = 0;
+        CraftingType craftingType = CraftingType.NONE;
+        boolean includeOffhand = false;
+        if (syncType == ToolSyncType.FULL_STACK) {
+          stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
+        } else if (syncType == ToolSyncType.MINIMAL) {
+          size = buffer.readVarInt();
+          craftingType = buffer.readEnum(CraftingType.class);
+          includeOffhand = buffer.readBoolean();
+        }
+        return new OpeningData(slotIndex, syncType, stack, size, craftingType, includeOffhand);
+      });
+
+    /** Builds the opening data for a tool being opened from the given inventory slot */
+    public static OpeningData forStack(ItemStack stack, int slotIndex) {
+      ToolSyncType syncType = Config.COMMON.toolInventorySync.get();
+      // fields the codec skips for this sync type are still filled in; they simply do not go over the wire
+      return new OpeningData(
+        slotIndex, syncType,
+        syncType == ToolSyncType.FULL_STACK ? stack : ItemStack.EMPTY,
+        ModifierUtil.getVolatileInt(stack, ToolInventoryCapability.TOTAL_SLOTS),
+        CraftingType.fromStack(stack),
+        ModifierUtil.checkVolatileFlag(stack, ToolInventoryCapability.INCLUDE_OFFHAND));
+    }
+  }
+
   /** Creates a new instance of this container on the client side */
-  public static ToolContainerMenu forClient(int id, Inventory inventory, FriendlyByteBuf buffer) {
-    int slotIndex = buffer.readVarInt();
-    ToolSyncType syncType = buffer.readEnum(ToolSyncType.class);
+  public static ToolContainerMenu forClient(int id, Inventory inventory, OpeningData data) {
+    int slotIndex = data.slotIndex();
+    ToolSyncType syncType = data.syncType();
     // when syncing the full stack, overwrite the spot in the inventory
     ItemStack stack;
     if (syncType == ToolSyncType.FULL_STACK) {
-      stack = buffer.readItem();
+      stack = data.stack();
       inventory.setItem(slotIndex, stack);
     } else {
       stack = inventory.getItem(slotIndex);
@@ -107,9 +160,9 @@ public class ToolContainerMenu extends AbstractContainerMenu {
     boolean includeOffhand;
     int size;
     if (syncType == ToolSyncType.MINIMAL) {
-      size = buffer.readVarInt();
-      craftingType = buffer.readEnum(CraftingType.class);
-      includeOffhand = buffer.readBoolean();
+      size = data.size();
+      craftingType = data.craftingType();
+      includeOffhand = data.includeOffhand();
     } else {
       size = ModifierUtil.getVolatileInt(stack, ToolInventoryCapability.TOTAL_SLOTS);
       craftingType = CraftingType.fromStack(stack);
@@ -117,8 +170,9 @@ public class ToolContainerMenu extends AbstractContainerMenu {
     }
     // if the stack looks like it could be our tool, fetch the handler from it
     IItemHandler handler;
-    if (stack.hasTag() && stack.is(TinkerTags.Items.MODIFIABLE)) {
-      handler = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).filter(cap -> cap instanceof IItemHandlerModifiable).orElse(EmptyItemHandler.INSTANCE);
+    if (TagCompat.hasTag(stack) && stack.is(TinkerTags.Items.MODIFIABLE)) {
+      IItemHandlerModifiable toolInventory = ToolInventoryCapability.getInventory(stack);
+      handler = toolInventory != null ? toolInventory : EmptyItemHandler.INSTANCE;
       // wrong number of slots means something went wrong, use a dummy
       if (handler.getSlots() != size) {
         handler = new ItemStackHandler(size);
@@ -272,7 +326,9 @@ public class ToolContainerMenu extends AbstractContainerMenu {
   public void slotsChanged(Container pContainer) {
     super.slotsChanged(pContainer);
     if (craftingContainer != null && resultContainer != null) {
-      CraftingMenu.slotChangedCraftingGrid(this, player.level(), player, craftingContainer, resultContainer);
+      // 1.21 added a "recipe we matched last time" hint; null means no hint, which is what the
+      // 1.20 signature effectively passed. Widened to public through the access widener.
+      CraftingMenu.slotChangedCraftingGrid(this, player.level(), player, craftingContainer, resultContainer, null);
     }
   }
 

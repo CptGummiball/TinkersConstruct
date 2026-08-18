@@ -703,6 +703,44 @@ supplies the events underneath:
   legacy ability-modifier classes stay parked: zero references, their behavior is datapack
   modules now.
 
+### Capability step — **DONE, server boots clean (Done 0.782s); dynamic modifier failures 34 → 13**
+
+Tools that hold fluid (tanks, spilling, bucketing) or items (quivers, tool belt, shield
+strap, sleeves, minimap) were built on Forge's per-stack capability system. The line count
+suggested a rewrite; the actual Forge coupling turned out to be **seven imports** across
+the whole tree, all covered by the capability shim the smeltery round already built. The
+bulk is Tinkers' own hook machinery and ported unchanged.
+
+- **Dispatch, not attachment.** Forge attached a capability provider to every ItemStack via
+  an event. Fabric has no such hook, so `ToolCapabilityProvider` became a static lookup
+  following the pattern `BlockItemProviderCapability` established earlier in the port. The
+  correctness-critical parts stay: the tool tag is refreshed and provider caches cleared on
+  every lookup — which is what Forge did anyway, so nothing is staler than before.
+- **The outward face is what makes tanks real.** A `FluidStorage.ITEM` fallback exposes any
+  modifiable tool carrying tanks through Fabric's transfer API, reusing the smeltery round's
+  `ItemFluidStorageBridge` so fill/drain keep proper container-exchange semantics. Other
+  GummiCraft mods can now fill and drain a Tinkers tool like any other fluid container.
+  Inventories get an equivalent static accessor (`ToolInventoryCapability.getInventory`).
+- **21 gameplay modules unparked**; nine needed no changes at all. The rest were ordinary
+  1.21 migrations: recipe lookups take an immutable `RecipeInput` and return a
+  `RecipeHolder` (so smelting's shared mutable container is gone), stack NBT round-trips
+  through `parseOptional`/`save` with registries, `isSameItemSameTags` →
+  `isSameItemSameComponents`, map ids are a `MapId` component, and both block-fluid
+  interfaces (`canPlaceLiquid`, `pickupBlock`) gained a player parameter.
+- **Menus and packets**: the tool container opens through an `ExtendedScreenHandlerFactory`
+  with a typed payload reproducing Forge's conditional wire format exactly; the fluid update
+  packet follows the port's existing packet conventions.
+- **Found and fixed while here**: `TinkerNetwork.setup()` was never called, so *any* packet
+  send would have thrown — including the projectile sync and reflecting logic the event
+  layer had just landed. It is wired now with all nine ported packets registered. Also
+  `minecraft:sweeping` → `sweeping_edge` (1.21 rename) in the enchantment mapping.
+- **Vaporization** moved into the FluidType shim: Forge let each fluid type decide, vanilla
+  hardcodes the one real case (water in ultrawarm dimensions) inside `BucketItem`.
+- **Deferred**: `ToolEnergyCapability` and `EnergyHandlerModifier` (energy step, Team Reborn
+  Energy), plus the datagen builders. **All 13 remaining dynamic modifier failures now share
+  a single root cause** — enchantments became a datapack registry and the loadable needs
+  registry-aware parsing. That is one focused pass, not thirteen.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

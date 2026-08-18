@@ -1,9 +1,14 @@
 package slimeknights.tconstruct.library.tools.nbt;
 
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import slimeknights.mantle.client.SafeClientAccess;
 
 import javax.annotation.Nullable;
 
@@ -50,6 +55,24 @@ public final class TagCompat {
     CompoundTag tag = data == null ? new CompoundTag() : data.copyTag();
     stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
     return tag;
+  }
+
+  /**
+   * Registry access for item stacks stored <i>inside</i> tool NBT (the tool inventory modules).
+   *
+   * <p>1.21 routes {@link ItemStack#save(net.minecraft.core.HolderLookup.Provider, net.minecraft.nbt.Tag)}
+   * and {@link ItemStack#parseOptional} through a {@link HolderLookup.Provider} so components that
+   * point at datapack registries (enchantments above all) resolve. The modifier hooks that read
+   * those stacks take no world context — the 1.20 API needed none — and the hook signatures are
+   * public API used by modules that port later, so the provider is resolved from the running game
+   * instead: the server's registries when one is running, else the connected client's synced ones.
+   */
+  public static HolderLookup.Provider registries() {
+    if (FabricLoader.getInstance().getGameInstance() instanceof MinecraftServer server) {
+      return server.registryAccess();
+    }
+    RegistryAccess client = SafeClientAccess.getRegistryAccess();
+    return client != null ? client : RegistryAccess.EMPTY;
   }
 
   /** Writes the tag back; null clears it. CustomData is immutable, so mutations must end here. */

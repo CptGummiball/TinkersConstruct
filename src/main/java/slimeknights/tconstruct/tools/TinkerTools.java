@@ -47,6 +47,8 @@ import slimeknights.tconstruct.library.modifiers.modules.capacity.OverslimeModul
 import slimeknights.tconstruct.library.recipe.ingredient.ToolHookIngredient;
 import slimeknights.tconstruct.library.tools.IndestructibleItemEntity;
 import slimeknights.tconstruct.library.tools.SlotType;
+import slimeknights.tconstruct.library.tools.capability.fluid.ToolFluidCapability;
+import slimeknights.tconstruct.library.tools.capability.fluid.ToolTankHelper;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinition;
 import slimeknights.tconstruct.library.tools.definition.module.ToolHooks;
 import slimeknights.tconstruct.library.tools.definition.module.ToolModule;
@@ -116,7 +118,7 @@ import slimeknights.tconstruct.tools.item.ModifiableSwordItem;
 import slimeknights.tconstruct.tools.item.SlimeskullItem;
 import slimeknights.tconstruct.tools.logic.ModifiableArrowDispenserBehavior;
 import slimeknights.tconstruct.tools.logic.ModifiableShurikenDispenserBehavior;
-// PORT (capability step): import slimeknights.tconstruct.tools.menu.ToolContainerMenu;
+import slimeknights.tconstruct.tools.menu.ToolContainerMenu;
 // PORT (fluid capability step): import slimeknights.tconstruct.tools.modules.MeltingFluidEffectiveModule;
 
 import java.util.function.Consumer;
@@ -232,7 +234,9 @@ public final class TinkerTools extends TinkerModule {
 
 
   /* Containers */
-  // PORT (capability step): public static final RegistryObject<MenuType<ToolContainerMenu>> toolContainer = MENUS.register("tool_container", ToolContainerMenu::forClient);
+  // opened from a held tool, so its opening data is the tool's inventory slot plus the configured
+  // sync payload rather than the block position every other menu sends
+  public static final RegistryObject<MenuType<ToolContainerMenu>> toolContainer = MENUS.register("tool_container", ToolContainerMenu.OpeningData.STREAM_CODEC, ToolContainerMenu::forClient);
 
 
   /*
@@ -248,8 +252,9 @@ public final class TinkerTools extends TinkerModule {
     RandomMaterial.init();
 
     // PORT: EquipmentChangeWatcher (equipment-change event bridge) returns with the event layer
-    // PORT: ToolCapabilityProvider registrations (tool fluid/inventory/energy caps) return
-    // with the capability step; BlockItemProviderModifierHook ports alongside them
+    ToolFluidCapability.register();
+    // PORT: the tool inventory and energy caps register here as their steps land;
+    // BlockItemProviderModifierHook needs no wiring, it dispatches from the stack
     for (ConfigurableAction action : Config.COMMON.toolTweaks) {
       action.run();
     }
@@ -272,8 +277,8 @@ public final class TinkerTools extends TinkerModule {
 
     // register tool stats that are not defined directly in the class; safer than static init registration
     ToolStats.register(OverslimeModule.OVERSLIME_STAT);
-    // PORT: ToolTankHelper.CAPACITY_STAT and ToolEnergyCapability.MAX_STAT return with the
-    // capability/energy steps
+    ToolStats.register(ToolTankHelper.CAPACITY_STAT);
+    // PORT: ToolEnergyCapability.MAX_STAT returns with the energy step
     ToolStats.register(EdibleModule.HUNGER);
     ToolStats.register(EdibleModule.SATURATION);
 

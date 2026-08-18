@@ -55,6 +55,9 @@ public class TConstructBootstrap implements ModInitializer {
 
     // Mantle infrastructure: packet channel plus the fluid container transfer loader.
     MantleNetwork.registerPackets();
+    // Tinkers' own channel; every packet send goes through this instance, so it must exist
+    // before any content registers (modifier sync, tool container updates, projectile sync).
+    slimeknights.tconstruct.common.network.TinkerNetwork.setup();
     slimeknights.mantle.recipe.MantleRecipes.init();
     FluidContainerTransferManager.INSTANCE.init();
     // transfer types referenced by the shipped data files; Forge Mantle registered these in

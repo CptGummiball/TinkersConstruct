@@ -133,6 +133,25 @@ public class FluidType implements FluidVariantAttributeHandler {
   /** The two bucket sounds Tinkers distinguishes; Forge had an open registry of actions. */
   public enum SoundAction { BUCKET_FILL, BUCKET_EMPTY }
 
+  /**
+   * Whether placing this fluid at the position makes it evaporate instead.
+   *
+   * <p>Forge let each fluid type decide; vanilla hardcodes the one case that exists —
+   * water in an ultrawarm dimension — inside {@code BucketItem}. Mirroring that keeps
+   * placement behavior identical for vanilla and Fabric fluids alike.
+   */
+  public boolean isVaporizedOnPlacement(net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, FluidStack stack) {
+    return level.dimensionType().ultraWarm() && stack.getFluid().is(net.minecraft.tags.FluidTags.WATER);
+  }
+
+  /** Plays the evaporation effects; mirrors vanilla's bucket behavior */
+  public void onVaporize(@javax.annotation.Nullable net.minecraft.world.entity.player.Player player, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, FluidStack stack) {
+    level.playSound(player, pos, SoundEvents.FIRE_EXTINGUISH, net.minecraft.sounds.SoundSource.BLOCKS, 0.5F, 2.6F + (level.random.nextFloat() - level.random.nextFloat()) * 0.8F);
+    for (int i = 0; i < 8; i++) {
+      level.addParticle(net.minecraft.core.particles.ParticleTypes.LARGE_SMOKE, pos.getX() + Math.random(), pos.getY() + Math.random(), pos.getZ() + Math.random(), 0, 0, 0);
+    }
+  }
+
   /* FluidVariantAttributeHandler — exposes the same values to the rest of the ecosystem */
 
   @Override

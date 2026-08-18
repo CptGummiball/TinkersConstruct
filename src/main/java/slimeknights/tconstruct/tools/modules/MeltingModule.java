@@ -116,7 +116,9 @@ public record MeltingModule(LevelingInt temperature, LevelingInt nuggetsPerMetal
     // first, update inventory
     IMeltingRecipe recipe = lastRecipe;
     if (recipe == null || !recipe.matches(this, world)) {
-      recipe = world.getRecipeManager().getRecipeFor(TinkerRecipeTypes.MELTING.get(), this, world).orElse(null);
+      // 1.21 takes a RecipeInput and hands back a RecipeHolder
+      recipe = world.getRecipeManager().getRecipeFor(TinkerRecipeTypes.MELTING.get(), new slimeknights.mantle.recipe.container.ContainerRecipeInput<>(this), world)
+                    .map(net.minecraft.world.item.crafting.RecipeHolder::value).orElse(null);
       if (recipe == null) {
         MeltingModule.stack = ItemStack.EMPTY;
         return FluidStack.EMPTY;

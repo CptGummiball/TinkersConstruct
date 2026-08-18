@@ -62,7 +62,7 @@ public record TankInteractionModule(@Nullable InteractionSource source) implemen
       return InteractionResult.PASS;
     }
     Direction face = context.getClickedFace();
-    IFluidHandler cap = LogicHelper.orElseNull(te.getCapability(ForgeCapabilities.FLUID_HANDLER, face));
+    IFluidHandler cap = LogicHelper.orElseNull(slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.FLUID_HANDLER, face).resolve());
     if (cap == null) {
       return InteractionResult.PASS;
     }

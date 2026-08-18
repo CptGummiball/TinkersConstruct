@@ -66,13 +66,15 @@ slimeknights/mantle/item/ILecternBookItem.java
 # ForgeEventFactory shim, the knockback dampener to the 1.21 attribute.
 
 # --- Core-slice deferrals ---
-# Forge capability system (entity data, tool fluid/energy caps). Ports onto Cardinal
-# Components (ships in GummiCraft) as its own step; tools/nbt does not reference it.
-# fluid/inventory/energy tool caps still Forge-coupled; the data caps are ported.
-slimeknights/tconstruct/library/tools/capability/fluid/**
-slimeknights/tconstruct/library/tools/capability/inventory/**
+# Forge capability system. The data caps are on Cardinal Components (ships in GummiCraft);
+# the tool caps dispatch statically from ToolCapabilityProvider, since Fabric cannot attach
+# per stack, and face outward as Fabric storage registrations.
+# (tool fluid round) fluid/** and ToolCapabilityProvider gated in: the tank hooks are Tinkers'
+# own code, so only the Forge cap imports moved to the mantle transfer.cap shim.
+# (tool inventory round) inventory/** gated in the same way; consumers reach the handler
+# through the static ToolInventoryCapability.getInventory instead of a stack capability.
+# Still Forge-coupled: Forge Energy, its own step.
 slimeknights/tconstruct/library/tools/capability/ToolEnergyCapability.java
-slimeknights/tconstruct/library/tools/capability/ToolCapabilityProvider.java
 
 # THE LOMBOK KILLER still standing (DummyArmorMaterial, its twin, is redesigned onto a
 # registered Holder<ArmorMaterial>): extends ItemPredicate, a RECORD in 1.21. Lombok's
@@ -205,23 +207,8 @@ slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
 slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---
-slimeknights/tconstruct/tools/modules/SmeltingModule.java
-slimeknights/tconstruct/tools/modules/MeltingModule.java
-slimeknights/tconstruct/tools/modules/InventorySelectionModule.java
-slimeknights/tconstruct/tools/modules/interaction/SlurpingModule.java
-slimeknights/tconstruct/tools/modules/interaction/SplashingModule.java
-slimeknights/tconstruct/tools/modules/interaction/TankInteractionModule.java
-slimeknights/tconstruct/tools/modules/interaction/BucketModule.java
-slimeknights/tconstruct/tools/modules/interaction/SpittingModule.java
-slimeknights/tconstruct/tools/modules/combat/SpillingModule.java
-slimeknights/tconstruct/tools/modules/armor/ToolBeltModule.java
-slimeknights/tconstruct/tools/modules/armor/SleevesModule.java
-slimeknights/tconstruct/tools/modules/armor/ShieldStrapModule.java
-slimeknights/tconstruct/tools/modules/ranged/BulkQuiverModule.java
-slimeknights/tconstruct/tools/modules/ranged/ammo/SmashingModule.java
-slimeknights/tconstruct/tools/modules/ranged/bow/QuiverInventoryModule.java
-slimeknights/tconstruct/tools/modifiers/ability/fluid/**
-slimeknights/tconstruct/tools/menu/ToolContainerMenu.java
+# (tool inventory round) ToolContainerMenu gated in: the opening buffer became an
+# ExtendedScreenHandlerType payload, everything else is Tinkers' own slot math.
 # energy step (Team Reborn Energy compat)
 slimeknights/tconstruct/tools/modifiers/EnergyHandlerModifier.java
 # (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
@@ -237,10 +224,8 @@ slimeknights/tconstruct/tools/recipe/ToggleInteractionWorktableRecipeBuilder.jav
 slimeknights/tconstruct/tools/recipe/ModifierSortingRecipeBuilder.java
 slimeknights/tconstruct/tools/recipe/ModifierRemovalRecipeBuilder.java
 slimeknights/tconstruct/tools/recipe/EnchantmentConvertingRecipeBuilder.java
-slimeknights/tconstruct/tools/modifiers/ability/tool/BucketingModifier.java
-slimeknights/tconstruct/tools/modules/ranged/TrickQuiverModule.java
-slimeknights/tconstruct/tools/modules/armor/MinimapModule.java
-slimeknights/tconstruct/tools/network/ToolContainerFluidUpdatePacket.java
+# (tool inventory round) ToolContainerFluidUpdatePacket gated in on the RegistryFriendlyByteBuf
+# packet shape; it still needs the tools module's packet registration, like its neighbours.
 # (event-layer round) deprecated legacy classes with zero references; their behavior is
 # datapack modules now (double_jump/reflecting/shears loaders are registered again), so
 # they stay parked rather than being ported to an API nothing calls.
@@ -248,8 +233,6 @@ slimeknights/tconstruct/tools/modifiers/ability/armor/DoubleJumpModifier.java
 slimeknights/tconstruct/tools/modifiers/ability/armor/ReflectingModifier.java
 slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifier.java
 slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityModifier.java
-slimeknights/tconstruct/tools/modules/OverburnModule.java
-slimeknights/tconstruct/tools/modules/MeltingFluidEffectiveModule.java
 
 # --- Phase 4 gadgets round: parked pieces ---
 # Client-only (phase 5): frame/shuriken renderers + model/color event wiring.
