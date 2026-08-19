@@ -27,17 +27,18 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.client.model.IQuadTransformer;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
+import slimeknights.mantle.client.extensions.IClientFluidTypeExtensions;
+import slimeknights.mantle.client.model.IQuadTransformer;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidType;
+import slimeknights.mantle.transfer.fluid.FluidTank;
 import slimeknights.mantle.client.model.util.ColoredBlockModel;
 import slimeknights.mantle.client.model.util.ExtraTextureContext;
+import slimeknights.mantle.client.model.util.ModelHelper;
 import slimeknights.mantle.client.model.util.SimpleBlockModel;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.config.Config;
@@ -54,14 +55,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 /*
- * PORT (phase 5, client models) — parked, loader id "tconstruct:tank" (8 model files).
- * The geometry shim is live (import swap) and SimpleBlockModel exists; it also extends
- * UniqueGuiModel.Baked, which is ported. What is still missing:
- *   Forge: ModelData, IQuadTransformer, IClientFluidTypeExtensions (Fabric side is
- *     FluidRenderHandlerRegistry), FluidStack/FluidType/FluidTank — the transfer shim already
- *     carries slimeknights.mantle.transfer.fluid equivalents for those three.
- *   Mantle (never copied into this tree): ColoredBlockModel, ExtraTextureContext.
- * Register in TinkerModelLoaders once it compiles.
+ * PORT (phase 5, client models) — LIVE, loader id "tconstruct:tank" (8 model files), registered in
+ * TinkerModelLoaders. Forge imports swapped to the mantle shims; FluidStack/FluidType/FluidTank
+ * come from the transfer shim, which already carried all three.
+ *
+ * The in-world fluid level is the one behaviour that does not carry over yet: it arrived through
+ * Forge's ModelData, and vanilla 1.21.1 has no such parameter, so getQuads always sees
+ * ModelData.EMPTY and the block renders empty (see slimeknights.mantle.client.model.data.ModelData
+ * for what feeding it needs). Note this only affects the static-model fluid, which is off by
+ * default anyway — Config.CLIENT.tankFluidModel — because the tank block entity renderer normally
+ * draws the fluid. The item model, which is what shows a filled tank in inventories and JEI, works
+ * fully: it goes through the ItemOverrides below.
  */
 /**
  * This model contains a single scalable fluid that can either be statically rendered or rendered in the TESR. It also supports rendering fluids in the item model
@@ -150,7 +154,7 @@ public class TankModel implements IUnbakedGeometry<TankModel> {
       // next, add in the fluid
       IQuadTransformer fluidTransformer = color == -1 ? quadTransformer : quadTransformer.andThen(ColoredBlockModel.applyColorQuadTransformer(color));
       ColoredBlockModel.bakePart(builder, owner, fluid, luminosity, spriteGetter, originalTransforms.getRotation(), fluidTransformer, originalTransforms.isUvLocked(), BAKE_LOCATION);
-      return builder.build(SimpleBlockModel.getRenderTypeGroup(owner));
+      return builder.build();
     }
 
     /**
@@ -162,9 +166,9 @@ public class TankModel implements IUnbakedGeometry<TankModel> {
       // fetch fluid data
       FluidStack stack = key.fluid();
       IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(stack.getFluid());
-      FluidType type = stack.getFluid().getFluidType();
+      FluidType type = FluidType.of(stack.getFluid());
       int color = attributes.getTintColor(stack);
-      int luminosity = type.getLightLevel(stack);
+      int luminosity = type.getLightLevel();
       Map<String,Material> textures = ImmutableMap.of(
         "fluid", new Material(InventoryMenu.BLOCK_ATLAS, attributes.getStillTexture(stack)),
         "flowing_fluid", new Material(InventoryMenu.BLOCK_ATLAS, attributes.getFlowingTexture(stack)));
@@ -217,10 +221,10 @@ public class TankModel implements IUnbakedGeometry<TankModel> {
         FluidStack fluid = data.get(ModelProperties.FLUID_STACK);
         if (fluid != null && !fluid.isEmpty()) {
           int capacity = Objects.requireNonNullElse(data.get(ModelProperties.TANK_CAPACITY), fluid.getAmount());
-          return getCachedModel(fluid, capacity).getQuads(state, side, rand, ModelData.EMPTY, renderType);
+          return ModelHelper.getQuads(getCachedModel(fluid, capacity), state, side, rand, ModelData.EMPTY, renderType);
         }
       }
-      return originalModel.getQuads(state, side, rand, data, renderType);
+      return ModelHelper.getQuads(originalModel, state, side, rand, data, renderType);
     }
 
     /** Override to add the fluid part to the item model */

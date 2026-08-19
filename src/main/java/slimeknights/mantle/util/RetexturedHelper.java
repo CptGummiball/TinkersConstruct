@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.Mantle;
+import slimeknights.mantle.client.model.data.ModelProperty;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -37,6 +38,15 @@ public final class RetexturedHelper {
   public static final String KEY_ID = Mantle.makeDescriptionId("block", "retextured.id");
   /** Tag name for texture blocks. Should not be used directly, use the utils to interact */
   public static final String TAG_TEXTURE = "texture";
+  /**
+   * Model data property carrying the block a retextured block entity copies its texture from.
+   * Read by the anvil and smeltery-component models.
+   *
+   * <p>Lives on this shared util rather than in the client packages because that is where upstream
+   * put it and where the block entities reach for it; {@link ModelProperty} itself is a plain
+   * generic key with no client imports, so it is safe on the dedicated server.
+   */
+  public static final ModelProperty<Block> BLOCK_PROPERTY = new ModelProperty<>();
 
 
   /* Texture name */

@@ -48,12 +48,12 @@ public class IncrementalFluidCuboid extends FluidCuboid {
 
     // create faces based on face data
     Map<Direction,BlockElementFace> faces = new EnumMap<>(Direction.class);
-    for (Entry<Direction, FluidFace> entry : this.getFaces().entrySet()) {
+    for (Entry<Direction, FluidFace> entry : collectFaces(this).entrySet()) {
       // only add the face if requested
       Direction dir = entry.getKey();
       FluidFace face = entry.getValue();
       // calculate in flowing and rotations
-      boolean isFlowing = face.isFlowing();
+      boolean isFlowing = face.flowing();
       faces.put(dir, new BlockElementFace(
         null, 0, isFlowing ? "flowing_fluid" : "fluid",
         getFaceUvs(from ,to, dir, face.rotation(), isFlowing ? 0.5f : 1f)));
@@ -134,8 +134,26 @@ public class IncrementalFluidCuboid extends FluidCuboid {
    * @return  Scalable fluid cuboid
    */
   public static IncrementalFluidCuboid fromJson(JsonObject json) {
-    FluidCuboid base = FluidCuboid.LOADABLE.deserialize(json);
+    FluidCuboid base = FluidCuboid.fromJson(json);
     int increments = GsonHelper.getAsInt(json, "increments");
-    return new IncrementalFluidCuboid(base.getFrom(), base.getTo(), base.getFaces(), increments);
+    return new IncrementalFluidCuboid(base.getFrom(), base.getTo(), collectFaces(base), increments);
+  }
+
+  /**
+   * Rebuilds the face map from the per-direction accessor.
+   *
+   * <p>{@link FluidCuboid} keeps its face map private and exposes only
+   * {@link FluidCuboid#getFace(Direction)}; the six-way sweep is the read-only equivalent of the
+   * {@code getFaces()} the Forge version called, without reaching into the render slice's class.
+   */
+  private static Map<Direction,FluidFace> collectFaces(FluidCuboid cuboid) {
+    Map<Direction,FluidFace> faces = new EnumMap<>(Direction.class);
+    for (Direction direction : Direction.values()) {
+      FluidFace face = cuboid.getFace(direction);
+      if (face != null) {
+        faces.put(direction, face);
+      }
+    }
+    return faces;
   }
 }

@@ -25,13 +25,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.client.model.IQuadTransformer;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.client.extensions.IClientFluidTypeExtensions;
+import slimeknights.mantle.client.model.IQuadTransformer;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.mantle.client.model.RetexturedModel;
 import slimeknights.mantle.client.model.RetexturedModel.RetexturedContext;
 import slimeknights.mantle.client.model.util.ColoredBlockModel;
@@ -56,13 +57,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /*
- * PORT (phase 5, client models) — parked, loader id "tconstruct:fluid_texture" (2 model files).
- * The geometry shim is live (import swap) and SimpleBlockModel exists. What is still missing:
- *   Forge: ModelData, IQuadTransformer, IClientFluidTypeExtensions (Fabric side is
- *     FluidRenderHandlerRegistry), FluidStack (shimmed as slimeknights.mantle.transfer.fluid).
- *   Mantle (never copied into this tree): ColoredBlockModel (+ ColorData), RetexturedModel,
- *     DynamicBakedWrapper, ModelHelper.
- * Register in TinkerModelLoaders once it compiles.
+ * PORT (phase 5, client models) — LIVE, loader id "tconstruct:fluid_texture" (2 model files),
+ * registered in TinkerModelLoaders. Every Forge import swapped to the mantle shims written for it:
+ * ModelData, IQuadTransformer, IClientFluidTypeExtensions (Fabric side is FluidVariantRendering)
+ * and FluidStack/FluidType (the transfer shim).
+ *
+ * Two behaviours are narrower than on Forge, both for reasons outside this class:
+ *   - The block-render path always hands over ModelData.EMPTY, since vanilla 1.21.1 has no model
+ *     data parameter (see slimeknights.mantle.client.model.data.ModelData). Until a Fabric render
+ *     attachment feeds it, a smeltery controller or drain renders its static bricks rather than the
+ *     contained fluid. The item path is unaffected: it goes through ItemOverrides, and the NBT
+ *     retexture below works as it did.
+ *   - Baked emissivity is dropped by the vanilla renderer (see QuadTransformers), so a glowing
+ *     fluid renders unlit until an ItemRenderer/ModelBlockRenderer hook lands.
  */
 /**
  * Model that replaces fluid textures with the fluid from model data
@@ -103,7 +110,7 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
       for (int i = 0; i < size; i++) {
         BlockElement part = elements.get(i);
         long fluidFaces = part.faces.values().stream()
-                                    .filter(face -> fluidTextures.contains(trimTextureName(face.texture)))
+                                    .filter(face -> fluidTextures.contains(trimTextureName(face.texture())))
                                     .count();
         // for simplicity, each part is either a fluid or not. If for some reason it contains both we mark it as a fluid, meaning it may get colored
         // if this is undesired, just use separate elements
@@ -167,7 +174,7 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
         if (color != -1) {
           fluidTransformer = ColoredBlockModel.applyColorQuadTransformer(color).andThen(quadTransformer);
         }
-        luminosity = key.fluid.getFluid().getFluidType().getLightLevel(key.fluid);
+        luminosity = FluidType.of(key.fluid.getFluid()).getLightLevel();
         textured = new RetexturedContext(textured, this.fluids, attributes.getStillTexture(key.fluid));
       }
 
@@ -188,7 +195,7 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
           ColoredBlockModel.bakePart(builder, textured, element, colors.luminosity(), spriteGetter, transform.getRotation(), partTransformer, colors.isUvLock(defaultUvLock), TankModel.BAKE_LOCATION);
         }
       }
-      return builder.build(SimpleBlockModel.getRenderTypeGroup(owner));
+      return builder.build();
     }
 
     /** Gets a retextured model for the given fluid, using the cached model if possible */
@@ -206,9 +213,9 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
       Block block = retextured.isEmpty() ? null : data.get(RetexturedHelper.BLOCK_PROPERTY);
       if (!fluid.isEmpty() || block != null) {
         BakedCacheKey key = new BakedCacheKey(fluid, block != null ? ModelHelper.getParticleTexture(block) : null);
-        return getCachedModel(key).getQuads(state, direction, random, data, renderType);
+        return ModelHelper.getQuads(getCachedModel(key), state, direction, random, data, renderType);
       }
-      return originalModel.getQuads(state, direction, random, data, renderType);
+      return ModelHelper.getQuads(originalModel, state, direction, random, data, renderType);
     }
 
     @Override

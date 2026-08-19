@@ -214,3 +214,27 @@ mutable field net/minecraft/world/inventory/Slot y I
 # when a fresh tool is in the output, and needs to read the current state to avoid clobbering
 # the typed name every display refresh.
 accessible method net/minecraft/client/gui/components/EditBox isEditable ()Z
+
+# --- Phase 5, block entity renderers ---
+# RenderType.create is private in vanilla (Forge's AT made it public) and returns the package
+# private CompositeRenderType. The fluid render types in MantleRenderTypes and TinkerRenderTypes
+# are built the same way vanilla builds its own, which is the only way to get a composite state.
+accessible class net/minecraft/client/renderer/RenderType$CompositeRenderType
+accessible method net/minecraft/client/renderer/RenderType create (Ljava/lang/String;Lcom/mojang/blaze3d/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;IZZLnet/minecraft/client/renderer/RenderType$CompositeState;)Lnet/minecraft/client/renderer/RenderType$CompositeRenderType;
+# The casting table fades its item in by swapping the render type for a translucent one carrying the
+# same texture, which means reading the type's name and its texture back off the composite state.
+accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
+accessible field net/minecraft/client/renderer/RenderType$CompositeRenderType state Lnet/minecraft/client/renderer/RenderType$CompositeState;
+accessible field net/minecraft/client/renderer/RenderType$CompositeState textureState Lnet/minecraft/client/renderer/RenderStateShard$EmptyTextureStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard$TextureStateShard texture Ljava/util/Optional;
+
+# --- Phase 5, client model geometry ---
+# ItemOverrides' no-arg constructor is private in vanilla; Forge's AT opened it for the same reason.
+# Every dynamic model subclasses ItemOverrides to swap the baked model from an item's NBT — the
+# tank's contained fluid, a retextured block, a tool part's material — and the subclass cannot call
+# an inaccessible super constructor.
+accessible method net/minecraft/client/renderer/block/model/ItemOverrides <init> ()V
+# Custom sprite source (shield banner -> modifier textures). Forge exposed an open registry
+# for these; 1.21 keeps the register method and the shield material map private, and without
+# the registration the whole pack's block atlas definition fails to parse.
+accessible field net/minecraft/client/renderer/texture/atlas/SpriteSources TYPES Lcom/google/common/collect/BiMap;

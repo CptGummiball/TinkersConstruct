@@ -141,7 +141,7 @@ public final class GeometryModelLoadingPlugin implements PreparableModelLoadingP
       BlockModel base = BlockModel.fromString(contents);
       base.name = id.toString();
       IUnbakedGeometry<?> geometry = loader.read(json, DESERIALIZATION_CONTEXT);
-      return new GeometryUnbakedModel(base, geometry, new BlockGeometryBakingContext(base, id), id);
+      return new GeometryUnbakedModel(base, geometry, id);
     } catch (RuntimeException e) {
       // one broken model must not take down the whole model load; fall back to the vanilla parse
       Mantle.logger.error("Failed to load custom geometry for model {}", id, e);

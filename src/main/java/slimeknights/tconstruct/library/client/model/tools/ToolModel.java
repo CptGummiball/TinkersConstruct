@@ -91,14 +91,25 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 /*
- * PORT (phase 5, client models) — parked, loader id "tconstruct:tool" (122 model files).
- * The largest of the seven geometry consumers and the last one to attempt. The geometry shim is
- * live (import swap), but this also needs, on top of everything MaterialModel waits on:
- *   Forge: IModelBuilder, QuadTransformers, IQuadTransformer, ModelData, BakedModelWrapper
- *     (BakedModelWrapper is ported: slimeknights.mantle.client.model.BakedModelWrapper).
- *   Mantle (never copied into this tree): ColoredBlockModel, MantleItemLayerModel.
- *   TConstruct: the whole library/client/modifiers model tree (ModifierModelManager,
- *     IBakedModifierModel and the ~15 modifier model types), still unported.
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:tool" (122 model files), the only
+ * one of the six geometry consumers still out. Everything on the model side it waited on now
+ * exists: the geometry shim, ColoredBlockModel, MantleItemLayerModel, QuadTransformers,
+ * IQuadTransformer, ModelData and BakedModelWrapper are all written and in use by the five live
+ * loaders, and the Forge imports above swap to slimeknights.mantle.client.model.* one for one.
+ *
+ * What is left is a separate slice rather than a missing utility:
+ *   - slimeknights.tconstruct.library.client.modifiers: the modifier model tree, 22 files
+ *     (ModifierModelManager, ModifierModelMapManager, IBakedModifierModel and the model/ subpackage).
+ *     7 of them still carry Forge imports, all in the fluid/tank/condition models; the loadable
+ *     framework they parse through is already ported, so this is a bounded round of its own.
+ *   - slimeknights.mantle.util.ReversedListBuilder — never copied into this tree, a small list
+ *     builder that emits in reverse insertion order.
+ *   - net.minecraftforge.client.model.IModelBuilder — the one Forge model utility with no shim
+ *     yet, deliberately: writing it before its only consumer compiles would be machinery nothing
+ *     calls. It is a thin interface over SimpleBakedModel.Builder, in the shape CompositeModel
+ *     already takes.
+ *   - slimeknights.mantle.util.ItemLayerPixels is a stub; this is the model that would give it a
+ *     reason to exist, since it is the only one stacking several material layers in one item.
  * Register in TinkerModelLoaders once it compiles.
  */
 /**

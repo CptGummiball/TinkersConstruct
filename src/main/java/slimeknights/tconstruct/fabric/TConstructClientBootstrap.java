@@ -3,6 +3,7 @@ package slimeknights.tconstruct.fabric;
 import net.fabricmc.api.ClientModInitializer;
 import slimeknights.mantle.fluid.tooltip.FluidTooltipHandler;
 import slimeknights.mantle.network.NetworkWrapperClient;
+import slimeknights.tconstruct.library.client.materials.MaterialRenderInfoLoader;
 import slimeknights.tconstruct.library.client.model.TinkerModelLoaders;
 import slimeknights.tconstruct.library.client.modifiers.ModifierIconManager;
 import slimeknights.tconstruct.smeltery.SmelteryClientEvents;
@@ -20,6 +21,11 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     // since ClientPlayNetworking does not exist on a dedicated server.
     NetworkWrapperClient.init();
 
+    // Material render info: which sprite and tint each material draws with. Must be registered
+    // before the first resource reload, and loads in a model-loading preparation stage so it is
+    // in place before any material model bakes.
+    MaterialRenderInfoLoader.init();
+
     // Custom model geometry: registers the "loader" ids and the Fabric ModelResolver bridge that
     // replaces Forge's patched model deserializer.
     TinkerModelLoaders.init();
@@ -29,13 +35,26 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     // single source of truth rather than duplicating it in a hand-kept list.
     slimeknights.tconstruct.fabric.client.BlockRenderTypes.init();
 
+    // Fluid rendering: Forge read sprites and tint from a client fluid-type extension; Fabric
+    // asks a render handler instead. The manager reads the same generated data and registers
+    // the handler once it knows which fluids declared textures.
+    slimeknights.mantle.fluid.texture.FluidTextureManager.init();
+
     // Menu screens: Forge registered these from FMLClientSetupEvent inside each *ClientEvents
     // class. The resource listeners below back the GUIs (fluid unit tooltips, modifier button
     // icons); Forge registered them from Mantle's client setup and ToolClientEvents.
+    // both hang off the tag-load event, which fires for every resource and datapack reload:
+    // one fills the colour table tooltips read, the other drops the caches built from it
+    slimeknights.mantle.client.ResourceColorManager.init();
+    slimeknights.tconstruct.library.client.materials.MaterialTooltipCache.init();
     FluidTooltipHandler.init();
     ModifierIconManager.init();
     TableClientEvents.init();
     SmelteryClientEvents.init();
+    // Block entity and entity renderers: Forge registered these from EntityRenderersEvent inside
+    // each *ClientEvents class; the two below carry only their renderer registrations so far.
+    slimeknights.tconstruct.tools.ToolClientEvents.init();
+    slimeknights.tconstruct.gadgets.GadgetClientEvents.init();
 
     // Further client modules are wired in as each one finishes porting; see PORTING.md.
   }

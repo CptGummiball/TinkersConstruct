@@ -11,8 +11,6 @@ import lombok.experimental.Accessors;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import slimeknights.mantle.transfer.fluid.FluidType;
-import net.minecraftforge.registries.ForgeRegistries;
-import slimeknights.mantle.client.model.TextureColorHelper;
 import slimeknights.mantle.data.loadable.common.ColorLoadable;
 import slimeknights.mantle.data.loadable.primitive.EnumLoadable;
 import slimeknights.mantle.util.JsonHelper;
@@ -51,9 +49,8 @@ public final class FluidTexture {
 
   /** Gets the fog color for this fluid */
   public int fogColor() {
-    if (calculateFogColor && fogColor == -1) {
-      fogColor = TextureColorHelper.getAverageColor(still);
-    }
+    // PORT: Forge averaged the still texture's pixels here. Fog rendering itself has no Fabric
+    // hook yet, so the declared colour stands in until that pass adds both together.
     return fogColor;
   }
 
@@ -168,7 +165,9 @@ public final class FluidTexture {
      * @return Builder instance
      */
     public Builder wrapId(String prefix, String suffix, boolean overlay, boolean camera) {
-      return textures(JsonHelper.wrap(Objects.requireNonNull(ForgeRegistries.FLUID_TYPES.get().getKey(fluid)), prefix, suffix), overlay, camera);
+      // PORT (phase 7 datagen): Forge looked the id up in its fluid-type registry, which has no
+      // Fabric counterpart. Only the datagen provider calls this, so it returns with that pass.
+      throw new UnsupportedOperationException("wrapId requires the fluid type registry; see the datagen pass");
     }
 
     /**

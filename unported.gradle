@@ -21,18 +21,18 @@ slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 
 
 # --- mantle.fluid: client/datagen/network pieces, deferred to their phases ---
-# texture/: IClientFluidTypeExtensions is Forge client API; Fabric side is
-# FluidRenderHandlerRegistry and belongs to phase 5 (client) / phase 7 (datagen providers).
-slimeknights/mantle/fluid/texture/AbstractFluidTextureProvider.java
-slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
+# texture/: gated in on Fabric's FluidRenderHandlerRegistry (see TextureFluidRenderHandler).
+# The two Client*FluidType classes are dropped rather than ported: they implemented Forge's
+# IClientFluidTypeExtensions, whose sprite/tint duties the render handler now covers. Their
+# fog and screen-overlay half has no Fabric hook and returns with a later pass.
 slimeknights/mantle/fluid/texture/ClientTextureFluidType.java
+slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
+slimeknights/mantle/fluid/texture/AbstractFluidTextureProvider.java
 slimeknights/mantle/fluid/texture/FluidTextureCameraProvider.java
-slimeknights/mantle/fluid/texture/FluidTextureManager.java
 # Datagen providers, phase 7.
 slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
 slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
 # Missed in the first fluid pass:
-slimeknights/mantle/fluid/texture/FluidTexture.java
 # (screen round) FluidTooltipHandler + FluidUnit/FluidUnitList gated in: the reload listener
 # moved to ResourceManagerHelper and the tag-flush to CommonLifecycleEvents.TAGS_LOADED.
 
@@ -176,30 +176,52 @@ slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuild
 slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
 slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---
-# (screen round) smeltery/client/screen/** and SmelteryClientEvents gated in; the block entity
-# renderers and their vertex helpers stay parked for the renderer slice, as do the renderer,
-# reload-listener and model-loader registrations inside SmelteryClientEvents (PORT-commented).
-slimeknights/tconstruct/smeltery/client/render/**
-slimeknights/tconstruct/smeltery/client/util/**
+# (screen round) smeltery/client/screen/** and SmelteryClientEvents gated in.
+# (renderer round) smeltery/client/render/** and smeltery/client/util/** gated in, along with the
+# renderer and reload-listener registrations in SmelteryClientEvents; only the model-loader and
+# ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
 slimeknights/tconstruct/smeltery/data/**
+# --- Phase 5 client model slice: what stayed out ---
+# tconstruct:tool is the one geometry consumer still parked. Its model-side support all landed with
+# this round (ColoredBlockModel, MantleItemLayerModel, the quad transformers, ModelData); what it
+# waits on is the modifier model tree below, plus mantle.util.ReversedListBuilder (never copied in)
+# and a shim for Forge's IModelBuilder. ToolModel's header carries the detail.
+slimeknights/tconstruct/library/client/model/tools/ToolModel.java
+# The modifier model tree ToolModel bakes through: 22 files, 7 of which still carry Forge imports
+# (the fluid, tank and load-condition models). Their loadable framework is already ported, so this
+# is a bounded round rather than an open question.
+slimeknights/tconstruct/library/client/modifiers/IBakedModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/IUnbakedModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/DyedModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/FluidModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/MaterialModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/ModifierModelManager.java
+slimeknights/tconstruct/library/client/modifiers/ModifierModelMap.java
+slimeknights/tconstruct/library/client/modifiers/ModifierModelMapManager.java
+slimeknights/tconstruct/library/client/modifiers/NormalModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/PotionModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/TankModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/TrimModifierModel.java
+slimeknights/tconstruct/library/client/modifiers/model/**
+# Datagen-only: the sprite generator info hanging off a material render info; it reaches into
+# library/client/data, which is the phase-7 texture generation tree.
+slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
+
 # --- tools round parks ---
 # client rendering + models (phase 5)
 # tools/client per file rather than a glob, so pieces can gate in individually.
-# ShieldBannerModifierSpriteSource is worth an early look next round: without it the
-# block atlas definition fails to parse entirely ("Unknown type
-# tconstruct:shield_banner_to_modifier"). It only waits on MaterialRenderInfo.
-slimeknights/tconstruct/tools/client/ShieldBannerModifierSpriteSource.java
 slimeknights/tconstruct/tools/client/ClientInteractionHandler.java
-slimeknights/tconstruct/tools/client/CrystalshotRenderer.java
-slimeknights/tconstruct/tools/client/FluidEffectProjectileRenderer.java
 slimeknights/tconstruct/tools/client/ModifierClientEvents.java
 slimeknights/tconstruct/tools/client/OverslimeModifierModel.java
 slimeknights/tconstruct/tools/client/RayTracer.java
 slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
 slimeknights/tconstruct/tools/client/ToolContainerScreen.java
 slimeknights/tconstruct/tools/client/ToolRenderEvents.java
-slimeknights/tconstruct/tools/client/material/**
-slimeknights/tconstruct/tools/ToolClientEvents.java
+# (renderer round) CrystalshotRenderer, FluidEffectProjectileRenderer, ThrownToolRenderer and
+# ThrownShurikenRenderer gated in, along with a ToolClientEvents holding just their registrations.
+# The fishing bobber renderer stays parked: it reads MaterialRenderInfoLoader and the armor texture
+# suppliers (both unported), and 1.21 made FishingHookRenderer#stringVertex private.
+slimeknights/tconstruct/tools/client/material/CombatFishingHookRenderer.java
 slimeknights/tconstruct/tools/data/client/**
 slimeknights/tconstruct/tools/data/sprite/**
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
@@ -240,9 +262,8 @@ slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifie
 slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityModifier.java
 
 # --- Phase 4 gadgets round: parked pieces ---
-# Client-only (phase 5): frame/shuriken renderers + model/color event wiring.
-slimeknights/tconstruct/gadgets/GadgetClientEvents.java
-slimeknights/tconstruct/gadgets/client/**
+# (renderer round) GadgetClientEvents and gadgets/client/** gated in: the frame models are registered
+# through Fabric's ModelLoadingPlugin and the renderers through EntityRendererRegistry.
 # Datagen (phase 7).
 slimeknights/tconstruct/gadgets/data/**
 # Forge attach-capability glue; superseded by the static PiggybackHandler tracker.

@@ -23,6 +23,8 @@ import com.google.common.collect.Maps;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.math.Transformation;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -41,25 +43,27 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.client.RenderTypeGroup;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.client.model.CompositeModel;
-import net.minecraftforge.client.model.DynamicFluidContainerModel;
-import net.minecraftforge.client.model.QuadTransformers;
-import net.minecraftforge.client.model.SimpleModelState;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
-import net.minecraftforge.client.model.geometry.StandaloneGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.UnbakedGeometryHelper;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fluids.FluidUtil;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.TagParser;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import slimeknights.mantle.client.RenderTypeGroup;
+import slimeknights.mantle.client.extensions.IClientFluidTypeExtensions;
+import slimeknights.mantle.client.model.CompositeModel;
+import slimeknights.mantle.client.model.DynamicFluidContainerModel;
+import slimeknights.mantle.client.model.QuadTransformers;
+import slimeknights.mantle.client.model.SimpleModelState;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.geometry.StandaloneGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.UnbakedGeometryHelper;
 import slimeknights.mantle.client.model.util.ColoredBlockModel;
 import slimeknights.mantle.data.loadable.Loadables;
+import slimeknights.mantle.transfer.TransferUtil;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.tconstruct.TConstruct;
 
 import javax.annotation.Nullable;
@@ -69,25 +73,33 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /*
- * PORT (phase 5, client models) — parked, loader id "tconstruct:fluid_container" (71 model files).
- * The geometry shim is live (import swap). This one leans hardest on Forge's own model utilities:
- *   Forge: DynamicFluidContainerModel (it is written as an extension of it), UnbakedGeometryHelper
- *     (createUnbakedItemElements / createUnbakedItemMaskElements / bakeElements), CompositeModel,
- *     RenderTypeGroup, QuadTransformers, SimpleModelState, StandaloneGeometryBakingContext,
- *     IClientFluidTypeExtensions, FluidUtil, FluidStack/FluidType, CraftingHelper.
- *   Mantle (never copied into this tree): ColoredBlockModel.
- * The item-mask element generation is the substantial piece; there is no vanilla equivalent, unlike
- * the plain item layers which ItemModelGenerator covers.
- * Register in TinkerModelLoaders once it compiles.
+ * PORT (phase 5, client models) — LIVE, loader id "tconstruct:fluid_container" (71 model files:
+ * the copper can plus every filled bucket), registered in TinkerModelLoaders. All the Forge model
+ * utilities it leaned on now have mantle shims.
+ *
+ * The element generation turned out not to be the substantial piece it looked like: both halves of
+ * UnbakedGeometryHelper trace a sprite into item geometry, and vanilla's ItemModelGenerator already
+ * does exactly that, so the mask elements are the same trace run over the container's mask sprite
+ * while the fluid sprite textures them.
+ *
+ * Two things to know:
+ *   - FluidUtil.getFluidContained became TransferUtil.getFluidHandlerItem, so the model reads the
+ *     contents through Fabric's item storage lookup and therefore also renders other mods' fluid
+ *     items correctly.
+ *   - The 70 bucket models parent to forge:item/bucket_drip and the can to forge:item/default,
+ *     neither of which exists in a Fabric tree. The parent resolves to the missing model, which
+ *     costs those items their display transforms (they render unrotated in hand) but not their
+ *     geometry, which comes from this loader. Supplying the two parent models is a resource-side
+ *     fix and belongs with the asset pass, not here.
  */
 /**
- * Extension of {@link net.minecraftforge.client.model.DynamicFluidContainerModel} with two additional features: baked tints and fluid stack sensitive models.
+ * Rework of Forge's {@code DynamicFluidContainerModel} with two additional features: baked tints and fluid stack sensitive models.
  * Does not handle covers as I have never seen a need for them, and it means less code duplication (plus the forge model does the whole cover is mask thing wrong compared to 1.18).
  */
 public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements IUnbakedGeometry<FluidContainerModel> {
   public static final IGeometryLoader<FluidContainerModel> LOADER = FluidContainerModel::deserialize;
 
-  /** Clone of same named field from {@link net.minecraftforge.client.model.DynamicFluidContainerModel} */
+  /** Clone of the same named field from Forge's {@code DynamicFluidContainerModel}: nudges the fluid layer forward so it does not z-fight the container. */
   public static final Transformation FLUID_TRANSFORM = new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1, 1, 1.002f), new Quaternionf());
 
   /** Deserializes this model from JSON */
@@ -102,7 +114,7 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
         JsonObject fluidObject = fluidElement.getAsJsonObject();
         fluid = Loadables.FLUID.getIfPresent(fluidObject, "name");
         if (fluidObject.has("nbt")) {
-          tag = CraftingHelper.getNBT(fluidObject.get("nbt"));
+          tag = parseTag(fluidObject.get("nbt"));
         }
       } else {
         fluid = Loadables.FLUID.convert(fluidElement, "fluid");
@@ -111,6 +123,21 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
     }
     boolean flipGas = GsonHelper.getAsBoolean(json, "flip_gas", true);
     return new FluidContainerModel(fluidStack, flipGas);
+  }
+
+  /**
+   * Reads a compound tag written either as inline SNBT or as a JSON object.
+   * Replaces Forge's {@code CraftingHelper.getNBT}, which accepted both spellings.
+   */
+  private static CompoundTag parseTag(JsonElement element) {
+    if (element.isJsonObject()) {
+      return (CompoundTag) JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, element);
+    }
+    try {
+      return TagParser.parseTag(GsonHelper.convertToString(element, "nbt"));
+    } catch (CommandSyntaxException e) {
+      throw new JsonSyntaxException("Malformed NBT in fluid container model", e);
+    }
   }
 
   /** Gets the given sprite, or null if the texture is not present in the model */
@@ -138,7 +165,7 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
     }
 
     // if its a gas and we flipping, flip it
-    if (flipGas && !fluid.isEmpty() && fluid.getFluid().getFluidType().isLighterThanAir()) {
+    if (flipGas && !fluid.isEmpty() && FluidType.of(fluid.getFluid()).isLighterThanAir()) {
       modelState = new SimpleModelState(modelState.getRotation().compose(new Transformation(null, new Quaternionf(0, 0, 1, 0), null, null)));
     }
 
@@ -154,8 +181,11 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
       ));
     }
 
-    // add in fluid
-    if (fluidSprite != null) {
+    // add in fluid, but only when the model supplies the mask that shapes it. Forge's models always
+    // did; forge:item/bucket_drip here is a stand-in whose mask texture (forge:item/mask/
+    // bucket_fluid_drip) is a Forge asset that was never vendored, and tracing the missing texture
+    // instead would paint the whole 16x16 square with the fluid.
+    if (fluidSprite != null && context.hasMaterial("fluid")) {
       List<BakedQuad> quads = UnbakedGeometryHelper.bakeElements(
         UnbakedGeometryHelper.createUnbakedItemMaskElements(1, spriteGetter.apply(context.getMaterial("fluid")).contents()),
         $ -> fluidSprite,
@@ -165,7 +195,7 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
 
       // apply light
       RenderTypeGroup fluidRenderTypes = renderTypes;
-      int light = fluid.getFluid().getFluidType().getLightLevel(fluid);
+      int light = FluidType.of(fluid.getFluid()).getLightLevel();
       if (light > 0) {
         fluidRenderTypes = DynamicFluidContainerModel.getLayerRenderTypes(true);
         QuadTransformers.settingEmissivity(light).processInPlace(quads);
@@ -213,9 +243,13 @@ public record FluidContainerModel(FluidStack fluid, boolean flipGas) implements 
     public BakedModel resolve(BakedModel originalModel, ItemStack stack, @Nullable ClientLevel world, @Nullable LivingEntity entity, int seed) {
       BakedModel overriden = nested.resolve(originalModel, stack, world, entity, seed);
       if (overriden != originalModel) return overriden;
-      Optional<FluidStack> optional = FluidUtil.getFluidContained(stack);
+      // Forge asked FluidUtil; on Fabric the contents come through the item storage lookup, which
+      // means containers from other mods resolve here just as Tinkers' own do
+      Optional<FluidStack> optional = TransferUtil.getFluidHandlerItem(stack)
+        .map(handler -> handler.getTanks() > 0 ? handler.getFluidInTank(0) : FluidStack.EMPTY)
+        .filter(contained -> !contained.isEmpty());
       if (optional.isPresent()) {
-        FluidStack fluid = optional.get();
+        FluidStack fluid = optional.get().copy();
         fluid.setAmount(FluidType.BUCKET_VOLUME); // cache considers amount, so ensure its consistent
         return cache.computeIfAbsent(fluid, this::getUncahcedModel);
       }

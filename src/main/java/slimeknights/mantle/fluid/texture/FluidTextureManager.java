@@ -1,101 +1,96 @@
 package slimeknights.mantle.fluid.texture;
 
 import com.google.gson.JsonElement;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import slimeknights.mantle.transfer.fluid.FluidType;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
 import slimeknights.mantle.Mantle;
-import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
 import slimeknights.mantle.util.JsonHelper;
 
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Manager for handling fluid textures */
-public class FluidTextureManager implements IEarlySafeManagerReloadListener {
+/**
+ * Loads the textures each fluid renders with.
+ *
+ * <p>Forge keyed these by its fluid-type registry; that registry has no Fabric counterpart, so
+ * the files are keyed by the still fluid instead — the shipped names already match, and on
+ * Fabric the fluid is what the renderer is handed anyway. The flowing variant resolves through
+ * the same entry, since a flowing fluid shares its source's textures.
+ */
+public class FluidTextureManager implements SimpleSynchronousResourceReloadListener {
   /** Folder containing the logic */
   public static final String FOLDER = "mantle/fluid_texture";
 
-  /* Instance data */
   private static final FluidTextureManager INSTANCE = new FluidTextureManager();
-  /** Map of fluid type to texture */
-  private Map<FluidType,FluidTexture> textures = Collections.emptyMap();
+  /** Map of still fluid to texture */
+  private Map<Fluid,FluidTexture> textures = Collections.emptyMap();
   /** Fallback texture instance */
-  private static final FluidTexture FALLBACK = new FluidTexture(ResourceLocation.parse("block/water_still"), ResourceLocation.parse("block/water_flow"), null, null, 0, -1, -1, false, null, 0, 0);
+  private static final FluidTexture FALLBACK = new FluidTexture(ResourceLocation.parse("block/water_still"), ResourceLocation.parse("block/water_flow"), null, null, -1);
 
   private FluidTextureManager() {}
 
-
-  /**
-   * Initializes this manager, registering it with the resource manager
-   */
-  public static void init(RegisterClientReloadListenersEvent event) {
-    event.registerReloadListener(INSTANCE);
+  /** Registers the reload listener; call once from the client entrypoint */
+  public static void init() {
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
   }
 
   @Override
-  public void onReloadSafe(ResourceManager resourceManager) {
+  public ResourceLocation getFabricId() {
+    return Mantle.getResource("fluid_texture");
+  }
+
+  @Override
+  public void onResourceManagerReload(ResourceManager resourceManager) {
     long time = System.nanoTime();
-    // fetch JSONs
     Map<ResourceLocation,JsonElement> jsons = new HashMap<>();
     SimpleJsonResourceReloadListener.scanDirectory(resourceManager, FOLDER, JsonHelper.DEFAULT_GSON, jsons);
 
-    // start building fluid type map
-    Map<FluidType, FluidTexture> map = new HashMap<>();
-    IForgeRegistry<FluidType> fluidTypeRegistry = ForgeRegistries.FLUID_TYPES.get();
-
-
+    Map<Fluid,FluidTexture> map = new HashMap<>();
     for (Map.Entry<ResourceLocation,JsonElement> entry : jsons.entrySet()) {
       ResourceLocation id = entry.getKey();
-      // first step is to find the matching fluid type, if there is none ignore the file
-      FluidType type = fluidTypeRegistry.getValue(id);
-      if (type == null || !id.equals(fluidTypeRegistry.getKey(type))) {
-        Mantle.logger.debug("Ignoring fluid texture {} as no fluid type exists with that name", id);
+      Fluid fluid = BuiltInRegistries.FLUID.get(id);
+      // get returns the default (empty) entry for unknown ids, so compare rather than null-check
+      if (fluid == Fluids.EMPTY) {
+        Mantle.logger.debug("Ignoring fluid texture {} as no fluid exists with that name", id);
       } else {
-        // parse it if valid
-        map.put(type, FluidTexture.deserialize(GsonHelper.convertToJsonObject(entry.getValue(), "fluid_texture")));
+        map.put(fluid, FluidTexture.deserialize(GsonHelper.convertToJsonObject(entry.getValue(), "fluid_texture")));
       }
     }
     this.textures = map;
     Mantle.logger.info("Loaded {} fluid textures in {} ms", map.size(), (System.nanoTime() - time) / 1000000f);
+    // which fluids need a render handler is only known once the textures are read, and the
+    // registry is global, so this registers on the first load and is a no-op afterwards
+    TextureFluidRenderHandler.register();
   }
 
-  /** Gets the texture for the given fluid */
-  public static FluidTexture getData(FluidType fluid) {
+  /** Gets the texture for the given fluid, falling back to water so lookups never fail */
+  public static FluidTexture getData(Fluid fluid) {
     return INSTANCE.textures.getOrDefault(fluid, FALLBACK);
   }
 
-  /** Gets the still texture for the given fluid */
-  public static ResourceLocation getStillTexture(FluidType fluid) {
+  /** True when the fluid declared its own textures */
+  public static boolean hasData(Fluid fluid) {
+    return INSTANCE.textures.containsKey(fluid);
+  }
+
+  public static ResourceLocation getStillTexture(Fluid fluid) {
     return getData(fluid).still();
   }
 
-  /** Gets the flowing texture for the given fluid */
-  public static ResourceLocation getFlowingTexture(FluidType fluid) {
+  public static ResourceLocation getFlowingTexture(Fluid fluid) {
     return getData(fluid).flowing();
   }
 
-  /** Gets the overlay texture for the given fluid */
-  @Nullable
-  public static ResourceLocation getOverlayTexture(FluidType fluid) {
+  public static ResourceLocation getOverlayTexture(Fluid fluid) {
     return getData(fluid).overlay();
-  }
-
-  /** Gets the camera texture for the given fluid */
-  @Nullable
-  public static ResourceLocation getCameraTexture(FluidType fluid) {
-    return getData(fluid).camera();
-  }
-
-  /** Gets the still texture for the given fluid */
-  public static int getColor(FluidType fluid) {
-    return getData(fluid).color();
   }
 }

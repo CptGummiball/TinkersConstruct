@@ -5,16 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import lombok.extern.log4j.Log4j2;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.GsonHelper;
-import net.minecraftforge.client.event.ModelEvent;
-import slimeknights.mantle.event.EventPriority;
-import net.minecraftforge.fml.ModLoader;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import slimeknights.mantle.data.datamap.RegistryDataMapLoader;
+import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
 import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.JsonHelper;
@@ -26,10 +21,12 @@ import slimeknights.tconstruct.library.utils.Util;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Loads the material render info from resource packs. Loaded independently of materials loaded in data packs, so a resource needs to exist in both lists to be used.
@@ -46,17 +43,23 @@ public class MaterialRenderInfoLoader implements IEarlySafeManagerReloadListener
   public static final String FOLDER = "tinkering/materials";
 
   /**
-   * Called on mod construct to register the resource listener
+   * Called from the client entrypoint to hook the render infos into the resource reload.
+   *
+   * <p>The timing is the whole difficulty. Render infos decide which material sprite a tool part
+   * bakes with, so they have to be loaded before models bake — and a listener registered the
+   * ordinary way runs long after that, because vanilla's own {@code ModelManager} is registered
+   * first. Forge worked around it by hanging the load off {@code ModelEvent.RegisterAdditional}.
+   *
+   * <p>Fabric has a hook meant for exactly this: the preparation stage of a
+   * {@link PreparableModelLoadingPlugin} is handed the reload's own resource manager and completes
+   * before any model is resolved. That is the same seam the geometry bridge uses, and the two are
+   * order-independent — geometry parsing never reads a render info, while every read of one happens
+   * at bake time, after both preparation stages are done.
    */
   public static void init()  {
-    // bit of a hack: instead of registering our resource listener to the list as we should, we use the additional model registration event
-    // we do this as we need to guarantee we run before models are baked, which happens in the first stage of listeners in the bakery constructor
-    // the other option would be to wait until the atlas stitch event, though that would make it more difficult to know which sprites we need
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, ModelEvent.RegisterAdditional.class, event -> {
-      if(ModLoader.isLoadingStateValid()) {
-        INSTANCE.onReloadSafe(Minecraft.getInstance().getResourceManager());
-      }
-    });
+    PreparableModelLoadingPlugin.register(
+      (manager, executor) -> CompletableFuture.runAsync(() -> INSTANCE.onReloadSafe(manager), executor),
+      (ignored, context) -> {});
   }
 
   /** Map of all loaded materials */
@@ -129,8 +132,8 @@ public class MaterialRenderInfoLoader implements IEarlySafeManagerReloadListener
         if (json.keySet().isEmpty()) {
           continue;
         }
-        // parse it into material render info
-        map.put(id, RegistryDataMapLoader.parseData("Material Render Info", jsons, location, json, null, MaterialRenderInfo.LOADABLE, createContext(id)));
+        // parse it into material render info, folding in any parent first
+        map.put(id, MaterialRenderInfo.LOADABLE.deserialize(resolveParents(jsons, location, json, new HashSet<>()), createContext(id)));
       } catch (IllegalArgumentException | JsonParseException ex) {
         log.error("Couldn't parse data file {} from {}", id, location, ex);
       }
@@ -140,6 +143,47 @@ public class MaterialRenderInfoLoader implements IEarlySafeManagerReloadListener
     this.renderInfos = Map.copyOf(map);
     log.debug("Loaded material render infos: {}", Util.toIndentedStringList(map.keySet().stream().sorted(Comparator.comparing(MaterialVariantId::getId).thenComparing(MaterialVariantId::getVariant)).toList()));
     log.info("{} material render infos loaded", map.size());
+  }
+
+
+  /**
+   * Folds a render info's {@code "parent"} chain into a single object, child keys winning.
+   *
+   * <p>25 of the 104 shipped render infos use it — the stone and slime variants mostly, which
+   * inherit a palette and override only the texture. Upstream this was Mantle's
+   * {@code RegistryDataMapLoader.parseData}, whose package was never copied into this tree; the
+   * merge is shallow because the render info schema is flat (texture, fallbacks, color,
+   * luminosity), so there is no nested object for a deep merge to reach.
+   *
+   * @param jsons     Every render info in the reload, keyed as the parent references them
+   * @param location  Id of the file being resolved, for error messages
+   * @param json      The file's own contents
+   * @param seen      Ids already visited on this chain, guarding against a parent loop
+   */
+  private static JsonObject resolveParents(Map<ResourceLocation,JsonElement> jsons, ResourceLocation location, JsonObject json, Set<ResourceLocation> seen) {
+    if (!json.has("parent")) {
+      return json;
+    }
+    ResourceLocation parentId = ResourceLocation.tryParse(GsonHelper.getAsString(json, "parent"));
+    if (parentId == null) {
+      throw new JsonParseException("Invalid parent in material render info " + location);
+    }
+    if (!seen.add(parentId)) {
+      throw new JsonParseException("Parent loop in material render info " + location + " at " + parentId);
+    }
+    JsonElement parentElement = jsons.get(parentId);
+    if (parentElement == null) {
+      throw new JsonParseException("Missing parent " + parentId + " for material render info " + location);
+    }
+    JsonObject parent = resolveParents(jsons, parentId, GsonHelper.convertToJsonObject(parentElement, parentId.toString()), seen);
+    JsonObject merged = parent.deepCopy();
+    merged.remove("parent");
+    for (Entry<String,JsonElement> entry : json.entrySet()) {
+      if (!"parent".equals(entry.getKey())) {
+        merged.add(entry.getKey(), entry.getValue());
+      }
+    }
+    return merged;
   }
 
 

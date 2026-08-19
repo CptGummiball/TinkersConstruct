@@ -3,6 +3,10 @@ package slimeknights.tconstruct.library.client.model;
 import slimeknights.mantle.client.model.geometry.GeometryLoaderRegistry;
 import slimeknights.mantle.client.model.geometry.GeometryModelLoadingPlugin;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.library.client.model.block.FluidTextureModel;
+import slimeknights.tconstruct.library.client.model.block.TankModel;
+import slimeknights.tconstruct.library.client.model.tools.MaterialBlockModel;
+import slimeknights.tconstruct.library.client.model.tools.MaterialModel;
 
 /**
  * Registers Tinkers' custom model geometry with {@link GeometryLoaderRegistry} and installs the
@@ -21,15 +25,25 @@ public final class TinkerModelLoaders {
     // shared module: CommonsClientEvents.registerModelLoaders
     GeometryLoaderRegistry.register(TConstruct.getResource("gui"), UniqueGuiModel.LOADER);
 
-    // Loaders still parked, listed with what each one waits on (see unported.gradle):
-    //   tconstruct:tool             ToolModel            — modifier model system + Forge composite/item-layer baking
-    //   tconstruct:material         MaterialModel        — MaterialRenderInfoLoader (needs mantle.data.datamap) + MantleItemLayerModel
-    //   tconstruct:material_block   MaterialBlockModel   — SimpleBlockModel retexturing + Forge ModelData
-    //   tconstruct:fluid_container  FluidContainerModel  — Forge DynamicFluidContainerModel + IClientFluidTypeExtensions
-    //   tconstruct:tank             TankModel            — ColoredBlockModel + Forge ModelData/IQuadTransformer
-    //   tconstruct:fluid_texture    FluidTextureModel    — RetexturedModel + Forge ModelData/IQuadTransformer
+    // smeltery module: SmelteryClientEvents.registerModelLoaders
+    GeometryLoaderRegistry.register(TConstruct.getResource("tank"), TankModel.LOADER);
+    GeometryLoaderRegistry.register(TConstruct.getResource("fluid_texture"), FluidTextureModel.LOADER);
+
+    // fluids module: FluidClientEvents.registerModelLoaders
+    GeometryLoaderRegistry.register(TConstruct.getResource("fluid_container"), FluidContainerModel.LOADER);
+
+    // tools module: ToolClientEvents.registerModelLoaders
+    GeometryLoaderRegistry.register(TConstruct.getResource("material"), MaterialModel.LOADER);
+    GeometryLoaderRegistry.register(TConstruct.getResource("material_block"), MaterialBlockModel.LOADER);
+
+    // Still parked: tconstruct:tool (122 models). Its model-side support is all written now; what
+    // it waits on is the library/client/modifiers tree (22 files) plus ReversedListBuilder and
+    // IModelBuilder. ToolModel's own header lists the detail.
+    //
     // Mantle's own loaders (connected, item_layer, retextured, nbt_key, colored_block) have no
-    // source in this tree at all; their geometry classes were never copied in.
+    // geometry source in this tree at all — only the support classes Tinkers' models needed were
+    // written — so the 135 mantle:connected and 18 mantle:item_layer models still fall through to
+    // the vanilla parse of their JSON, which is what happened before this bridge existed.
 
     // must come last: the plugin snapshots nothing, but registering loaders after the first
     // resource reload has begun would silently miss that reload's models

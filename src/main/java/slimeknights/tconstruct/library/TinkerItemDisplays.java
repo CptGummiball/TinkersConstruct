@@ -2,59 +2,48 @@ package slimeknights.tconstruct.library;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
-import net.minecraftforge.registries.RegisterEvent;
+import slimeknights.mantle.client.render.RenderItem;
 import slimeknights.tconstruct.TConstruct;
 
-import java.util.Locale;
-
-/** Custom transform types used for tinkers item rendering */
+/**
+ * Display contexts used by the Tinkers' block entity renderers.
+ *
+ * <p>Fabric port: Forge let mods add values to {@link ItemDisplayContext} through a registry, so a
+ * model could declare a {@code tconstruct:melter} display and be posed for the melter specifically.
+ * Fabric has no such hook — the enum is closed — so each context becomes the vanilla one Forge
+ * declared as its fallback, and the ids stay registered with {@link RenderItem} so the generated
+ * {@code item_lists} data still resolves.
+ *
+ * <p>The visible loss is per context model tuning: an item shown in the melter now uses the same
+ * pose as any other {@link ItemDisplayContext#NONE} render rather than a melter specific one. The
+ * placement itself (position, scale, rotation) comes from the item list data and is unaffected.
+ */
 public class TinkerItemDisplays {
   private TinkerItemDisplays() {}
 
-  public static void init() {
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(TinkerItemDisplays::registerDisplay);
-  }
-
   /** Used by the melter and smeltery for display of items its melting */
-  public static ItemDisplayContext MELTER = create("melter", ItemDisplayContext.NONE);
+  public static final ItemDisplayContext MELTER = create("melter", ItemDisplayContext.NONE);
   /** Used by the part builder, crafting station, tinkers station, and tinker anvil */
-  public static ItemDisplayContext TABLE = create("table", ItemDisplayContext.NONE);
+  public static final ItemDisplayContext TABLE = create("table", ItemDisplayContext.NONE);
   /** Used by the casting table for item rendering */
-  public static ItemDisplayContext CASTING_TABLE = create("casting_table", ItemDisplayContext.FIXED);
+  public static final ItemDisplayContext CASTING_TABLE = create("casting_table", ItemDisplayContext.FIXED);
   /** Used by the casting basin for item rendering */
-  public static ItemDisplayContext CASTING_BASIN = create("casting_basin", ItemDisplayContext.NONE);
+  public static final ItemDisplayContext CASTING_BASIN = create("casting_basin", ItemDisplayContext.NONE);
   /** Used by the fluid cannon for display of the item in front */
-  public static ItemDisplayContext FLUID_CANNON = create("fluid_cannon", ItemDisplayContext.FIXED);
+  public static final ItemDisplayContext FLUID_CANNON = create("fluid_cannon", ItemDisplayContext.FIXED);
   /** Used by throwing to allow adjusting the tool position */
-  public static ItemDisplayContext THROWN = create("thrown", ItemDisplayContext.FIXED);
+  public static final ItemDisplayContext THROWN = create("thrown", ItemDisplayContext.FIXED);
 
-  /** Creates a transform type */
+  /**
+   * Loads this class so the ids above are known to {@link RenderItem}; safe to call repeatedly.
+   * Forge instead added a listener to the mod event bus from the mod constructor.
+   */
+  public static void init() {}
+
+  /** Registers the id under which the display appears in item list data, returning its behaviour */
   private static ItemDisplayContext create(String name, ItemDisplayContext fallback) {
-    String key = "TCONSTRUCT_" + name.toUpperCase(Locale.ROOT);
-    if (fallback == ItemDisplayContext.NONE) {
-      return ItemDisplayContext.create(key, TConstruct.getResource(name), null);
-    }
-    return ItemDisplayContext.create(key, TConstruct.getResource(name), fallback);
-  }
-
-  /** Registers all item display types */
-  private static void registerDisplay(RegisterEvent event) {
-    if (event.getRegistryKey() == ForgeRegistries.Keys.DISPLAY_CONTEXTS) {
-      IForgeRegistry<ItemDisplayContext> registry = ForgeRegistries.DISPLAY_CONTEXTS.get();
-      register(registry, MELTER);
-      register(registry, TABLE);
-      register(registry, CASTING_TABLE);
-      register(registry, CASTING_BASIN);
-      register(registry, FLUID_CANNON);
-      register(registry, THROWN);
-    }
-  }
-
-  /** Registers a display type */
-  private static void register(IForgeRegistry<ItemDisplayContext> registry, ItemDisplayContext context) {
-    registry.register(ResourceLocation.parse(context.getSerializedName()), context);
+    ResourceLocation id = TConstruct.getResource(name);
+    RenderItem.registerContext(id, fallback);
+    return fallback;
   }
 }

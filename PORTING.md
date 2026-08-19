@@ -883,6 +883,76 @@ because a custom sprite source (`tconstruct:shield_banner_to_modifier`) is not r
 it only waits on `MaterialRenderInfo`, so it is worth an early look — and the fluid block
 models still miss their textures, which belongs with the fluid rendering slice.
 
+### Phase 5, slice 2: client model foundation + renderers — **DONE, verified in-game**
+
+Slice 1 built the bridge but only one loader could cross it, because this repository's
+Mantle has no client model package. This slice wrote that package, and with it most of what
+Tinkers actually looks like.
+
+**A regression from slice 1 was the gating item, and it was invisible to the build.** The
+client had been discarding the *entire* Tinkers resource pack at model-bake time
+(`BlockModel parent has to be a block model` → `removing all selected resourcepacks`), so
+nothing rendered at all while every build stayed green. It surfaced only by running the
+client and diffing against an earlier run. The cause: 114 of the 402 loader-carrying models
+are used as a `parent` by 144 others, and the bridge handed back a plain unbaked model where
+vanilla requires a `BlockModel`. The fix makes the geometry model *be* a `BlockModel` whose
+parent is the vanilla parse of the same JSON. A second trap sat behind it: vanilla routes
+anything whose root is `item/generated` through `ItemModelGenerator` **instead of** calling
+bake, which would have silently emptied 170 models — caught by disassembling the bakery.
+
+- **Five more loaders live**: `material` (29 models), `material_block` (3), `fluid_texture`
+  (2), `fluid_container` (71), `tank` (8). Only `tconstruct:tool` (122) stays parked; its
+  model-side support is complete now, and what remains is the modifier-texture tree.
+- **Written from scratch**, because none of it existed: Mantle's client model classes
+  (`ColoredBlockModel`, `MantleItemLayerModel`, `RetexturedModel`, `DynamicBakedWrapper`,
+  `ModelHelper`, `ExtraTextureContext`) and the Forge client-model compat layer. Two Forge
+  concepts collapsed honestly rather than being faked: render-type groups (Fabric assigns
+  layers per block, so there is nothing per-model to carry) and `ModelData` *delivery* —
+  the map itself is real, but 1.21's `getQuads` has no data parameter, so block-state-driven
+  variants render their static form. Item rendering is unaffected, which is what shows tools
+  and tanks in inventories.
+- **Renderers**: smeltery, casting tables, faucets, channels, tanks, gauges and the
+  projectile renderers are live, on a render-helper package that also had to be written
+  (fluid cuboids, the fluid renderer, blockstate data maps, item placement).
+- **Fluid rendering**: Forge read sprites and tint from a client fluid-type extension; on
+  Fabric a render handler supplies them. The manager reads the same 72 generated files, keyed
+  by the fluid rather than Forge's fluid-type registry — the names already matched. Forge's
+  two client fluid-type classes were dropped rather than ported: their sprite duties moved to
+  the handler, and their fog/overlay half has no Fabric hook.
+- **The block atlas was failing to parse as a whole** because a custom sprite source was
+  unregistered — costing every sprite the definition adds, including the fluid textures.
+  Ported to 1.21 (sprite sources now take a `MapCodec`, suppliers take a resource loader,
+  the shield material map is keyed by plain ids) and registered. Registration goes into
+  `SpriteSources.TYPES` directly rather than through vanilla's `register`, which takes a
+  bare name and stamps the minecraft namespace onto it — an id the shipped atlas
+  definition does not name, and not even a legal one. The atlas entry itself was migrated
+  too: 1.20 nested a custom source's fields under `value`, 1.21 takes a `MapCodec` and
+  reads them flat. A single malformed source fails the whole definition, so this cost
+  every sprite the file adds, not just the shield banners. The source's own body needed a
+  rewrite on top: it read `Sheets.SHIELD_MATERIALS`, which 1.20 built eagerly from the
+  banner pattern registry and 1.21 fills lazily on first render — so it is empty while the
+  atlas stitches and the port would have generated nothing, silently. It now lists the
+  shield texture folder through vanilla's own `FileToIdConverter`, which also picks up
+  pattern textures a datapack or resource pack adds — 43 sprites where the registry read
+  gave none. Upstream's own source carries a TODO predicting this. A hand-rolled
+  `listResources` with a trailing slash was tried first and hung the resource reload
+  outright: no exception, no log line, all workers idle and the client stuck on the
+  loading overlay forever. Worth remembering that a bad resource path can stall rather
+  than throw. Every
+  JSON under `generated` and `main` was then swept for the same `{type, value}` nesting;
+  the only other hit is a `forge:not` biome modifier, which Fabric never reads.
+- **Buckets** get their fluid mask from Tinkers' own potion-bucket contents texture rather
+  than vendoring Forge's PNG; Forge's version also draws a drip on the lip, which this lacks.
+
+Confirmed in a running client: 139 material render infos, 139 blocks given their declared
+render layer, 72 fluid textures registered for rendering, and zero model, mixin or bake
+errors.
+
+One fidelity gap worth recording: vanilla's item renderer discards baked vertex colours
+(Forge patched that call site), so materials that tint a greyscale sprite render grey on
+items; blocks are unaffected and the data is written correctly, so it lights up when a
+renderer hook lands.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

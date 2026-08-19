@@ -28,12 +28,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.IQuadTransformer;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.data.ModelProperty;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.IQuadTransformer;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.mantle.client.model.data.ModelProperty;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
 import org.jetbrains.annotations.NotNull;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.client.model.RetexturedModel;
@@ -69,14 +69,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 /*
- * PORT (phase 5, client models) — parked, loader id "tconstruct:material_block" (3 model files).
- * The geometry shim is live (import swap) and SimpleBlockModel exists. What is still missing:
- *   Forge: ModelData/ModelProperty — per-block-entity model data has no direct Fabric analogue;
- *     the equivalent is a RenderAttachedBlockView attachment plus FabricBakedModel emission.
- *   Forge: IQuadTransformer.
- *   Mantle (never copied into this tree): ColoredBlockModel, RetexturedModel, DynamicBakedWrapper,
- *     ExtraTextureContext, ModelHelper.
- * Register in TinkerModelLoaders once it compiles.
+ * PORT (phase 5, client models) — LIVE, loader id "tconstruct:material_block" (3 model files:
+ * the two anvils and the fake storage block), registered in TinkerModelLoaders. Forge imports
+ * swapped to the mantle shims written for them.
+ *
+ * The item side is complete — the anvils in an inventory or in JEI pick their material and their
+ * retextured block out of NBT through the ItemOverrides below. The in-world side is not: the block
+ * variant read its material from Forge's ModelData, which vanilla 1.21.1 does not thread through
+ * getQuads (see slimeknights.mantle.client.model.data.ModelData), so a placed anvil renders its
+ * fallback texture until a Fabric render attachment feeds that data.
  */
 /**
  * Model that handles dynamic materials using the block model elements style.
@@ -232,7 +233,7 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
         // for simplicity, assume the whole part is tinted if so. Build your model to separate distinct material faces if needed
         TintedSprite tint = null;
         for (BlockElementFace face : part.faces.values()) {
-          TintedSprite faceTint = tints.get(face.texture);
+          TintedSprite faceTint = tints.get(face.texture());
           if (faceTint != null) {
             tint = faceTint;
             break;
@@ -246,7 +247,7 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
           SimpleBlockModel.bakePart(builder, retextureContext, part, spriteGetter, transform, quadTransformer, BAKE_LOCATION);
         }
       }
-      return builder.build(SimpleBlockModel.getRenderTypeGroup(owner));
+      return builder.build();
     }
 
     /** Gets the cached model for the given materials. */
@@ -257,10 +258,10 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
       if (particleRetextured) {
         P materials = data.get(property);
         if (materials != null) {
-          return getCachedModel(materials).getParticleIcon(data);
+          return ModelHelper.getParticleIcon(getCachedModel(materials), data);
         }
       }
-      return originalModel.getParticleIcon(data);
+      return ModelHelper.getParticleIcon(originalModel, data);
     }
 
     @Nonnull
@@ -268,9 +269,9 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData extraData, @Nullable RenderType renderType) {
       P materials = extraData.get(property);
       if (materials != null) {
-        return getCachedModel(materials).getQuads(state, side, rand, extraData, renderType);
+        return ModelHelper.getQuads(getCachedModel(materials), state, side, rand, extraData, renderType);
       }
-      return originalModel.getQuads(state, side, rand, extraData, renderType);
+      return ModelHelper.getQuads(originalModel, state, side, rand, extraData, renderType);
     }
   }
 
@@ -433,7 +434,7 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
       if (particleRetextured) {
         Block block = data.get(RetexturedHelper.BLOCK_PROPERTY);
         if (block != null) {
-          return getCachedModel(block).getParticleIcon(data);
+          return ModelHelper.getParticleIcon(getCachedModel(block), data);
         }
       }
       return super.getParticleIcon(data);
@@ -444,7 +445,7 @@ public class MaterialBlockModel implements IUnbakedGeometry<MaterialBlockModel> 
     public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource rand, ModelData extraData, @Nullable RenderType renderType) {
       Block block = extraData.get(RetexturedHelper.BLOCK_PROPERTY);
       if (block != null) {
-        return getCachedModel(block).getQuads(state, side, rand, extraData, renderType);
+        return ModelHelper.getQuads(getCachedModel(block), state, side, rand, extraData, renderType);
       }
       return super.getQuads(state, side, rand, extraData, renderType);
     }

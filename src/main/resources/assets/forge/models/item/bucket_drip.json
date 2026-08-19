@@ -1,3 +1,8 @@
 {
-  "parent": "minecraft:item/generated"
+  "__comment": "Stand-in for Forge's forge:item/bucket_drip, the parent of Tinkers' 70 filled buckets. 'fluid' is the mask that shapes the fluid to the inside of the bucket; Forge shipped its own PNG, so this uses Tinkers' equivalent contents mask (the same one the potion bucket layers under its bucket sprite). Forge's mask also draws a drip on the lip, which this one lacks.",
+  "parent": "forge:item/default",
+  "textures": {
+    "base": "minecraft:item/bucket",
+    "fluid": "tconstruct:item/potion_bucket_contents"
+  }
 }

@@ -174,15 +174,42 @@ slimeknights/mantle/util/Lazy.java
 # through a Fabric ModelResolver instead. The shim interfaces mirror the Forge ones, so the
 # geometry classes port by import swap. Also holds the mantle model support classes the geometry
 # needs; upstream Mantle's client model package was never copied into this tree, so they are
-# written here as the consumers require them (SimpleBlockModel and BakedModelWrapper so far).
+# written here as the consumers require them: SimpleBlockModel, ColoredBlockModel,
+# MantleItemLayerModel, RetexturedModel, ExtraTextureContext, DynamicBakedWrapper, ModelHelper,
+# plus shims for ModelData/ModelProperty, IQuadTransformer/QuadTransformers, CompositeModel,
+# SimpleModelState, UnbakedGeometryHelper and StandaloneGeometryBakingContext.
 slimeknights/mantle/client/model/**
-# UniqueGuiModel is the one geometry consumer whose support is complete. The other six in this
-# package stay out: each carries a PORT note listing the Forge model utilities (ModelData,
-# IQuadTransformer, UnbakedGeometryHelper, CompositeModel, ...) and the absent Mantle model
-# classes it still waits on. TinkerModelLoaders holds the id -> loader registrations.
+# Overlap record for stacked item layers; a type the material models' signatures need.
+slimeknights/mantle/util/ItemLayerPixels.java
+# Forge-compat shims that sit outside the model package: the fluid client extensions (Fabric side
+# is FluidVariantRendering) and the render type group, which collapses to a no-op on Fabric.
+slimeknights/mantle/client/extensions/**
+slimeknights/mantle/client/RenderTypeGroup.java
+# Geometry consumers, in the order their support landed. TinkerModelLoaders holds the
+# id -> loader registrations; each file's header note records what its port gave up, if anything.
 slimeknights/tconstruct/library/client/model/UniqueGuiModel.java
 slimeknights/tconstruct/library/client/model/TinkerModelLoaders.java
+slimeknights/tconstruct/library/client/model/ModelProperties.java
+slimeknights/tconstruct/library/client/model/FluidContainerModel.java
 slimeknights/tconstruct/library/client/model/package-info.java
+# Material render info: which sprite and tint a material draws with. Its reload hook moved from
+# Forge's ModelEvent.RegisterAdditional to the preparation stage of a Fabric model loading plugin,
+# and the "parent" merge that mantle.data.datamap used to do is now local to the loader.
+slimeknights/tconstruct/library/client/materials/package-info.java
+slimeknights/tconstruct/library/client/materials/MaterialTextureField.java
+slimeknights/tconstruct/library/client/materials/MaterialRenderInfo.java
+slimeknights/tconstruct/library/client/materials/MaterialRenderInfoLoader.java
+# Block geometry: the fluid-textured smeltery components and the tanks.
+slimeknights/tconstruct/library/client/model/block/package-info.java
+slimeknights/tconstruct/library/client/model/block/IncrementalFluidCuboid.java
+slimeknights/tconstruct/library/client/model/block/FluidTextureModel.java
+slimeknights/tconstruct/library/client/model/block/TankModel.java
+# Tool geometry: the tool parts and repair kits (material), plus the anvils and the fake storage
+# block (material_block). ToolModel stays out; its header names what it still waits on.
+slimeknights/tconstruct/library/client/model/tools/package-info.java
+slimeknights/tconstruct/library/client/model/tools/NestedOverrides.java
+slimeknights/tconstruct/library/client/model/tools/MaterialBlockModel.java
+slimeknights/tconstruct/library/client/model/tools/MaterialModel.java
 
 # --- Phase 5: client screens ---
 # Mantle screen infrastructure (elements, widgets, module screens) rewritten for the 1.21
@@ -198,3 +225,19 @@ slimeknights/tconstruct/library/client/modifiers/package-info.java
 slimeknights/tconstruct/library/client/modifiers/ModifierIconManager.java
 # Tables module screens (crafting station, tinker station, part builder, worktable, chests).
 slimeknights/tconstruct/tables/client/**
+
+# --- Phase 5: block entity and entity renderers ---
+# Mantle's client render package: the fluid cuboid geometry, its quad renderer, the resource driven
+# block state data maps behind them, and the shared item/rotation helpers. Written for this tree, as
+# upstream Mantle's client packages were never copied in; the JSON they read is the data the render
+# providers already generated into assets/tconstruct/mantle/model.
+slimeknights/mantle/client/render/**
+# TConstruct's own render helpers: the fluid tank/cuboid wrappers and the two custom render types.
+slimeknights/tconstruct/library/client/RenderUtils.java
+slimeknights/tconstruct/library/client/TinkerRenderTypes.java
+# Display contexts: Forge registered six custom ItemDisplayContext values, Fabric maps them onto the
+# vanilla context each declared as its fallback.
+slimeknights/tconstruct/library/TinkerItemDisplays.java
+
+# --- Phase 5 slice 2: fluid rendering ---
+slimeknights/mantle/fluid/texture/**
