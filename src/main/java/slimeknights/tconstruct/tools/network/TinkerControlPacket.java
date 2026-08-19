@@ -8,8 +8,8 @@ import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.client.TooltipKey;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.shared.TinkerEffects;
-// PORT (event layer): import slimeknights.tconstruct.tools.logic.DoubleJumpHandler;
-// PORT (event layer): import slimeknights.tconstruct.tools.logic.InteractionHandler;
+import slimeknights.tconstruct.tools.logic.DoubleJumpHandler;
+import slimeknights.tconstruct.tools.logic.InteractionHandler;
 
 /**
  * Generic packet for various controls the client may send to the server
@@ -71,14 +71,14 @@ public enum TinkerControlPacket implements IThreadsafePacket {
     ServerPlayer player = context.getSender();
     if (player != null) {
       switch (this) {
-        case DOUBLE_JUMP -> { /* PORT (event layer): DoubleJumpHandler.extraJump(player) */ }
+        case DOUBLE_JUMP -> DoubleJumpHandler.extraJump(player);
         case ANTIGRAVITY_JUMP -> TinkerEffects.antigravity.get().antigravityJump(player);
         case START_HELMET_INTERACT, START_HELMET_INTERACT_SHIFT, START_HELMET_INTERACT_CONTROL, START_HELMET_INTERACT_ALT
-          -> { /* PORT (event layer): InteractionHandler.startArmorInteract HEAD */ }
-        case STOP_HELMET_INTERACT -> { /* PORT (event layer): stopArmorInteract HEAD */ }
+          -> InteractionHandler.startArmorInteract(player, EquipmentSlot.HEAD, modifier);
+        case STOP_HELMET_INTERACT -> InteractionHandler.stopArmorInteract(player, EquipmentSlot.HEAD);
         case START_LEGGINGS_INTERACT, START_LEGGINGS_INTERACT_SHIFT, START_LEGGINGS_INTERACT_CONTROL, START_LEGGINGS_INTERACT_ALT
-          -> { /* PORT (event layer): InteractionHandler.startArmorInteract LEGS */ }
-        case STOP_LEGGINGS_INTERACT -> { /* PORT (event layer): stopArmorInteract LEGS */ }
+          -> InteractionHandler.startArmorInteract(player, EquipmentSlot.LEGS, modifier);
+        case STOP_LEGGINGS_INTERACT -> InteractionHandler.stopArmorInteract(player, EquipmentSlot.LEGS);
       }
     }
   }

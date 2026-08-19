@@ -326,7 +326,7 @@ public final class TinkerTools extends TinkerModule {
       ToolModule.LOADER.register(getResource("preference_set_interaction"), PreferenceSetInteraction.LOADER);
       ToolModule.LOADER.register(getResource("toggleable_set_interaction"), ToggleableSetInteraction.LOADER);
       // special tool modules
-      // PORT (fluid capability step): ToolModule.LOADER.register(getResource("melting_fluid_effective"), MeltingFluidEffectiveModule.LOADER);
+      ToolModule.LOADER.register(getResource("melting_fluid_effective"), slimeknights.tconstruct.tools.modules.MeltingFluidEffectiveModule.LOADER);
       // display name
       ToolModule.LOADER.register(getResource("item_name"), SimpleToolName.ITEM.getLoader());
       ToolModule.LOADER.register(getResource("material_name"), MaterialToolNameModule.LOADER);

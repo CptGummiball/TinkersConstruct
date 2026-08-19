@@ -22,6 +22,7 @@ import slimeknights.mantle.transfer.cap.ICapabilityProvider;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.transfer.fluid.FluidTank;
 import slimeknights.mantle.data.loadable.Loadables;
+import slimeknights.mantle.fluid.tooltip.FluidTooltipHandler;
 import slimeknights.mantle.fluid.FluidTransferHelper;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferDirection;
@@ -87,7 +88,7 @@ public class TankItem extends BlockTooltipItem {
         if (flag.isAdvanced()) {
           tooltip.add(Component.translatable(FLUID_ID, Loadables.FLUID.getKey(fluid.getFluid())).withStyle(ChatFormatting.DARK_GRAY));
         }
-        // phase 5: FluidTooltipHandler amounts return with the client fluid tooltip system
+        FluidTooltipHandler.appendMaterial(fluid, tooltip);
       }
     }
     else {

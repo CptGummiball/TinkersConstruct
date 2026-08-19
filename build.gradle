@@ -106,6 +106,15 @@ loom {
     accessWidenerPath = file('src/main/resources/tconstruct.accesswidener')
     runs {
         client { client(); ideConfigGenerated true; runDir 'run' }
+        // Dev only: joins a singleplayer world straight from the launch, so a validation run
+        // exercises the in-world code paths a title screen never loads — LocalPlayer, the armor
+        // renderers, the entity ticks. Override the world with -PquickPlayWorld="My World".
+        clientWorld {
+            inherit client
+            name 'Minecraft Client (auto-join)'
+            programArgs '--quickPlaySingleplayer', (project.findProperty('quickPlayWorld') ?: 'New World')
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server

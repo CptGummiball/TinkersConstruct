@@ -75,7 +75,12 @@ That unblocked:
   **The two call sites (`BreakBlockFluidEffect`, `EnchantmentModule`) must therefore be ported
   to holders**, which they need anyway.
 
-## The recipe-ID problem (phase 3)
+## The recipe-ID problem (phase 3) — **RESOLVED in phase 5 slice 5**
+
+Both halves are done: the JSON path publishes the id through `CurrentRecipeId`, and the
+network path writes the id into the serializer's own payload. See that slice for why the
+network half only surfaced once a client actually joined a world.
+
 
 1.20 handed the recipe id to the serializer (`fromJson(ResourceLocation id, JsonObject)`),
 and Mantle exposed it to recipes as `ContextKey.ID`. **1.21 does not**: a recipe is wrapped
@@ -1095,6 +1100,158 @@ exist, all 236 custom-geometry models still resolving, and zero hits for missing
 textures, atlas failures, modifier-map failures or mixin failures. What a title-screen run cannot
 show is armor actually drawn on a body — that needs a world, and belongs in the next round's checks
 alongside the `BODY` equipment slot fix from slice 3.
+
+### Phase 5, slice 5: tool interaction — **DONE; a world can be joined for the first time**
+
+The last of `tools/client`, and the part a player actually touches: the keys that trigger armour
+abilities, the double jump, the overlays a modifier draws on the HUD, the area-of-effect preview
+under the crosshair, and the tool's own inventory screen.
+
+**Nearly none of it had a Fabric callback.** Forge's client event bus covered all of this with
+events; Fabric offers a callback for four of the hooks and nothing for the rest, so five mixins go
+in at the same points Forge's patches sat:
+
+| What | Forge event | Here |
+| --- | --- | --- |
+| Right click into air | `PlayerInteractEvent.RightClickEmpty` | `MinecraftInteractionMixin` on `startUseItem` |
+| Left click into air | `PlayerInteractEvent.LeftClickEmpty` | same mixin, on `startAttack` |
+| First-person hand | `RenderHandEvent` | `ItemInHandRendererMixin` |
+| Field of view | `ComputeFovModifierEvent` | `AbstractClientPlayerFovMixin` |
+| Movement while using an item | `MovementInputUpdateEvent` | `LocalPlayerMovementMixin` |
+
+The right-click mixin is placed after both of vanilla's guards and after the right-click delay is
+set, so the interaction repeats at vanilla's rate rather than every tick. Cancelling there also
+retires a workaround: upstream carried a `cancelNextOffhand` flag because Forge's event could only
+suppress the hand it fired for, while cancelling `startUseItem` covers both hands at once. The
+left-click mixin lands at the end of the miss branch, so vanilla has already set the miss time and
+reset the attack strength; only the swing is skipped, and the interaction does its own.
+
+**Two behaviours were silently dead on the server and are now connected.** `TinkerControlPacket`
+carried the client's key presses across, and its handler was a set of empty cases left from the
+event-layer round — the client ran the double jump and the helmet/leggings interaction locally, and
+the server did nothing with either. Both call into logic that has been ported since.
+
+The rest is a straight mapping: the durability tooltip suppression to `ItemTooltipCallback`, the
+disconnect reset to `ClientPlayConnectionEvents`, the shield-strap/sleeves/item-frame/minimap
+overlays to `HudRenderCallback`, the AOE outline and break progress to `WorldRenderEvents`, and the
+two keys to `KeyBindingHelper` plus a client tick. One fidelity note: Forge drew the overlays right
+after the hotbar, Fabric's HUD callback runs after the whole HUD, so they sit above the rest of it.
+
+1.21 drift along the way: the vertex builder chain lost `endVertex` and gained `set*` names, the map
+id became a component with its own type, `Slot#getSlotIndex` became `getContainerSlot`,
+`SheetedDecalTextureGenerator` takes a pose instead of two matrices, and `MobEffectInstance#getEffect`
+returns a holder. Forge's client extension for hiding an effect from the GUI has no counterpart, so
+the potion-row offset reads only the instance's own flag.
+
+Widened rather than reimplemented, all of them things the overlays have to draw exactly like vanilla:
+`Gui#renderSlot`, `ItemInHandRenderer#renderPlayerArm` and its two map background render types, and
+three `LevelRenderer` internals for the AOE preview — the buffer sources, the per-block outline, and
+the map of blocks being broken.
+
+Also settled: `RayTracer`'s reach calculation collapses to `Player#blockInteractionRange`, since 1.21
+made reach a vanilla attribute and the client/server split it needed is gone.
+
+**The round's real find, and it took a world to see it.** Every validation run so far has stopped at
+the title screen. A `runClientWorld` task was added to join a singleplayer world straight from the
+launch, and the first thing it produced was this:
+
+```
+Couldn't place player in world
+java.lang.IllegalArgumentException: Packet class ...UpdateModifiersPacket is not registered on channel tconstruct:network
+```
+
+**Nineteen of the mod's packets were never registered.** `TinkerNetwork` carried a note saying each
+module would register its own from its bootstrap; none ever did, and the list had grown to cover
+only the eleven whose classes happened to exist when it was written. The consequence is not subtle:
+an unregistered packet throws when sent, and the first packet a joining player receives is the
+modifier sync — so **no player could enter a world at all**. Behind that sat the whole datapack
+sync (materials, material stats and traits, modifiers, tool definitions, slot layouts, fluid
+effects) and every tables and smeltery GUI packet.
+
+Two things kept this hidden. Title-screen runs never open a connection. And the one earlier run that
+did reach a world reached it with the mod's datapack missing from that world's `level.dat`, so the
+managers had nothing to sync and never tried. The registration is one block again, with the note
+rewritten to say why.
+
+Found alongside it: `UpdateStationScreenPacket`'s handler was still an empty stub from before the
+screens were ported, so a tinker station never refreshed on the client. It calls
+`BaseTabbedScreen#updateDisplay` again.
+
+**And behind that, a second one.** With the packets registered the player joined — and was
+immediately disconnected by `Failed to encode packet 'clientbound/minecraft:update_recipes'`, caused
+by `ItemStack cannot be empty` inside an `ItemCastingRecipe`. The serializer's error named the
+loadable but not the recipe, so it now names the recipe id too; that pointed straight at
+`tconstruct:smeltery/casting/amethyst/block`.
+
+Its output is the tag `c:storage_blocks/amethyst`, which nothing fills. Tinkers melts vanilla
+amethyst and quartz blocks and casts them back, naming the convention tag on both sides; on Forge
+that tag came from Forge's own tag data, and Fabric's convention tags do not carry either. An
+unfillable output is not a dead recipe — it is a stack that cannot be written to the network, which
+takes the connection down with it.
+
+A sweep over every item-output recipe against the tags this environment actually defines (Fabric's
+convention tags plus the mod's own) found exactly these two — amethyst and quartz — and nothing
+else; 161 other output tags are either defined or guarded by a `tag_filled` condition. Both tags are
+now shipped, item and block, and the datagen provider carries a note to emit them in phase 7.
+
+**And a third, one layer deeper.** With the tags shipped the player joined and the recipes encoded —
+and the *client* then failed to decode them: `Unable to fetch id from context` out of
+`ModifierSalvage`. This is the "recipe-ID problem" PORTING.md has carried since phase 3, and it had
+only ever been half solved. 1.21 moved a recipe's id out of `Recipe` and onto `RecipeHolder`, which
+writes it separately; the JSON path was patched to publish the id being parsed, but the network path
+had none at all, so the 67 recipe classes that declare the id as a required context field threw on
+arrival.
+
+The serializer now writes the id into its own payload and reads it back — a nullable resource
+location per recipe. Finding the id to write needs one reflective lookup per recipe class, cached:
+the recipes keep it in a Lombok-generated getter rather than behind a shared interface.
+
+The three findings stack: each one only became visible once the one before it was fixed, and none of
+them can be seen without joining a world.
+
+**Then the deepest one: seven registrations that nothing called.** With the recipes decoding, the
+client threw `MaterialRegistry.INSTANCE is null` — because `MaterialRegistry.init()` had never been
+invoked. A sweep for every `public static void init/setup/register()` in the tree that no other file
+calls found ten, of which seven are live code and are now wired into the bootstrap:
+
+| Missing | What was silently absent |
+| --- | --- |
+| `MaterialRegistry.init()` | the entire material registry and its three datapack loaders |
+| `ToolDefinitionLoader.init()` | tool definitions — every tool's stats and modules |
+| `StationSlotLayoutLoader.init()` | the tinker station's slot layouts |
+| `TinkerRecipeTypes.init()` | the recipe types themselves |
+| `TinkerTags.init()`, `MantleTags.init()` | the tag holder classes |
+| `DomainDisplayName.init()` | the mod-name cache's reload hook |
+
+The remaining three are Forge-only classes still parked (`PiggybackCapability`, `TConstructCommand`)
+or an empty body (`OffhandCooldownTracker`).
+
+This is the fourth time in this port a registration method that compiles has turned out to be called
+by nobody, so the sweep is written down as a script rather than repeated by hand. It is worth
+re-running whenever a slice adds an `init()`.
+
+**With the loaders running, three more things became visible** — they had been failing silently
+because the code that reads them had never been registered:
+
+- 18 of the 23 station slot layouts failed to parse — two bugs stacked. Their icon is a tool with
+  display NBT written in 1.20's `{"item", "nbt"}` shape, while 1.21's stack codec spells the item
+  `id` and takes components; the deserializer now reads the legacy pair directly and routes the tag
+  through `TagCompat`, the way a real tool carries it. That exposed the second: `NBTLoadable` parsed
+  a string entry by serialising the JSON element *back* to JSON, which re-quotes and escapes it, so
+  the tag parser rejected every string-form NBT in the mod. It reads the string's value now.
+- The melting pan's tool definition named `tconstruct:melting_fluid_effective`, a module whose
+  registration was commented out during the fluid capability step. The class was ported; the line
+  was not.
+- Two entity melting recipes still fail on `minecraft:milk`, which is the milk-fluid decision phase 6
+  owes. Unchanged, and now the only recipe errors in the log.
+
+Final state of a run that boots, joins and stays: **77 materials, 45 tool definitions, 23 station
+slot layouts, 3375 recipes**, five client mixins applied, and the player does not disconnect. The
+only remaining errors in the log are the two milk recipes and vanilla's own data-fixer notices.
+
+This run also clears two things earlier slices could not check: the `BODY` equipment slot fix from
+slice 3 (nothing throws while entities tick) and the armour renderers from slice 4 loading against a
+real player.
 
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.

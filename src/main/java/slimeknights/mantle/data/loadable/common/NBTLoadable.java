@@ -33,10 +33,15 @@ public enum NBTLoadable implements RecordLoadable<CompoundTag> {
   @Override
   public CompoundTag convert(JsonElement element, String key, TypedMap context) {
     if (this == ALLOW_STRING && !element.isJsonObject()) {
+      // the SNBT is the string's *value*; serializing the element back to JSON would wrap it in
+      // quotes and escape the braces, which the tag parser then rejects
+      String snbt = element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()
+                    ? element.getAsString()
+                    : JsonHelper.DEFAULT_GSON.toJson(element);
       try {
-        return TagParser.parseTag(JsonHelper.DEFAULT_GSON.toJson(element));
+        return TagParser.parseTag(snbt);
       } catch (CommandSyntaxException e) {
-        throw new JsonSyntaxException("Invalid NBT Entry: ", e);
+        throw new JsonSyntaxException("Invalid NBT Entry: " + snbt, e);
       }
     }
     return RecordLoadable.super.convert(element, key, context);

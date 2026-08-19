@@ -259,3 +259,19 @@ accessible field net/minecraft/client/renderer/blockentity/SkullBlockRenderer SK
 # BreakingItemParticle's constructor — the slime splash particle subclasses it; vanilla keeps the
 # constructor package-private, Forge's AT opened it.
 accessible method net/minecraft/client/particle/BreakingItemParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDDLnet/minecraft/world/item/ItemStack;)V
+# --- Phase 5, tool interaction and overlays ---
+# ItemInHandRenderer.renderPlayerArm — modifiers that show the player's arm where vanilla would not
+# (gloves, the empty offhand a chestplate uses) draw through vanilla's own arm renderer.
+accessible method net/minecraft/client/renderer/ItemInHandRenderer renderPlayerArm (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IFFLnet/minecraft/world/entity/HumanoidArm;)V
+# ItemInHandRenderer's map background render types, for the minimap modifier's HUD overlay.
+accessible field net/minecraft/client/renderer/ItemInHandRenderer MAP_BACKGROUND Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/ItemInHandRenderer MAP_BACKGROUND_CHECKERBOARD Lnet/minecraft/client/renderer/RenderType;
+# Gui.renderSlot — the shield strap, sleeves and item frame modifiers draw hotbar-style slots, and
+# vanilla's own slot renderer is what makes them match the hotbar exactly.
+accessible method net/minecraft/client/gui/Gui renderSlot (Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/client/DeltaTracker;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;I)V
+# LevelRenderer internals for the area-of-effect preview: the buffer sources it batches through, the
+# outline it draws per block, and the map of blocks currently being broken. Forge's AT opened all
+# three for the same reason — the preview has to draw exactly like vanilla's own highlight.
+accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+accessible field net/minecraft/client/renderer/LevelRenderer destroyingBlocks Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
+accessible method net/minecraft/client/renderer/LevelRenderer renderHitOutline (Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;DDDLnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V

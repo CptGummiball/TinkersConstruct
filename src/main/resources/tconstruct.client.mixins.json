@@ -4,7 +4,11 @@
   "package": "slimeknights.tconstruct.fabric.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AbstractClientPlayerFovMixin",
+    "ItemInHandRendererMixin",
     "ItemRendererBakedColorMixin",
+    "LocalPlayerMovementMixin",
+    "MinecraftInteractionMixin",
     "ItemRendererModelSwapMixin",
     "SkullBlockRendererMixin"
   ],

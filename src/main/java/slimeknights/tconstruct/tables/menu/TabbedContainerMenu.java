@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import slimeknights.tconstruct.tables.client.inventory.BaseTabbedScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -242,19 +243,25 @@ public class TabbedContainerMenu<TILE extends BlockEntity> extends TriggeringMul
     /** Updates the client's screen */
     private static void clientScreenUpdate() {
       Screen screen = Minecraft.getInstance().screen;
-      // phase 5: BaseTabbedScreen. returns with the client screens
+      if (screen instanceof BaseTabbedScreen<?,?> tabbed) {
+        tabbed.updateDisplay();
+      }
     }
 
     /** Sends the error message from the container to the client's screen */
     private static void clientError(MutableComponent errorMessage) {
       Screen screen = Minecraft.getInstance().screen;
-      // phase 5: BaseTabbedScreen. returns with the client screens
+      if (screen instanceof BaseTabbedScreen<?,?> tabbed) {
+        tabbed.error(errorMessage);
+      }
     }
 
     /** Sends the warning message from the container to the client's screen */
     private static void clientWarning(MutableComponent warningMessage) {
       Screen screen = Minecraft.getInstance().screen;
-      // phase 5: BaseTabbedScreen. returns with the client screens
+      if (screen instanceof BaseTabbedScreen<?,?> tabbed) {
+        tabbed.warning(warningMessage);
+      }
     }
   }
 }

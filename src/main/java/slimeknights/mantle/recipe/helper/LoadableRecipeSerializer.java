@@ -27,11 +27,12 @@ import java.util.function.Supplier;
  * are still logged with the loadable's identity before rethrowing, since netty otherwise
  * swallows the context.
  *
- * <p>{@link ContextKey#ID} is populated on the JSON path only: the RecipeManager mixin
- * publishes the id being parsed through {@link CurrentRecipeId} and {@link #contextBuilder()}
- * picks it up, restoring the 1.20 contract for the ~1700 loadables that declare the id as a
- * required context field. The network path still has no id — see "the recipe-ID problem" in
- * PORTING.md and the note on {@link CurrentRecipeId}.
+ * <p>{@link ContextKey#ID} is restored on both paths. On the JSON path the RecipeManager mixin
+ * publishes the id being parsed through {@link CurrentRecipeId} and {@link #contextBuilder()} picks
+ * it up. On the network path 1.21 gives the serializer no id at all — the {@code RecipeHolder} keeps
+ * it and writes it separately — so the id is written into the payload here and read back on the
+ * other side. Without it, the 67 recipe classes that declare the id as a required context field
+ * throw while decoding and take the joining player's connection with them.
  */
 public class LoadableRecipeSerializer<T extends Recipe<?>> implements RecipeSerializer<T> {
 
@@ -97,7 +98,12 @@ public class LoadableRecipeSerializer<T extends Recipe<?>> implements RecipeSeri
 
   private T fromNetwork(RegistryFriendlyByteBuf buffer) {
     try {
-      return loadable.decode(buffer, buildContext());
+      net.minecraft.resources.ResourceLocation id = buffer.readNullable(net.minecraft.network.FriendlyByteBuf::readResourceLocation);
+      TypedMapBuilder context = contextBuilder();
+      if (id != null && CurrentRecipeId.get() == null) {
+        context.put(ContextKey.ID, id);
+      }
+      return loadable.decode(buffer, context.build());
     } catch (RuntimeException e) {
       Mantle.logger.error("{}: Error reading recipe from packet using loadable {}", getClass().getSimpleName(), loadable, e);
       throw e;
@@ -106,11 +112,68 @@ public class LoadableRecipeSerializer<T extends Recipe<?>> implements RecipeSeri
 
   private void toNetwork(RegistryFriendlyByteBuf buffer, T recipe) {
     try {
+      buffer.writeNullable(recipeId(recipe), net.minecraft.network.FriendlyByteBuf::writeResourceLocation);
       loadable.encode(buffer, recipe);
     } catch (RuntimeException e) {
-      Mantle.logger.error("{}: Error writing recipe of class {} to packet using loadable {}", getClass().getSimpleName(), recipe.getClass().getSimpleName(), loadable, e);
+      // the id is worth more than the loadable dump when a single recipe out of thousands fails;
+      // 1.21 recipes carry no id, but every loadable recipe reads one into a field it can expose
+      Mantle.logger.error("{}: Error writing recipe {} of class {} to packet", getClass().getSimpleName(), recipeId(recipe), recipe.getClass().getSimpleName(), e);
       throw e;
     }
+  }
+
+  /** One reflective lookup per recipe class, not per recipe */
+  private static final java.util.Map<Class<?>,java.util.Optional<java.lang.reflect.AccessibleObject>> ID_ACCESSORS = new java.util.concurrent.ConcurrentHashMap<>();
+
+  /**
+   * Id of a recipe that keeps one, or null.
+   *
+   * <p>1.21 moved the id out of {@code Recipe} and onto {@code RecipeHolder}, but every recipe whose
+   * loadable declares {@link ContextKey#ID} still stores it and exposes a getter — often generated
+   * by Lombok, so there is no shared interface to ask. Reflection finds it once per class.
+   */
+  @javax.annotation.Nullable
+  private static net.minecraft.resources.ResourceLocation recipeId(Recipe<?> recipe) {
+    if (recipe instanceof slimeknights.mantle.registration.object.IdAwareObject aware) {
+      return aware.getId();
+    }
+    java.util.Optional<java.lang.reflect.AccessibleObject> accessor = ID_ACCESSORS.computeIfAbsent(recipe.getClass(), LoadableRecipeSerializer::findIdAccessor);
+    if (accessor.isPresent()) {
+      try {
+        java.lang.reflect.AccessibleObject member = accessor.get();
+        if (member instanceof java.lang.reflect.Method method) {
+          return (net.minecraft.resources.ResourceLocation)method.invoke(recipe);
+        }
+        return (net.minecraft.resources.ResourceLocation)((java.lang.reflect.Field)member).get(recipe);
+      } catch (ReflectiveOperationException | RuntimeException e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /** A getter if the class has one, else the field itself — several recipes keep the id without a getter */
+  private static java.util.Optional<java.lang.reflect.AccessibleObject> findIdAccessor(Class<?> cls) {
+    try {
+      java.lang.reflect.Method method = cls.getMethod("getId");
+      if (net.minecraft.resources.ResourceLocation.class.isAssignableFrom(method.getReturnType())) {
+        return java.util.Optional.of(method);
+      }
+    } catch (NoSuchMethodException e) {
+      // fall through to the field
+    }
+    for (Class<?> current = cls; current != null && current != Object.class; current = current.getSuperclass()) {
+      try {
+        java.lang.reflect.Field field = current.getDeclaredField("id");
+        if (net.minecraft.resources.ResourceLocation.class.isAssignableFrom(field.getType())) {
+          field.setAccessible(true);
+          return java.util.Optional.of(field);
+        }
+      } catch (NoSuchFieldException | RuntimeException e) {
+        // keep walking up
+      }
+    }
+    return java.util.Optional.empty();
   }
 
   public static class TypeAware<T extends Recipe<?>> extends LoadableRecipeSerializer<T> implements TypeAwareRecipeSerializer<T> {

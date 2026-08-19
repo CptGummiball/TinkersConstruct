@@ -110,6 +110,18 @@ public class TConstructBootstrap implements ModInitializer {
     slimeknights.tconstruct.tools.TinkerTools.init();
     slimeknights.tconstruct.gadgets.TinkerGadgets.init();
 
+    // Datapack loaders and the material registry. Forge registered these from the mod
+    // constructor and through AddReloadListenerEvent; without them the material registry stays
+    // null, tool definitions and station layouts never load, and nothing that reads a material
+    // works — which is invisible until a tool is actually used or a client joins.
+    slimeknights.mantle.datagen.MantleTags.init();
+    slimeknights.tconstruct.common.TinkerTags.init();
+    slimeknights.tconstruct.library.recipe.TinkerRecipeTypes.init();
+    slimeknights.tconstruct.library.materials.MaterialRegistry.init();
+    slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader.init();
+    slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader.init();
+    slimeknights.tconstruct.library.utils.DomainDisplayName.init();
+
     // Event layer: the Fabric-callback side of the bridge, then every gameplay handler's
     // listener registration on the shim bus (their events post from the bridge mixins).
     slimeknights.tconstruct.fabric.events.TinkerEventBridge.init();

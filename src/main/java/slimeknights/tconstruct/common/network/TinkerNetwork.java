@@ -10,6 +10,26 @@ import net.minecraft.world.level.LevelAccessor;
 import slimeknights.mantle.network.NetworkDirection;
 import slimeknights.mantle.network.NetworkWrapper;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.library.materials.definition.UpdateMaterialsPacket;
+import slimeknights.tconstruct.library.materials.stats.UpdateMaterialStatsPacket;
+import slimeknights.tconstruct.library.materials.traits.UpdateMaterialTraitsPacket;
+import slimeknights.tconstruct.library.modifiers.UpdateModifiersPacket;
+import slimeknights.tconstruct.library.modifiers.fluid.UpdateFluidEffectsPacket;
+import slimeknights.tconstruct.library.tools.definition.UpdateToolDefinitionDataPacket;
+import slimeknights.tconstruct.library.tools.layout.UpdateTinkerSlotLayoutsPacket;
+import slimeknights.tconstruct.smeltery.network.ChannelFlowPacket;
+import slimeknights.tconstruct.smeltery.network.FaucetActivationPacket;
+import slimeknights.tconstruct.smeltery.network.FluidUpdatePacket;
+import slimeknights.tconstruct.smeltery.network.SmelteryFluidClickedPacket;
+import slimeknights.tconstruct.smeltery.network.SmelteryTankUpdatePacket;
+import slimeknights.tconstruct.smeltery.network.StructureErrorPositionPacket;
+import slimeknights.tconstruct.smeltery.network.StructureUpdatePacket;
+import slimeknights.tconstruct.tables.network.StationTabPacket;
+import slimeknights.tconstruct.tables.network.TinkerStationRenamePacket;
+import slimeknights.tconstruct.tables.network.TinkerStationSelectionPacket;
+import slimeknights.tconstruct.tables.network.UpdateCraftingRecipePacket;
+import slimeknights.tconstruct.tables.network.UpdateStationScreenPacket;
+import slimeknights.tconstruct.tables.network.UpdateTinkerStationRecipePacket;
 import slimeknights.tconstruct.tools.network.EntityMovementChangePacket;
 import slimeknights.tconstruct.tools.network.InteractWithAirPacket;
 import slimeknights.tconstruct.tools.network.PushBlockRowPacket;
@@ -24,11 +44,11 @@ import javax.annotation.Nullable;
  * <p>
  * In general, if you need to send packets you should use your own network class
  *
- * <p>Port note: the Forge build registered all ~28 packets here in one block. Most of those
- * classes belong to modules that port later (tables, smeltery, tools), so each module now
- * registers its own packets from its bootstrap — the registration index stays deterministic
- * because bootstrap order is fixed. The packets registered here are only the ones whose
- * classes exist already.
+ * <p>Port note: registration is one block, as the Forge build had it. An earlier plan to let each
+ * module register its own was never carried out, and the gap was invisible until a client actually
+ * joined a world: an unregistered packet throws on send, and the very first one the server sends is
+ * the modifier sync, so the join failed outright. One list is easier to check against the packet
+ * classes than several.
  */
 public class TinkerNetwork extends NetworkWrapper {
 
@@ -55,9 +75,38 @@ public class TinkerNetwork extends NetworkWrapper {
     }
     instance = new TinkerNetwork();
 
+    // shared
     instance.registerPacket(SyncPersistentDataPacket.class, SyncPersistentDataPacket::new, NetworkDirection.PLAY_TO_CLIENT);
     instance.registerPacket(InventorySlotSyncPacket.class, InventorySlotSyncPacket::new, NetworkDirection.PLAY_TO_CLIENT);
     instance.registerPacket(UpdateNeighborsPacket.class, UpdateNeighborsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+
+    // datapack sync: without these a client joining a world has no materials, modifiers or tool
+    // definitions, and the join itself fails on the first packet the manager tries to send
+    instance.registerPacket(UpdateMaterialsPacket.class, UpdateMaterialsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateMaterialStatsPacket.class, UpdateMaterialStatsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateMaterialTraitsPacket.class, UpdateMaterialTraitsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateModifiersPacket.class, UpdateModifiersPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateToolDefinitionDataPacket.class, UpdateToolDefinitionDataPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateTinkerSlotLayoutsPacket.class, UpdateTinkerSlotLayoutsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateFluidEffectsPacket.class, UpdateFluidEffectsPacket::decode, NetworkDirection.PLAY_TO_CLIENT);
+
+    // tables
+    instance.registerPacket(StationTabPacket.class, StationTabPacket::new, NetworkDirection.PLAY_TO_SERVER);
+    instance.registerPacket(TinkerStationRenamePacket.class, TinkerStationRenamePacket::new, NetworkDirection.PLAY_TO_SERVER);
+    instance.registerPacket(TinkerStationSelectionPacket.class, TinkerStationSelectionPacket::new, NetworkDirection.PLAY_TO_SERVER);
+    instance.registerPacket(UpdateCraftingRecipePacket.class, UpdateCraftingRecipePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(UpdateTinkerStationRecipePacket.class, UpdateTinkerStationRecipePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    // a signal with no payload, so the decoder hands back the singleton
+    instance.registerPacket(UpdateStationScreenPacket.class, buffer -> UpdateStationScreenPacket.INSTANCE, NetworkDirection.PLAY_TO_CLIENT);
+
+    // smeltery
+    instance.registerPacket(FluidUpdatePacket.class, FluidUpdatePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(FaucetActivationPacket.class, FaucetActivationPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(ChannelFlowPacket.class, ChannelFlowPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(SmelteryTankUpdatePacket.class, SmelteryTankUpdatePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(StructureUpdatePacket.class, StructureUpdatePacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(StructureErrorPositionPacket.class, StructureErrorPositionPacket::new, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(SmelteryFluidClickedPacket.class, SmelteryFluidClickedPacket::new, NetworkDirection.PLAY_TO_SERVER);
 
     // tools
     instance.registerPacket(EntityMovementChangePacket.class, EntityMovementChangePacket::new, NetworkDirection.PLAY_TO_CLIENT);
@@ -68,7 +117,8 @@ public class TinkerNetwork extends NetworkWrapper {
     instance.registerPacket(InteractWithAirPacket.class, InteractWithAirPacket::read, NetworkDirection.PLAY_TO_SERVER);
     instance.registerPacket(TinkerControlPacket.class, buffer -> buffer.readEnum(TinkerControlPacket.class), NetworkDirection.PLAY_TO_SERVER);
 
-    // PORT: the part-texture generation packet stays with the client phase.
+    // PORT: the part-texture generation packet stays with the datagen phase, being the only one
+    // whose handler is a datagen command rather than gameplay.
   }
 
   /**

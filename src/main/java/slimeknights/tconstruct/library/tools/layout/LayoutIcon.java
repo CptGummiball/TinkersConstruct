@@ -159,8 +159,19 @@ public abstract class LayoutIcon {
         Pattern pattern = new Pattern(JsonHelper.getResourceLocation(object, "pattern"));
         return new PatternIcon(pattern);
       }
-      if (object.has("item")) {
+      // 1.21's stack codec spells the item "id" and takes components; the shipped layouts still use
+      // 1.20's {"item", "nbt"} pair, and the nbt they carry is a tool's own data — so it is read
+      // directly and routed through TagCompat, exactly as a real tool carries it.
+      if (object.has("id")) {
         ItemStack stack = net.minecraft.world.item.ItemStack.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, object).getOrThrow(com.google.gson.JsonSyntaxException::new);
+        return new ItemStackIcon(stack);
+      }
+      if (object.has("item")) {
+        ItemStack stack = new ItemStack(slimeknights.mantle.data.loadable.Loadables.ITEM.getIfPresent(object, "item"));
+        if (object.has("nbt")) {
+          slimeknights.tconstruct.library.tools.nbt.TagCompat.setTag(
+            stack, slimeknights.mantle.data.loadable.common.NBTLoadable.ALLOW_STRING.convert(object.get("nbt"), "nbt", slimeknights.mantle.util.typed.TypedMap.empty()));
+        }
         return new ItemStackIcon(stack);
       }
       // not sure why this would be needed, but might as well

@@ -190,12 +190,8 @@ slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
 
 # --- tools round parks ---
 # client rendering + models (phase 5)
-# tools/client per file rather than a glob, so pieces can gate in individually.
-slimeknights/tconstruct/tools/client/ClientInteractionHandler.java
-slimeknights/tconstruct/tools/client/ModifierClientEvents.java
-slimeknights/tconstruct/tools/client/RayTracer.java
-slimeknights/tconstruct/tools/client/ToolContainerScreen.java
-slimeknights/tconstruct/tools/client/ToolRenderEvents.java
+# (interaction round) the rest of tools/client gated in: the interaction handlers, the modifier
+# render hooks, the tool inventory screen and the AOE highlight renderer.
 # (renderer round) CrystalshotRenderer, FluidEffectProjectileRenderer, ThrownToolRenderer and
 # ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
 # gated in with the armor texture suppliers they read.

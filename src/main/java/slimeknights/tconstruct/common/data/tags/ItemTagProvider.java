@@ -177,6 +177,11 @@ public class ItemTagProvider extends ItemTagsProvider {
     this.tag(TinkerTags.Items.COBALT_SHARD).add(TinkerWorld.cobaltShard.get());
     this.tag(TinkerTags.Items.KNIGHTMETAL_SHARD).add(TinkerWorld.knightmetalShard.get());
 
+    // PORT (phase 7): also emit c:storage_blocks/amethyst and c:storage_blocks/quartz, holding
+    // minecraft:amethyst_block and minecraft:quartz_block. Tinkers names both tags on the melting
+    // and casting sides; Forge's own tag data supplied them, Fabric's convention tags do not, and
+    // an unfillable casting output kills the connection of every joining player. The two files are
+    // written by hand under src/generated/resources/data/c/tags until this provider emits them.
     // ores
     addMetalTags(TinkerMaterials.steel);
     addMetalTags(TinkerMaterials.cobalt);

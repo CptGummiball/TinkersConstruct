@@ -280,3 +280,6 @@ slimeknights/tconstruct/fabric/client/SkullModelRegistry.java
 # Particles: the slime splash and the tool attack sprites.
 slimeknights/tconstruct/library/client/particle/**
 slimeknights/tconstruct/fabric/client/ClientReloadListeners.java
+
+# --- Phase 5 slice 5: tool interaction, overlays and the tool inventory screen ---
+slimeknights/tconstruct/tools/client/**
