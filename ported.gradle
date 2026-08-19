@@ -168,3 +168,33 @@ slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipe.java
 
 # --- Event-layer round ---
 slimeknights/mantle/util/Lazy.java
+
+# --- Phase 5: the custom-geometry model bridge ---
+# Replaces Forge's patched model deserializer: a "loader" key in a model JSON now dispatches
+# through a Fabric ModelResolver instead. The shim interfaces mirror the Forge ones, so the
+# geometry classes port by import swap. Also holds the mantle model support classes the geometry
+# needs; upstream Mantle's client model package was never copied into this tree, so they are
+# written here as the consumers require them (SimpleBlockModel and BakedModelWrapper so far).
+slimeknights/mantle/client/model/**
+# UniqueGuiModel is the one geometry consumer whose support is complete. The other six in this
+# package stay out: each carries a PORT note listing the Forge model utilities (ModelData,
+# IQuadTransformer, UnbakedGeometryHelper, CompositeModel, ...) and the absent Mantle model
+# classes it still waits on. TinkerModelLoaders holds the id -> loader registrations.
+slimeknights/tconstruct/library/client/model/UniqueGuiModel.java
+slimeknights/tconstruct/library/client/model/TinkerModelLoaders.java
+slimeknights/tconstruct/library/client/model/package-info.java
+
+# --- Phase 5: client screens ---
+# Mantle screen infrastructure (elements, widgets, module screens) rewritten for the 1.21
+# GuiGraphics API; TConstruct's table and smeltery GUIs build on it.
+slimeknights/mantle/client/screen/**
+# Shared TConstruct GUI helpers the screens draw through.
+slimeknights/tconstruct/common/ClientEventBase.java
+slimeknights/tconstruct/library/client/package-info.java
+slimeknights/tconstruct/library/client/GuiUtil.java
+slimeknights/tconstruct/library/client/Icons.java
+# Modifier button icons on the worktable; the modifier *models* stay with the model slice.
+slimeknights/tconstruct/library/client/modifiers/package-info.java
+slimeknights/tconstruct/library/client/modifiers/ModifierIconManager.java
+# Tables module screens (crafting station, tinker station, part builder, worktable, chests).
+slimeknights/tconstruct/tables/client/**

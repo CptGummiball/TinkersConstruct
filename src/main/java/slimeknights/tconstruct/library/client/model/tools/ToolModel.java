@@ -90,6 +90,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:tool" (122 model files).
+ * The largest of the seven geometry consumers and the last one to attempt. The geometry shim is
+ * live (import swap), but this also needs, on top of everything MaterialModel waits on:
+ *   Forge: IModelBuilder, QuadTransformers, IQuadTransformer, ModelData, BakedModelWrapper
+ *     (BakedModelWrapper is ported: slimeknights.mantle.client.model.BakedModelWrapper).
+ *   Mantle (never copied into this tree): ColoredBlockModel, MantleItemLayerModel.
+ *   TConstruct: the whole library/client/modifiers model tree (ModifierModelManager,
+ *     IBakedModifierModel and the ~15 modifier model types), still unported.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Model handling all tools, both multipart and non.
  */

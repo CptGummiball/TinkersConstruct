@@ -46,7 +46,7 @@ public class GuiMeltingModule {
         // determine the bar to draw and the progress
         ScalableElementScreen bar = progressBars.progress;
 
-        int index = slot.getSlotIndex(); // note this is the inventory index, not the index in the slots list
+        int index = slot.getContainerSlot(); // note this is the inventory index, not the index in the slots list
         int currentTemp = inventory.getCurrentTime(index);
         int requiredTime = inventory.getRequiredTime(index);
 
@@ -89,7 +89,7 @@ public class GuiMeltingModule {
       if (slot.hasItem() && slotPredicate.test(slot)) {
         // mouse must be within the slot
         if (GuiUtil.isHovered(checkX, checkY, slot.x - 5, slot.y - 1, progressBars.width() + 1, progressBars.height() + 2)) {
-          int index = slot.getSlotIndex(); // note this is the inventory index, not the index in the slots list
+          int index = slot.getContainerSlot(); // note this is the inventory index, not the index in the slots list
           Component tooltip = null;
 
           // NaN means 0 progress for 0 need, unmeltable
@@ -97,7 +97,7 @@ public class GuiMeltingModule {
             tooltip = TOOLTIP_UNMELTABLE;
           }
           // -1 error state if temperature is too low
-          else if (inventory.getRequiredTemp(slot.getSlotIndex()) > temperature) {
+          else if (inventory.getRequiredTemp(slot.getContainerSlot()) > temperature) {
             tooltip = TOOLTIP_NO_HEAT;
           }
           // 2x error state if no space

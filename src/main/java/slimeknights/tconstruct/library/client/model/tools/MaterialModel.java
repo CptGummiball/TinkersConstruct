@@ -43,6 +43,19 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:material" (29 model files).
+ * The geometry shim is live: the three net.minecraftforge.client.model.geometry.* imports swap
+ * straight to slimeknights.mantle.client.model.geometry.*. What is still missing:
+ *   Mantle (never copied into this tree): MantleItemLayerModel + ItemLayerPixels — the item-layer
+ *     quad generator. Vanilla's ItemModelGenerator produces the same elements from a sprite, so it
+ *     can be built on that plus a quad transformer for the per-quad colour/emissivity.
+ *   Forge: CompositeModel.Baked.Builder — replaceable by SimpleBakedModel.Builder (see
+ *     SimpleBlockModel.bakedBuilder), since Fabric picks item render layers at render time.
+ *   TConstruct: MaterialRenderInfoLoader, which needs slimeknights.mantle.data.datamap
+ *     (RegistryDataMapLoader, absent) and a Fabric reload listener in place of ModelEvent.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Model for an item with material texture variants, such as tool parts. Used only for single material items, {@link ToolModel} is used for multi-material items.
  */

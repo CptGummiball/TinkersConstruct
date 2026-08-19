@@ -53,6 +53,16 @@ import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:tank" (8 model files).
+ * The geometry shim is live (import swap) and SimpleBlockModel exists; it also extends
+ * UniqueGuiModel.Baked, which is ported. What is still missing:
+ *   Forge: ModelData, IQuadTransformer, IClientFluidTypeExtensions (Fabric side is
+ *     FluidRenderHandlerRegistry), FluidStack/FluidType/FluidTank — the transfer shim already
+ *     carries slimeknights.mantle.transfer.fluid equivalents for those three.
+ *   Mantle (never copied into this tree): ColoredBlockModel, ExtraTextureContext.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * This model contains a single scalable fluid that can either be statically rendered or rendered in the TESR. It also supports rendering fluids in the item model
  */

@@ -33,10 +33,8 @@ slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
 slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
 # Missed in the first fluid pass:
 slimeknights/mantle/fluid/texture/FluidTexture.java
-# Client module work: needs SafeClientAccess/TooltipKey plus Fabric reload listeners.
-slimeknights/mantle/fluid/tooltip/FluidTooltipHandler.java
-slimeknights/mantle/fluid/tooltip/FluidUnit.java
-slimeknights/mantle/fluid/tooltip/FluidUnitList.java
+# (screen round) FluidTooltipHandler + FluidUnit/FluidUnitList gated in: the reload listener
+# moved to ResourceManagerHelper and the tag-flush to CommonLifecycleEvents.TAGS_LOADED.
 
 # InvertedFluid note: the big FlowingFluid spread refactor landed in 1.21.2, not 1.21.1 —
 # the 1.20-shaped internals (getCacheKey, canPassThrough, the slope caches) still exist
@@ -130,9 +128,9 @@ slimeknights/tconstruct/world/data/**
 # events, wandering trades via Fabric's TradeOfferHelper (pool 2 = Forge's rare list)
 
 # --- tables module: pieces deferred from the phase-4 gate-in ---
-# client screens/events (phase 5)
-slimeknights/tconstruct/tables/TableClientEvents.java
-slimeknights/tconstruct/tables/client/**
+# (screen round) tables/client/** and TableClientEvents gated in; the block/item colour and
+# block-entity renderer registrations inside TableClientEvents stay PORT-commented for the
+# renderer slice.
 # datagen provider (phase 7)
 slimeknights/tconstruct/tables/data/**
 
@@ -178,12 +176,29 @@ slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuild
 slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
 slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---
-slimeknights/tconstruct/smeltery/client/**
+# (screen round) smeltery/client/screen/** and SmelteryClientEvents gated in; the block entity
+# renderers and their vertex helpers stay parked for the renderer slice, as do the renderer,
+# reload-listener and model-loader registrations inside SmelteryClientEvents (PORT-commented).
+slimeknights/tconstruct/smeltery/client/render/**
+slimeknights/tconstruct/smeltery/client/util/**
 slimeknights/tconstruct/smeltery/data/**
-slimeknights/tconstruct/smeltery/SmelteryClientEvents.java
 # --- tools round parks ---
 # client rendering + models (phase 5)
-slimeknights/tconstruct/tools/client/**
+# tools/client per file rather than a glob, so pieces can gate in individually.
+# ShieldBannerModifierSpriteSource is worth an early look next round: without it the
+# block atlas definition fails to parse entirely ("Unknown type
+# tconstruct:shield_banner_to_modifier"). It only waits on MaterialRenderInfo.
+slimeknights/tconstruct/tools/client/ShieldBannerModifierSpriteSource.java
+slimeknights/tconstruct/tools/client/ClientInteractionHandler.java
+slimeknights/tconstruct/tools/client/CrystalshotRenderer.java
+slimeknights/tconstruct/tools/client/FluidEffectProjectileRenderer.java
+slimeknights/tconstruct/tools/client/ModifierClientEvents.java
+slimeknights/tconstruct/tools/client/OverslimeModifierModel.java
+slimeknights/tconstruct/tools/client/RayTracer.java
+slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
+slimeknights/tconstruct/tools/client/ToolContainerScreen.java
+slimeknights/tconstruct/tools/client/ToolRenderEvents.java
+slimeknights/tconstruct/tools/client/material/**
 slimeknights/tconstruct/tools/ToolClientEvents.java
 slimeknights/tconstruct/tools/data/client/**
 slimeknights/tconstruct/tools/data/sprite/**

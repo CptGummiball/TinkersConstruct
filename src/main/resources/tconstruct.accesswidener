@@ -181,3 +181,36 @@ accessible method net/minecraft/world/level/block/BeehiveBlock angerNearbyBees (
 # recomputes its result through vanilla's helper, which is protected static (Forge's patch
 # left it callable). 1.21 also appended a nullable "last matched recipe" hint parameter.
 accessible method net/minecraft/world/inventory/CraftingMenu slotChangedCraftingGrid (Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/inventory/CraftingContainer;Lnet/minecraft/world/inventory/ResultContainer;Lnet/minecraft/world/item/crafting/RecipeHolder;)V
+# --- client model phase: the custom-geometry bridge ---
+# BlockModel.GSON — the geometry shim hands IGeometryLoader.read a JsonDeserializationContext,
+# as Forge's patched deserializer did. Backing it with vanilla's own model GSON is what makes
+# context.deserialize(json, BlockModel.class) build elements/faces/transforms with the same
+# adapters vanilla uses; the alternative is re-registering all six package-private Deserializers.
+accessible field net/minecraft/client/renderer/block/model/BlockModel GSON Lcom/google/gson/Gson;
+# SimpleBakedModel.Builder's flag constructor — SimpleBlockModel bakes sub-models against the
+# owning model's lighting/transform data, not the sub-model's own, so it cannot use the public
+# (BlockModel, ItemOverrides, boolean) constructor which reads those off the model it is given.
+accessible method net/minecraft/client/resources/model/SimpleBakedModel$Builder <init> (ZZZLnet/minecraft/client/renderer/block/model/ItemTransforms;Lnet/minecraft/client/renderer/block/model/ItemOverrides;)V
+
+# --- Phase 5, menu screens ---
+# Forge's AT made these public; the multi-module screen system positions modules and GUI
+# widgets from outside the AbstractContainerScreen subclass hierarchy (GuiTankModule,
+# GuiFuelModule, TinkerTabsWidget, ...), which vanilla's protected access does not allow.
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen leftPos I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen topPos I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageWidth I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageHeight I
+# Screen.font — the same GUI modules draw text without being Screens themselves.
+accessible field net/minecraft/client/gui/screens/Screen font Lnet/minecraft/client/gui/Font;
+# isHovering went private in 1.21 (it was protected in 1.20.1). The side inventory and the
+# tinker station hide slots that scrolled out of view or belong to an inactive layout, which
+# only works if vanilla's hover test dispatches to the override.
+extendable method net/minecraft/client/gui/screens/inventory/AbstractContainerScreen isHovering (Lnet/minecraft/world/inventory/Slot;DD)Z
+# Slot.x/y are final in vanilla; the scrolling side inventories and the tinker station's slot
+# layouts move slots at runtime. Forge's AT dropped the final for the same reason.
+mutable field net/minecraft/world/inventory/Slot x I
+mutable field net/minecraft/world/inventory/Slot y I
+# EditBox.isEditable went private in 1.21; the tinker station only enables its rename field
+# when a fresh tool is in the output, and needs to read the current state to avoid clobbering
+# the typed name every display refresh.
+accessible method net/minecraft/client/gui/components/EditBox isEditable ()Z

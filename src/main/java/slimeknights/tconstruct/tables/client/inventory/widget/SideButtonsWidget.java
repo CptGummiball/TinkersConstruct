@@ -6,7 +6,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.renderer.Rect2i;
-import org.apache.commons.compress.utils.Lists;
+import com.google.common.collect.Lists;
 import slimeknights.mantle.client.screen.MultiModuleScreen;
 
 import java.util.List;

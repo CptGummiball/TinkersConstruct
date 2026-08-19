@@ -68,6 +68,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:fluid_container" (71 model files).
+ * The geometry shim is live (import swap). This one leans hardest on Forge's own model utilities:
+ *   Forge: DynamicFluidContainerModel (it is written as an extension of it), UnbakedGeometryHelper
+ *     (createUnbakedItemElements / createUnbakedItemMaskElements / bakeElements), CompositeModel,
+ *     RenderTypeGroup, QuadTransformers, SimpleModelState, StandaloneGeometryBakingContext,
+ *     IClientFluidTypeExtensions, FluidUtil, FluidStack/FluidType, CraftingHelper.
+ *   Mantle (never copied into this tree): ColoredBlockModel.
+ * The item-mask element generation is the substantial piece; there is no vanilla equivalent, unlike
+ * the plain item layers which ItemModelGenerator covers.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Extension of {@link net.minecraftforge.client.model.DynamicFluidContainerModel} with two additional features: baked tints and fluid stack sensitive models.
  * Does not handle covers as I have never seen a need for them, and it means less code duplication (plus the forge model does the whole cover is mask thing wrong compared to 1.18).

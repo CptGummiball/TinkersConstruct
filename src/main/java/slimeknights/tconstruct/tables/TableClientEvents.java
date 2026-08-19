@@ -1,41 +1,25 @@
 package slimeknights.tconstruct.tables;
 
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.world.item.DyeableLeatherItem;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import slimeknights.mantle.client.render.InventoryBlockEntityRenderer;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
-import slimeknights.tconstruct.shared.block.entity.TableBlockEntity;
-import slimeknights.tconstruct.tables.block.entity.chest.TinkersChestBlockEntity;
 import slimeknights.tconstruct.tables.client.inventory.CraftingStationScreen;
 import slimeknights.tconstruct.tables.client.inventory.ModifierWorktableScreen;
 import slimeknights.tconstruct.tables.client.inventory.PartBuilderScreen;
 import slimeknights.tconstruct.tables.client.inventory.TinkerChestScreen;
 import slimeknights.tconstruct.tables.client.inventory.TinkerStationScreen;
 
+/**
+ * Client-side setup for the tables module.
+ *
+ * <p>Fabric port: Forge ran this from {@code FMLClientSetupEvent} and the various
+ * {@code Register*Event} hooks on the mod bus; on Fabric {@link #init()} is called from
+ * {@code TConstructClientBootstrap}. Only the menu screen registration is ported so far — the
+ * block entity renderers and the tinkers' chest colour handlers wait on the renderer/colour slice.
+ */
 @SuppressWarnings("unused")
-@EventBusSubscriber(modid=TConstruct.MOD_ID, value=Dist.CLIENT, bus=Bus.MOD)
 public class TableClientEvents extends ClientEventBase {
-  @SubscribeEvent
-  static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-    BlockEntityRendererProvider<TableBlockEntity> tableRenderer = InventoryBlockEntityRenderer::new;
-    event.registerBlockEntityRenderer(TinkerTables.craftingStationTile.get(), tableRenderer);
-    event.registerBlockEntityRenderer(TinkerTables.tinkerStationTile.get(), tableRenderer);
-    event.registerBlockEntityRenderer(TinkerTables.modifierWorktableTile.get(), tableRenderer);
-    event.registerBlockEntityRenderer(TinkerTables.partBuilderTile.get(), tableRenderer);
-  }
-
-  @SubscribeEvent
-  static void setupClient(final FMLClientSetupEvent event) {
+  /** Registers the table menu screens */
+  public static void init() {
     MenuScreens.register(TinkerTables.craftingStationContainer.get(), CraftingStationScreen::new);
     MenuScreens.register(TinkerTables.tinkerStationContainer.get(), TinkerStationScreen::new);
     MenuScreens.register(TinkerTables.partBuilderContainer.get(), PartBuilderScreen::new);
@@ -43,21 +27,14 @@ public class TableClientEvents extends ClientEventBase {
     MenuScreens.register(TinkerTables.tinkerChestContainer.get(), TinkerChestScreen::new);
   }
 
-  @SubscribeEvent
-  static void registerBlockColors(final RegisterColorHandlersEvent.Block event) {
-    event.register((state, world, pos, index) -> {
-      if (world != null && pos != null) {
-        BlockEntity te = world.getBlockEntity(pos);
-        if (te instanceof TinkersChestBlockEntity) {
-          return ((TinkersChestBlockEntity)te).getColor();
-        }
-      }
-      return -1;
-    }, TinkerTables.tinkersChest.get());
-  }
+  // PORT: block entity renderers wait on the renderer slice. Forge registered
+  //   InventoryBlockEntityRenderer::new for craftingStationTile, tinkerStationTile,
+  //   modifierWorktableTile and partBuilderTile through EntityRenderersEvent.RegisterRenderers;
+  //   the Fabric equivalent is BlockEntityRenderers.register, but
+  //   slimeknights.mantle.client.render.InventoryBlockEntityRenderer is not ported yet.
 
-  @SubscribeEvent
-  static void registerItemColors(final RegisterColorHandlersEvent.Item event) {
-    event.register((stack, index) -> ((DyeableLeatherItem)stack.getItem()).getColor(stack), TinkerTables.tinkersChest.asItem());
-  }
+  // PORT: colour handlers wait on the colour slice. Forge registered a block colour reading
+  //   TinkersChestBlockEntity#getColor and an item colour reading DyeableLeatherItem#getColor
+  //   (removed in 1.21 in favour of the DYED_COLOR data component) for TinkerTables.tinkersChest,
+  //   via RegisterColorHandlersEvent; the Fabric equivalent is ColorProviderRegistry.
 }

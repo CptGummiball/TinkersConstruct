@@ -55,6 +55,15 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:fluid_texture" (2 model files).
+ * The geometry shim is live (import swap) and SimpleBlockModel exists. What is still missing:
+ *   Forge: ModelData, IQuadTransformer, IClientFluidTypeExtensions (Fabric side is
+ *     FluidRenderHandlerRegistry), FluidStack (shimmed as slimeknights.mantle.transfer.fluid).
+ *   Mantle (never copied into this tree): ColoredBlockModel (+ ColorData), RetexturedModel,
+ *     DynamicBakedWrapper, ModelHelper.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Model that replaces fluid textures with the fluid from model data
  */

@@ -68,6 +68,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:material_block" (3 model files).
+ * The geometry shim is live (import swap) and SimpleBlockModel exists. What is still missing:
+ *   Forge: ModelData/ModelProperty — per-block-entity model data has no direct Fabric analogue;
+ *     the equivalent is a RenderAttachedBlockView attachment plus FabricBakedModel emission.
+ *   Forge: IQuadTransformer.
+ *   Mantle (never copied into this tree): ColoredBlockModel, RetexturedModel, DynamicBakedWrapper,
+ *     ExtraTextureContext, ModelHelper.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Model that handles dynamic materials using the block model elements style.
  * When used for tools, notably does not handle modifier models, just materials are considered.

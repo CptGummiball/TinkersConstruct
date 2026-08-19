@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentContents;
+import net.minecraft.network.chat.contents.PlainTextContents;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.entity.player.Inventory;
@@ -48,7 +48,8 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
 
   /** If true, has pattern cost text */
   private boolean hasPatternCost() {
-    return this.patternCost != null && this.patternCost.getContents() != ComponentContents.EMPTY;
+    // 1.21 moved the shared empty contents singleton to PlainTextContents
+    return this.patternCost != null && this.patternCost.getContents() != PlainTextContents.EMPTY;
   }
 
   /* Material value */
@@ -72,7 +73,7 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
 
   /** If true, has material value text */
   private boolean hasMaterialValue() {
-    return this.materialValue != null && this.materialValue.getContents() != ComponentContents.EMPTY;
+    return this.materialValue != null && this.materialValue.getContents() != PlainTextContents.EMPTY;
   }
 
   @Override
@@ -125,7 +126,8 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
 
     // info ? in the top right corner
     if (this.hasTooltips()) {
-      graphics.drawString(this.font, "?", guiRight() - this.border.w - this.font.width("?") / 2f, this.topPos + 5, 0xff5f5f5f, false);
+      // 1.21 GuiGraphics#drawString dropped the float-position overloads, so round instead
+      graphics.drawString(this.font, "?", Math.round(guiRight() - this.border.w - this.font.width("?") / 2f), this.topPos + 5, 0xff5f5f5f, false);
     }
 
     int scaledFontHeight = this.getScaledFontHeight();
@@ -133,7 +135,7 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
       int x2 = this.imageWidth / 2;
       x2 -= this.font.width(this.caption) / 2;
 
-      graphics.drawString(this.font, this.caption.getVisualOrderText(), (float) this.leftPos + x2, y, color, true);
+      graphics.drawString(this.font, this.caption.getVisualOrderText(), this.leftPos + x2, Math.round(y), color, true);
       y += scaledFontHeight + 3;
     }
 
@@ -142,7 +144,7 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
       int x2 = this.imageWidth / 2;
       x2 -= this.font.width(this.patternCost) / 2;
 
-      graphics.drawString(this.font, this.patternCost.getVisualOrderText(), (float) this.leftPos + x2, y, color, true);
+      graphics.drawString(this.font, this.patternCost.getVisualOrderText(), this.leftPos + x2, Math.round(y), color, true);
       y += scaledFontHeight + 3;
     }
 
@@ -151,7 +153,7 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
       int x2 = this.imageWidth / 2;
       x2 -= this.font.width(this.materialValue) / 2;
 
-      graphics.drawString(this.font, this.materialValue.getVisualOrderText(), (float) this.leftPos + x2, y, color, true);
+      graphics.drawString(this.font, this.materialValue.getVisualOrderText(), this.leftPos + x2, Math.round(y), color, true);
       y += scaledFontHeight + 3;
     }
 
@@ -177,7 +179,7 @@ public class PartInfoPanelScreen extends InfoPanelScreen<PartBuilderScreen,PartB
       }
 
       FormattedCharSequence line = iter.next();
-      graphics.drawString(this.font, line, x, y, color, true);
+      graphics.drawString(this.font, line, Math.round(x), Math.round(y), color, true);
       y += textHeight;
     }
 

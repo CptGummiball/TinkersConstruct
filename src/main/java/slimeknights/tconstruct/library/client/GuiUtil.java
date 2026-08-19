@@ -9,16 +9,18 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat.Mode;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariantAttributes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
 import org.joml.Matrix4f;
 import slimeknights.mantle.client.screen.ElementScreen;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.library.recipe.partbuilder.Pattern;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -104,7 +106,12 @@ public final class GuiUtil {
   }
 
   /**
-   * Colors and renders a fluid sprite
+   * Colors and renders a fluid sprite.
+   *
+   * <p>Fabric port: Forge's {@code IClientFluidTypeExtensions} has no counterpart here; the sprite
+   * and tint come from {@code FluidVariantRendering} and the gas flip from
+   * {@code FluidVariantAttributes}. Fabric's tint is opaque RGB, so alpha is forced on.
+   *
    * @param matrices    Matrix instance
    * @param screen  Parent screen
    * @param stack   Fluid stack
@@ -116,10 +123,12 @@ public final class GuiUtil {
    */
   public static void renderTiledFluid(PoseStack matrices, AbstractContainerScreen<?> screen, FluidStack stack, int x, int y, int width, int height, int depth) {
     if (!stack.isEmpty()) {
-      IClientFluidTypeExtensions clientFluid = IClientFluidTypeExtensions.of(stack.getFluid());
-      TextureAtlasSprite fluidSprite = screen.getMinecraft().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(clientFluid.getStillTexture(stack));
-      RenderUtils.setColorRGBA(clientFluid.getTintColor(stack));
-      renderTiledTextureAtlas(matrices, screen, fluidSprite, x, y, width, height, depth, stack.getFluid().getFluidType().isLighterThanAir());
+      TextureAtlasSprite fluidSprite = FluidVariantRendering.getSprite(stack.getVariant());
+      if (fluidSprite == null) {
+        return;
+      }
+      setColorRGBA(0xFF000000 | FluidVariantRendering.getColor(stack.getVariant()));
+      renderTiledTextureAtlas(matrices, screen, fluidSprite, x, y, width, height, depth, FluidVariantAttributes.isLighterThanAir(stack.getVariant()));
       RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
   }
@@ -138,9 +147,9 @@ public final class GuiUtil {
    */
   public static void renderTiledTextureAtlas(PoseStack matrices, AbstractContainerScreen<?> screen, TextureAtlasSprite sprite, int x, int y, int width, int height, int depth, boolean upsideDown) {
     // start drawing sprites
-    RenderUtils.bindTexture(sprite.atlasLocation());
-    BufferBuilder builder = Tesselator.getInstance().getBuilder();
-    builder.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+    bindTexture(sprite.atlasLocation());
+    // 1.21: Tesselator hands out a started BufferBuilder instead of getBuilder()+begin()
+    BufferBuilder builder = Tesselator.getInstance().begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
     // tile vertically
     float u1 = sprite.getU0();
@@ -152,7 +161,8 @@ public final class GuiUtil {
     do {
       int renderHeight = Math.min(spriteHeight, height);
       height -= renderHeight;
-      float v2 = sprite.getV((16f * renderHeight) / spriteHeight);
+      // 1.21: getU/getV take a 0-1 fraction, 1.20 took 0-16
+      float v2 = sprite.getV((float)renderHeight / spriteHeight);
 
       // we need to draw the quads per width too
       int x2 = startX;
@@ -163,7 +173,7 @@ public final class GuiUtil {
         int renderWidth = Math.min(spriteWidth, widthLeft);
         widthLeft -= renderWidth;
 
-        float u2 = sprite.getU((16f * renderWidth) / spriteWidth);
+        float u2 = sprite.getU((float)renderWidth / spriteWidth);
         if(upsideDown) {
           // FIXME: I think this causes tiling errors, look into it
           buildSquare(matrix, builder, x2, x2 + renderWidth, startY, startY + renderHeight, depth, u1, u2, v2, v1);
@@ -177,8 +187,7 @@ public final class GuiUtil {
     } while(height > 0);
 
     // finish drawing sprites
-    BufferUploader.drawWithShader(builder.end());
-    // RenderSystem.enableAlphaTest();
+    BufferUploader.drawWithShader(builder.buildOrThrow());
     RenderSystem.enableDepthTest();
   }
 
@@ -196,10 +205,11 @@ public final class GuiUtil {
    * @param v2       Texture V end
    */
   private static void buildSquare(Matrix4f matrix, BufferBuilder builder, int x1, int x2, int y1, int y2, int z, float u1, float u2, float v1, float v2) {
-    builder.vertex(matrix, x1, y2, z).uv(u1, v2).endVertex();
-    builder.vertex(matrix, x2, y2, z).uv(u2, v2).endVertex();
-    builder.vertex(matrix, x2, y1, z).uv(u2, v1).endVertex();
-    builder.vertex(matrix, x1, y1, z).uv(u1, v1).endVertex();
+    // 1.21: vertex()/uv()/endVertex() collapsed into addVertex()/setUv()
+    builder.addVertex(matrix, x1, y2, z).setUv(u1, v2);
+    builder.addVertex(matrix, x2, y2, z).setUv(u2, v2);
+    builder.addVertex(matrix, x2, y1, z).setUv(u2, v1);
+    builder.addVertex(matrix, x1, y1, z).setUv(u1, v1);
   }
 
   /**
@@ -244,5 +254,24 @@ public final class GuiUtil {
   public static void renderPattern(GuiGraphics graphics, Pattern pattern, int x, int y) {
     TextureAtlasSprite sprite = Minecraft.getInstance().getModelManager().getAtlas(InventoryMenu.BLOCK_ATLAS).getSprite(pattern.getTexture());
     graphics.blit(x, y, 100, 16, 16, sprite);
+  }
+
+  /* Shader helpers.
+   * These live here rather than in RenderUtils because that class is bound to the block-entity
+   * renderer slice (FluidCuboid/FluidRenderer/MantleRenderTypes), which has not been ported yet. */
+
+  /** Binds a texture for the position-tex shader */
+  public static void bindTexture(ResourceLocation texture) {
+    RenderSystem.setShader(GameRenderer::getPositionTexShader);
+    RenderSystem.setShaderTexture(0, texture);
+  }
+
+  /** Sets the shader color from a packed ARGB integer */
+  public static void setColorRGBA(int color) {
+    float a = ((color >> 24) & 0xFF) / 255.0F;
+    float r = ((color >> 16) & 0xFF) / 255.0F;
+    float g = ((color >>  8) & 0xFF) / 255.0F;
+    float b = ( color        & 0xFF) / 255.0F;
+    RenderSystem.setShaderColor(r, g, b, a);
   }
 }

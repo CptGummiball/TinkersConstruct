@@ -837,6 +837,52 @@ global loot modifiers, energy — is done. The datapack loads with zero errors i
 category; the only remaining data failures in the whole port are the two milk-fluid recipes
 awaiting the phase-6 decision.
 
+### Phase 5, slice 1: model bridge + screens — **DONE, client launches and loads clean**
+
+The client already started before this slice; what it could not do was render anything
+Tinkers-specific or open a single GUI. Both foundations now exist.
+
+- **The geometry bridge.** Forge patched its model deserializer so a `"loader"` key in a
+  model JSON dispatched to a registered geometry loader; over 400 of the shipped models
+  rely on that. Fabric has no such hook, so the port supplies one: a Forge-shaped shim
+  (`IGeometryLoader`, `IUnbakedGeometry`, `IGeometryBakingContext`) over Fabric's model
+  API, with the baking context implemented against the vanilla `BlockModel` parsed from the
+  same JSON so the geometry classes see exactly what Forge handed them.
+  The hard part was recursion: asking the model loader for the id you are currently
+  resolving makes Fabric throw. The resolver therefore reads and parses the model files
+  itself during the reload's prepare stage, and a substring test skips the JSON parse for
+  the ~99% of models that declare no loader. Unknown loader ids fall through to vanilla,
+  so nothing regresses.
+- **Screens.** All the table GUIs (crafting station, tinker station, part builder, modifier
+  worktable, tinkers chest) and the smeltery GUIs (melter, smeltery, alloyer) are live,
+  together with their inventory modules, widgets and tank/fuel/melting overlays.
+- **The three Forge parent models** (`forge:item/default`, `default-tool`, `bucket_drip`)
+  are provided under the forge namespace rather than rewriting the 163 models that
+  reference them — the same call taken for the loot-modifier index. They exist to supply
+  display transforms, so they map onto `item/generated` and `item/handheld`.
+- **Render layers, data-driven.** Forge honored a `render_type` key in the model JSON;
+  vanilla and Fabric only know a per-block mapping, and 295 of the shipped models declare
+  one. Instead of a hand-kept block list that would drift, the port walks each block's
+  blockstate to its models and applies what they declare, so the models stay the single
+  source of truth. Where a block's models disagree, the most permissive layer wins.
+
+**The structural finding of this slice**, worth recording because it reshapes the phase:
+**this repository's vendored Mantle is server-side only.** Its client model package
+(`SimpleBlockModel`, `ColoredBlockModel`, `MantleItemLayerModel`, `RetexturedModel`,
+`DynamicBakedWrapper`, `ModelHelper`, `ItemLayerPixels`) and its screen package are not
+parked — they were never copied in, and no Mantle source exists on this machine to copy
+from. The screen infrastructure was therefore reconstructed from the API surface its
+consumers require (eight classes). The client model package still has to be, and that is
+what gates the remaining geometry: only `tconstruct:gui` is registered so far, proving the
+bridge end to end, while the six real geometry classes — including the 122 tool models and
+71 fluid containers — wait on it plus a small Forge client-model compat layer. Each file
+now names its own blocker.
+
+Two known gaps carried forward: the block atlas definition fails to parse as a whole
+because a custom sprite source (`tconstruct:shield_banner_to_modifier`) is not registered —
+it only waits on `MaterialRenderInfo`, so it is worth an early look — and the fluid block
+models still miss their textures, which belongs with the fluid rendering slice.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

@@ -16,13 +16,12 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
+import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.packs.PackType;
 import slimeknights.mantle.transfer.fluid.FluidStack;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModList;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.mantle.client.TooltipKey;
@@ -37,13 +36,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /** Handles fluid units displaying in tooltips */
 @SuppressWarnings("unused")
 @Log4j2
-public class FluidTooltipHandler extends SimpleJsonResourceReloadListener {
+public class FluidTooltipHandler extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   /** Tooltip when not holding shift mentioning that is possible */
   public static final Component HOLD_SHIFT = Mantle.makeComponent("gui", "fluid.hold_shift").withStyle(ChatFormatting.GRAY);
   /** Folder for saving the logic */
@@ -81,13 +79,21 @@ public class FluidTooltipHandler extends SimpleJsonResourceReloadListener {
   private final Map<Fluid,FluidUnitList> listCache = new HashMap<>();
 
   /**
-   * Initializes this manager, registering it with the resource manager
-   * @param manager  Manager
+   * Initializes this manager, registering it with the client resource manager.
+   *
+   * <p>Fabric port: Forge passed in a {@code RegisterClientReloadListenersEvent}; here the listener
+   * registers itself through {@code ResourceManagerHelper}, and the tag-change cache flush moves
+   * from {@code TagsUpdatedEvent} to {@code CommonLifecycleEvents.TAGS_LOADED}.
    */
-  public static void init(RegisterClientReloadListenersEvent manager) {
-    manager.registerReloadListener(INSTANCE);
+  public static void init() {
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
     // clear the cache on tag reload, if the tags changed it might be wrong
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, TagsUpdatedEvent.class, event -> INSTANCE.listCache.clear());
+    CommonLifecycleEvents.TAGS_LOADED.register((registries, client) -> INSTANCE.listCache.clear());
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return Mantle.getResource("fluid_tooltips");
   }
 
   private FluidTooltipHandler() {
@@ -190,11 +196,10 @@ public class FluidTooltipHandler extends SimpleJsonResourceReloadListener {
 
   /** Gets the mod name for display in the tooltip */
   public static <T> Component formatModName(ResourceLocation key) {
-    String name = key.getNamespace();
-    Optional<? extends ModContainer> mod = ModList.get().getModContainerById(name);
-    if (mod.isPresent()) {
-      name = mod.get().getModInfo().getDisplayName();
-    }
+    String namespace = key.getNamespace();
+    String name = FabricLoader.getInstance().getModContainer(namespace)
+                              .map(mod -> mod.getMetadata().getName())
+                              .orElse(namespace);
     return Component.literal(name).withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC);
   }
 
