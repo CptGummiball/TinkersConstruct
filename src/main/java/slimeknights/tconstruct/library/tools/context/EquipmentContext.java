@@ -12,6 +12,7 @@ import slimeknights.tconstruct.library.tools.context.EquipmentIterator.Equipment
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
+import slimeknights.tconstruct.library.utils.Util;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -28,9 +29,9 @@ public class EquipmentContext {
   @Getter
   private final LivingEntity entity;
   /** Determines if the tool in the given slot was fetched */
-  protected final boolean[] fetchedTool = new boolean[6];
+  protected final boolean[] fetchedTool = new boolean[Util.EQUIPMENT_SLOTS];
   /** Array of tools currently on the entity */
-  protected final IToolStackView[] toolsInSlots = new IToolStackView[6];
+  protected final IToolStackView[] toolsInSlots = new IToolStackView[Util.EQUIPMENT_SLOTS];
   /** Cached tinker data holder, saves the map lookup on repeated access */
   private Optional<TinkerDataCapability.Holder> tinkerData = null;
 

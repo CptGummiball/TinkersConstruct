@@ -85,7 +85,7 @@ public record SlotInChargeModule(TinkerDataKey<SlotInCharge> key, @Nullable TagK
 
   /** Tracker to determine which slot should be in charge */
   public static class SlotInCharge {
-    private final int[] levels = new int[6];
+    private final int[] levels = new int[slimeknights.tconstruct.library.utils.Util.EQUIPMENT_SLOTS];
     @Getter
     private int totalLevel = 0;
     @Getter

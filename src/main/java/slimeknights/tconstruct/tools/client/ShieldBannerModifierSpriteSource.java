@@ -21,6 +21,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.ExtraCodecs;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.library.client.BannerPatternTextures;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfo;
 
 import javax.annotation.Nullable;
@@ -49,7 +50,7 @@ public record ShieldBannerModifierSpriteSource(int cropX, int cropY, int cropWid
     return DataResult.success(source);
   });
   /** Folder the shield pattern textures live in */
-  private static final FileToIdConverter SHIELD_TEXTURES = new FileToIdConverter("textures/entity/shield", ".png");
+  private static final FileToIdConverter SHIELD_TEXTURES = BannerPatternTextures.SHIELD_TEXTURES;
   /** Registered type set on init */
   private static SpriteSourceType TYPE = null;
 
@@ -67,18 +68,12 @@ public record ShieldBannerModifierSpriteSource(int cropX, int cropY, int cropWid
 
   @Override
   public void run(ResourceManager manager, Output output) {
-    // 1.20 read Sheets.SHIELD_MATERIALS, which was built eagerly from the banner pattern registry.
-    // 1.21 made banner patterns a datapack registry and fills that map lazily on first render, so
-    // it is still empty while the atlas stitches. The textures are listed from the packs instead,
-    // which is also what picks up patterns a datapack or resource pack adds.
+    // the pattern list moved to BannerPatternTextures, which the banner modifier model reads too;
+    // its header records why the registry cannot be asked for it during resource loading
     int count = 0;
-    for (Entry<ResourceLocation,Resource> entry : SHIELD_TEXTURES.listMatchingResources(manager).entrySet()) {
+    for (Entry<ResourceLocation,Resource> entry : BannerPatternTextures.listResources(manager)) {
       ResourceLocation input = entry.getKey();
       ResourceLocation assetId = SHIELD_TEXTURES.fileToId(input);
-      // patterns live directly in the folder; anything nested belongs to something else
-      if (assetId.getPath().indexOf('/') != -1) {
-        continue;
-      }
       LazyLoadedImage image = new LazyLoadedImage(input, entry.getValue(), 1);
       ResourceLocation destination = destinationPrefix.withSuffix(MaterialRenderInfo.getSuffix(assetId));
       output.add(destination, new BannerModifierSpriteSupplier(image, input, destination));

@@ -1,22 +1,19 @@
 package slimeknights.tconstruct.library.client.modifiers.model;
 
 import com.mojang.math.Transformation;
-import net.minecraft.client.renderer.Sheets;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.Material;
-import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.entity.BannerPattern;
 import slimeknights.mantle.client.model.util.MantleItemLayerModel;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.ItemLayerPixels;
 import slimeknights.tconstruct.common.config.Config;
+import slimeknights.tconstruct.library.client.BannerPatternTextures;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfo;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.tools.nbt.IModDataView;
@@ -46,8 +43,10 @@ public record BannerModifierModel(@Nullable ResourceLocation smallPrefix, @Nulla
   public void validate(Function<Material, TextureAtlasSprite> spriteGetter) {
     // since these are dynamically loaded, condition based on the config option
     if (Config.CLIENT.logMissingModifierTextures.get()) {
-      for (ResourceKey<BannerPattern> key : Sheets.SHIELD_MATERIALS.keySet()) {
-        String suffix = MaterialRenderInfo.getSuffix(key.location());
+      // Sheets.SHIELD_MATERIALS is private in 1.21 and empty until the first shield renders;
+      // the pattern textures in the packs are the same list, and are what our sprite source used
+      for (ResourceLocation pattern : BannerPatternTextures.listPatterns()) {
+        String suffix = MaterialRenderInfo.getSuffix(pattern);
         if (smallPrefix != null) {
           spriteGetter.apply(ModifierModel.blockAtlas(smallPrefix.withSuffix(suffix)));
         }
@@ -74,21 +73,18 @@ public record BannerModifierModel(@Nullable ResourceLocation smallPrefix, @Nulla
         List<BakedQuad> quads = new ArrayList<>(list.size());
         // iterate all patterns
         for (int i = 0; i < list.size(); i++) {
-          // patterns are stored as short strings for some reason, for consistency we also store as hashes
-          // map that back to the pattern
           CompoundTag tag = list.getCompound(i);
-          Holder<BannerPattern> pattern = BannerPattern.byHash(tag.getString(BannerModule.KEY_PATTERN));
+          // 1.20 stored the pattern's short hash and mapped it back through BannerPattern.byHash;
+          // 1.21 deleted both the hash and that lookup, so BannerModule writes the registry id and
+          // the texture name comes straight off it
+          ResourceLocation pattern = ResourceLocation.tryParse(tag.getString(BannerModule.KEY_PATTERN));
           int color = tag.getInt(BannerModule.KEY_COLOR);
           if (pattern != null) {
-            // why must holders be such a pain?
-            // TODO 1.21: will need to switch from using the ID to using the asset root for the texture
-            pattern.unwrapKey().ifPresent(id -> {
-              TextureAtlasSprite sprite = spriteGetter.apply(ModifierModel.blockAtlas(prefix.withSuffix(MaterialRenderInfo.getSuffix(id.location()))));
-              // skip if sprite is missing - deals with modded patterns that we haven't made textures for
-              if (!MissingTextureAtlasSprite.getLocation().equals(sprite.contents().name())) {
-                quads.add(MantleItemLayerModel.getQuadForGui(color, -1, sprite, transforms, 0));
-              }
-            });
+            TextureAtlasSprite sprite = spriteGetter.apply(ModifierModel.blockAtlas(prefix.withSuffix(MaterialRenderInfo.getSuffix(pattern))));
+            // skip if sprite is missing - deals with modded patterns that we haven't made textures for
+            if (!MissingTextureAtlasSprite.getLocation().equals(sprite.contents().name())) {
+              quads.add(MantleItemLayerModel.getQuadForGui(color, -1, sprite, transforms, 0));
+            }
           }
         }
         if (!quads.isEmpty()) {

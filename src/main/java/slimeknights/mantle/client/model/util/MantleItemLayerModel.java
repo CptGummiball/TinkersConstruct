@@ -5,6 +5,7 @@ import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.BlockElement;
 import net.minecraft.client.renderer.block.model.BlockElementFace;
+import net.minecraft.client.renderer.block.model.BlockFaceUV;
 import net.minecraft.client.renderer.block.model.BlockModel;
 import net.minecraft.client.renderer.block.model.FaceBakery;
 import net.minecraft.client.renderer.block.model.ItemModelGenerator;
@@ -14,6 +15,7 @@ import net.minecraft.client.resources.model.Material;
 import net.minecraft.client.resources.model.ModelState;
 import net.minecraft.core.Direction;
 import net.minecraft.world.inventory.InventoryMenu;
+import org.joml.Vector3f;
 import slimeknights.mantle.client.RenderTypeGroup;
 import slimeknights.mantle.client.model.IQuadTransformer;
 import slimeknights.mantle.client.model.QuadTransformers;
@@ -47,6 +49,9 @@ public final class MantleItemLayerModel {
   private static final ItemModelGenerator ITEM_MODEL_GENERATOR = new ItemModelGenerator();
   /** Name the generated elements reference; must be one of {@link ItemModelGenerator#LAYERS}. */
   private static final String LAYER = "layer0";
+  /** Corners of the layer's flat rectangle, matching {@link ItemModelGenerator}'s own element. */
+  private static final Vector3f FRONT_FROM = new Vector3f(0, 0, 7.5f);
+  private static final Vector3f FRONT_TO = new Vector3f(16, 16, 8.5f);
 
   /**
    * Render types a plain item layer draws with.
@@ -75,8 +80,9 @@ public final class MantleItemLayerModel {
    * {@link #getQuadsForSprite(int, int, TextureAtlasSprite, Transformation, int)} with an overlap
    * record.
    *
-   * @param pixels  Ignored — see {@link ItemLayerPixels} for why the suppression is not implemented
-   *                and which model would need it
+   * @param pixels  Ignored — vanilla's generator draws the front of a layer as one full-size quad,
+   *                so there is no per-pixel face to trim; {@link ItemLayerPixels} works through why
+   *                that costs nothing but overdraw
    */
   public static List<BakedQuad> getQuadsForSprite(int color, int tintIndex, TextureAtlasSprite sprite, Transformation transform, int emissivity, @Nullable ItemLayerPixels pixels) {
     List<BakedQuad> quads = new ArrayList<>();
@@ -95,6 +101,26 @@ public final class MantleItemLayerModel {
       }
     }
     return quads;
+  }
+
+  /**
+   * Builds only the front-facing quad of a layer, skipping the silhouette sides.
+   *
+   * <p>For overlays that exist to be seen flat-on and would only add thickness anywhere else. The
+   * banner patterns on a tool are the case: a dozen of them stack on one tool, and giving each its
+   * own set of side faces would ring the tool in seams no pattern actually has.
+   *
+   * <p>Geometry matches the front face vanilla's generator produces — the full sprite rectangle at
+   * z 8.5, uv 0 to 16 — so it lines up exactly with the layers around it.
+   */
+  public static BakedQuad getQuadForGui(int color, int tintIndex, TextureAtlasSprite sprite, Transformation transform, int emissivity) {
+    BlockElementFace face = new BlockElementFace(null, tintIndex, LAYER, new BlockFaceUV(new float[]{0, 0, 16, 16}, 0));
+    BakedQuad quad = FACE_BAKERY.bakeQuad(FRONT_FROM, FRONT_TO, face, sprite, Direction.SOUTH, new SimpleModelState(transform), null, true);
+    IQuadTransformer quadTransformer = quadTransformer(color, emissivity);
+    if (quadTransformer != null) {
+      quadTransformer.processInPlace(quad);
+    }
+    return quad;
   }
 
   /** Builds the combined colour and emissivity transform, or null when neither applies. */

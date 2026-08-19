@@ -182,27 +182,8 @@ slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
 slimeknights/tconstruct/smeltery/data/**
 # --- Phase 5 client model slice: what stayed out ---
-# tconstruct:tool is the one geometry consumer still parked. Its model-side support all landed with
-# this round (ColoredBlockModel, MantleItemLayerModel, the quad transformers, ModelData); what it
-# waits on is the modifier model tree below, plus mantle.util.ReversedListBuilder (never copied in)
-# and a shim for Forge's IModelBuilder. ToolModel's header carries the detail.
-slimeknights/tconstruct/library/client/model/tools/ToolModel.java
-# The modifier model tree ToolModel bakes through: 22 files, 7 of which still carry Forge imports
-# (the fluid, tank and load-condition models). Their loadable framework is already ported, so this
-# is a bounded round rather than an open question.
-slimeknights/tconstruct/library/client/modifiers/IBakedModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/IUnbakedModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/DyedModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/FluidModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/MaterialModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/ModifierModelManager.java
-slimeknights/tconstruct/library/client/modifiers/ModifierModelMap.java
-slimeknights/tconstruct/library/client/modifiers/ModifierModelMapManager.java
-slimeknights/tconstruct/library/client/modifiers/NormalModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/PotionModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/TankModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/TrimModifierModel.java
-slimeknights/tconstruct/library/client/modifiers/model/**
+# (tool model round) ToolModel and the whole library/client/modifiers tree gated in, along with
+# ReversedListBuilder and the IModelBuilder shim. tconstruct:tool is live.
 # Datagen-only: the sprite generator info hanging off a material render info; it reaches into
 # library/client/data, which is the phase-7 texture generation tree.
 slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
@@ -212,7 +193,6 @@ slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
 # tools/client per file rather than a glob, so pieces can gate in individually.
 slimeknights/tconstruct/tools/client/ClientInteractionHandler.java
 slimeknights/tconstruct/tools/client/ModifierClientEvents.java
-slimeknights/tconstruct/tools/client/OverslimeModifierModel.java
 slimeknights/tconstruct/tools/client/RayTracer.java
 slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
 slimeknights/tconstruct/tools/client/ToolContainerScreen.java

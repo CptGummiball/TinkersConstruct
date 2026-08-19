@@ -1071,7 +1071,7 @@ public final class TinkerModifiers extends TinkerModule {
 
       // tank helper
       ToolTankHelper.LOADABLE.register(getResource("tank"), ToolTankHelper.TANK_HELPER);
-      // PORT: the "smashing" helper waits on SmashingModule (ranged ammo, still parked)
+      ToolTankHelper.LOADABLE.register(getResource("smashing"), slimeknights.tconstruct.tools.modules.ranged.ammo.SmashingModule.TANK_HELPER);
     }
   }
 

@@ -40,6 +40,23 @@ public interface IQuadTransformer {
     }
   }
 
+  /**
+   * Applies this transform to copies of the given quads, leaving the originals untouched.
+   *
+   * <p>Needed where the source quads belong to someone else's baked model: the tool model pulls the
+   * ammo item's quads straight out of its model and offsets them into the tool, which must not
+   * move the ammo item's own geometry.
+   */
+  default List<BakedQuad> process(List<BakedQuad> quads) {
+    List<BakedQuad> out = new java.util.ArrayList<>(quads.size());
+    for (BakedQuad quad : quads) {
+      BakedQuad copy = new BakedQuad(quad.getVertices().clone(), quad.getTintIndex(), quad.getDirection(), quad.getSprite(), quad.isShade());
+      processInPlace(copy);
+      out.add(copy);
+    }
+    return out;
+  }
+
   /** Runs this transform, then the given one. */
   default IQuadTransformer andThen(IQuadTransformer after) {
     return quad -> {

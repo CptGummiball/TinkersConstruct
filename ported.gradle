@@ -241,3 +241,22 @@ slimeknights/tconstruct/library/TinkerItemDisplays.java
 
 # --- Phase 5 slice 2: fluid rendering ---
 slimeknights/mantle/fluid/texture/**
+
+# --- Phase 5 slice 3: the tool model ---
+# ReversedListBuilder (assemble top down, emit bottom up) and the IModelBuilder shim, the last two
+# model utilities ToolModel waited on. ItemLayerPixels stays a marker type; its class doc records
+# why the per-pixel suppression has nothing to trim once vanilla's item generator draws the layer.
+slimeknights/mantle/util/ReversedListBuilder.java
+slimeknights/mantle/client/model/IModelBuilder.java
+# The modifier model tree: the live map manager plus the deprecated per-tool manager, both of which
+# ToolModel reads, and the model/ subpackage holding the sprite types the map names.
+# Banner pattern texture listing, shared by the shield sprite source and the banner modifier model.
+slimeknights/tconstruct/library/client/BannerPatternTextures.java
+# Missing-texture logging the modifier models validate through.
+slimeknights/tconstruct/library/client/model/DynamicTextureLoader.java
+slimeknights/tconstruct/library/client/modifiers/**
+# Item properties the tool models' overrides read (broken, charging, charge, cast, ammo).
+slimeknights/tconstruct/library/client/model/TinkerItemProperties.java
+# tconstruct:tool itself, 122 model files, the last of the six geometry consumers.
+slimeknights/tconstruct/library/client/model/tools/ToolModel.java
+slimeknights/tconstruct/tools/client/OverslimeModifierModel.java

@@ -238,3 +238,11 @@ accessible method net/minecraft/client/renderer/block/model/ItemOverrides <init>
 # for these; 1.21 keeps the register method and the shield material map private, and without
 # the registration the whole pack's block atlas definition fails to parse.
 accessible field net/minecraft/client/renderer/texture/atlas/SpriteSources TYPES Lcom/google/common/collect/BiMap;
+# Minecraft.itemColors — 1.21 dropped the getItemColors() accessor. The tool model bakes an ammo
+# item's tints into static vertex colours, which needs the whole ItemColors dispatch rather than a
+# single registered provider.
+accessible field net/minecraft/client/Minecraft itemColors Lnet/minecraft/client/color/item/ItemColors;
+# ItemProperties.register — vanilla keeps it private and registers only its own properties;
+# Forge exposed an open registration. Every tconstruct:tool model names tconstruct:broken and
+# tconstruct:charging in its overrides, which resolve to zero unless these are registered.
+accessible method net/minecraft/client/renderer/item/ItemProperties register (Lnet/minecraft/world/item/Item;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/item/ClampedItemPropertyFunction;)V

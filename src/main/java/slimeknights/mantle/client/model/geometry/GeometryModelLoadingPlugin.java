@@ -21,10 +21,13 @@ import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 
 /**
  * The Fabric half of the geometry bridge: turns a {@code "loader": "namespace:id"} key in a model
@@ -97,21 +100,31 @@ public final class GeometryModelLoadingPlugin implements PreparableModelLoadingP
       if (GeometryLoaderRegistry.isEmpty()) {
         return models;
       }
+      Map<ResourceLocation,LongAdder> claimed = new ConcurrentHashMap<>();
       ModelBakery.MODEL_LISTER.listMatchingResources(manager).entrySet().parallelStream().forEach(entry -> {
         // listMatchingResources keys by file path (namespace:models/foo/bar.json); models are addressed by id
         ResourceLocation id = ModelBakery.MODEL_LISTER.fileToId(entry.getKey());
-        UnbakedModel model = load(id, entry.getValue());
+        UnbakedModel model = load(id, entry.getValue(), claimed);
         if (model != null) {
           models.put(id, model);
         }
       });
+      // an unregistered loader falls through silently by design, so the only way to tell a loader
+      // apart from a missing one is to say how many models each claimed
+      if (!claimed.isEmpty()) {
+        Mantle.logger.info("Resolved {} models through custom geometry: {}", models.size(),
+                           claimed.entrySet().stream()
+                                  .sorted(Map.Entry.comparingByKey(Comparator.comparing(ResourceLocation::toString)))
+                                  .map(e -> e.getKey() + "=" + e.getValue().sum())
+                                  .collect(Collectors.joining(", ")));
+      }
       return models;
     }, executor);
   }
 
   /** Reads one model file, returning the wrapper if it declares a registered loader. */
   @Nullable
-  private static UnbakedModel load(ResourceLocation id, Resource resource) {
+  private static UnbakedModel load(ResourceLocation id, Resource resource, Map<ResourceLocation,LongAdder> claimed) {
     try {
       String contents;
       try (BufferedReader reader = resource.openAsReader()) {
@@ -141,6 +154,7 @@ public final class GeometryModelLoadingPlugin implements PreparableModelLoadingP
       BlockModel base = BlockModel.fromString(contents);
       base.name = id.toString();
       IUnbakedGeometry<?> geometry = loader.read(json, DESERIALIZATION_CONTEXT);
+      claimed.computeIfAbsent(loaderId, key -> new LongAdder()).increment();
       return new GeometryUnbakedModel(base, geometry, id);
     } catch (RuntimeException e) {
       // one broken model must not take down the whole model load; fall back to the vanilla parse

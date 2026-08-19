@@ -1,5 +1,6 @@
 package slimeknights.mantle.client.model.util;
 
+import com.mojang.math.Transformation;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -12,6 +13,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.client.model.BakedModelWrapper;
 import slimeknights.mantle.client.model.data.ModelData;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -61,5 +64,24 @@ public final class ModelHelper {
     return Minecraft.getInstance().getBlockRenderer().getBlockModelShaper()
                     .getBlockModel(block.defaultBlockState())
                     .getParticleIcon().contents().name();
+  }
+
+  /**
+   * Rebases a transformation around a different origin.
+   *
+   * <p>Vanilla's face bakery rotates about the block centre, {@code 0.5, 0.5, 0.5}; an item layer
+   * wants the corner. A model mixing the two — a fluid baked through the block path and then placed
+   * inside an item layer — passes the offset here so the composed transform lands where the item
+   * expects it. Shim for Forge's {@code Transformation.applyOrigin}.
+   */
+  public static Transformation applyOrigin(Transformation transform, Vector3f origin) {
+    // 1.21 dropped Transformation.isIdentity(); the shared IDENTITY instance compares by matrix
+    if (Transformation.identity().equals(transform)) {
+      return Transformation.identity();
+    }
+    Matrix4f matrix = new Matrix4f().translation(origin);
+    matrix.mul(transform.getMatrix());
+    matrix.translate(-origin.x, -origin.y, -origin.z);
+    return new Transformation(matrix);
   }
 }

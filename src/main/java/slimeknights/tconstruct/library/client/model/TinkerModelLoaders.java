@@ -7,6 +7,7 @@ import slimeknights.tconstruct.library.client.model.block.FluidTextureModel;
 import slimeknights.tconstruct.library.client.model.block.TankModel;
 import slimeknights.tconstruct.library.client.model.tools.MaterialBlockModel;
 import slimeknights.tconstruct.library.client.model.tools.MaterialModel;
+import slimeknights.tconstruct.library.client.model.tools.ToolModel;
 
 /**
  * Registers Tinkers' custom model geometry with {@link GeometryLoaderRegistry} and installs the
@@ -35,11 +36,8 @@ public final class TinkerModelLoaders {
     // tools module: ToolClientEvents.registerModelLoaders
     GeometryLoaderRegistry.register(TConstruct.getResource("material"), MaterialModel.LOADER);
     GeometryLoaderRegistry.register(TConstruct.getResource("material_block"), MaterialBlockModel.LOADER);
+    GeometryLoaderRegistry.register(TConstruct.getResource("tool"), ToolModel.LOADER);
 
-    // Still parked: tconstruct:tool (122 models). Its model-side support is all written now; what
-    // it waits on is the library/client/modifiers tree (22 files) plus ReversedListBuilder and
-    // IModelBuilder. ToolModel's own header lists the detail.
-    //
     // Mantle's own loaders (connected, item_layer, retextured, nbt_key, colored_block) have no
     // geometry source in this tree at all — only the support classes Tinkers' models needed were
     // written — so the 135 mantle:connected and 18 mantle:item_layer models still fall through to

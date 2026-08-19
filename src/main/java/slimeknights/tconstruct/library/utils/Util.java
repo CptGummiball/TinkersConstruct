@@ -269,4 +269,11 @@ public class Util {
   public static boolean isForge() {
     return !isNeo();
   }
+  /**
+   * Number of distinct {@link EquipmentSlot#getFilterFlag()} values, for arrays indexed by it.
+   *
+   * <p>1.21 added {@code BODY} for animal armor, taking the count from six to seven. Sizing an array
+   * to a literal six, as the 1.20 code did throughout, throws the moment a wolf in armor ticks.
+   */
+  public static final int EQUIPMENT_SLOTS = EquipmentSlot.values().length;
 }

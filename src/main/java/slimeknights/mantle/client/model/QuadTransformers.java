@@ -1,6 +1,9 @@
 package slimeknights.mantle.client.model;
 
+import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.LightTexture;
+import org.joml.Matrix4f;
+import org.joml.Vector4f;
 
 /**
  * Factories for the {@link IQuadTransformer}s Tinkers uses. Shim for
@@ -48,6 +51,35 @@ public final class QuadTransformers {
   /** Lights every vertex as if it sat under a block light source of the given level. */
   public static IQuadTransformer settingEmissivity(int emissivity) {
     return applyingLightmap(LightTexture.pack(emissivity, emissivity));
+  }
+
+  /**
+   * Moves every vertex by the given transformation.
+   *
+   * <p>Positions only, as Forge's did: the packed normal is left alone, and the lighting normal a
+   * renderer uses comes from the quad's {@code direction} field, which the caller sets.
+   */
+  public static IQuadTransformer applying(Transformation transform) {
+    // 1.21 dropped Transformation.isIdentity(); the shared IDENTITY instance compares by matrix
+    if (Transformation.identity().equals(transform)) {
+      return empty();
+    }
+    Matrix4f matrix = transform.getMatrix();
+    return quad -> {
+      int[] vertices = quad.getVertices();
+      for (int i = 0; i < 4; i++) {
+        int offset = i * IQuadTransformer.STRIDE + IQuadTransformer.POSITION;
+        Vector4f pos = new Vector4f(
+          Float.intBitsToFloat(vertices[offset]),
+          Float.intBitsToFloat(vertices[offset + 1]),
+          Float.intBitsToFloat(vertices[offset + 2]), 1);
+        matrix.transform(pos);
+        pos.div(pos.w);
+        vertices[offset]     = Float.floatToRawIntBits(pos.x);
+        vertices[offset + 1] = Float.floatToRawIntBits(pos.y);
+        vertices[offset + 2] = Float.floatToRawIntBits(pos.z);
+      }
+    };
   }
 
   /**

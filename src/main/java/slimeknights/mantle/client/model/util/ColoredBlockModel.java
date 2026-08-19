@@ -109,6 +109,17 @@ public class ColoredBlockModel extends SimpleBlockModel {
   }
 
   /**
+   * Swaps the red and blue bytes of a packed colour.
+   *
+   * <p>{@code ItemColors} and the model JSON both speak ARGB, while a vertex's colour element is
+   * four unsigned bytes in R,G,B,A order — little-endian ABGR when read as an int. Writing a colour
+   * straight into the vertex array therefore needs this swap once.
+   */
+  public static int swapColorRedBlue(int color) {
+    return (color & 0xFF00FF00) | ((color >> 16) & 0x000000FF) | ((color << 16) & 0x00FF0000);
+  }
+
+  /**
    * Bakes one element with a light level and a per-element uv lock, resolving textures against the
    * given context.
    *

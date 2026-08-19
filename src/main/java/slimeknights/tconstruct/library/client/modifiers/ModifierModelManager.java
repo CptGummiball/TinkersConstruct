@@ -12,12 +12,14 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
 import slimeknights.mantle.event.Event;
-import net.minecraftforge.fml.ModLoader;
-import net.minecraftforge.fml.event.IModBusEvent;
+import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
 import slimeknights.mantle.util.JsonHelper;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.client.model.DynamicTextureLoader;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
@@ -40,7 +42,7 @@ import java.util.function.Predicate;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 @Deprecated
-public class ModifierModelManager implements IEarlySafeManagerReloadListener {
+public class ModifierModelManager implements IEarlySafeManagerReloadListener, IdentifiableResourceReloadListener {
   /** Modifier file to load, has merging behavior but forge prevents multiple mods from loading the same file */
   private static final String VISIBLE_MODIFIERS = "tinkering/modifiers.json";
   /** Instance of this manager */
@@ -56,11 +58,18 @@ public class ModifierModelManager implements IEarlySafeManagerReloadListener {
   private static Map<ModifierId,IUnbakedModifierModel> modifierModels = Collections.emptyMap();
 
   /**
-   * Initializes this manager, registering it with the resource manager
-   * @param manager  Manager
+   * Initializes this manager, registering it with the client resource manager.
+   *
+   * <p>Fabric port: Forge registered through {@code RegisterClientReloadListenersEvent} on the mod
+   * bus; the Fabric equivalent registers directly and needs an id for reload ordering.
    */
-  public static void init(RegisterClientReloadListenersEvent manager) {
-    manager.registerReloadListener(INSTANCE);
+  public static void init() {
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return TConstruct.getResource("legacy_modifier_models");
   }
 
   /**
@@ -91,7 +100,7 @@ public class ModifierModelManager implements IEarlySafeManagerReloadListener {
   public void onReloadSafe(ResourceManager manager) {
     // fire an event so people can register loaders, was the easiest way to do so after modifiers are registered but before models load
     if (!eventFired) {
-      ModLoader.get().postEvent(new ModifierModelRegistrationEvent());
+      MinecraftForge.EVENT_BUS.post(new ModifierModelRegistrationEvent());
       eventFired = true;
     }
 
@@ -228,8 +237,13 @@ public class ModifierModelManager implements IEarlySafeManagerReloadListener {
     return modelMap.build();
   }
 
-  /** Event fired when its time to register models */
-  public static class ModifierModelRegistrationEvent extends Event implements IModBusEvent {
+  /**
+   * Event fired when its time to register models.
+   *
+   * <p>Fabric port: this was a mod bus event, which has no Fabric counterpart; it posts on the
+   * shim bus instead, so an addon subscribes with {@code MinecraftForge.EVENT_BUS.addListener}.
+   */
+  public static class ModifierModelRegistrationEvent extends Event {
     /**
      * Register a unbaked model that modifiers can use
      * @param name   Modifier model name

@@ -88,17 +88,31 @@ public abstract class BakedModelWrapper<T extends BakedModel> implements BakedMo
   }
 
   /**
-   * Chance for the model to swap itself out for a given display context, mirroring Forge's
-   * {@code IForgeBakedModel.applyTransform}.
+   * Chance for the model to swap itself out for a given display context.
    *
-   * <p>PORT: nothing calls this yet. Forge patched {@code ItemRenderer.render} to route every item
-   * render through it; vanilla 1.21.1 applies {@link ItemTransforms} directly and offers no such
-   * hook, so wiring it up needs an {@code ItemRenderer} mixin. Until then a subclass override (see
-   * {@code UniqueGuiModel.Baked}) compiles and is correct but never fires, and the model renders as
-   * its base variant in every context.
+   * <p>Forge carried this as {@code IForgeBakedModel.applyTransform}, which also applied the
+   * transform; vanilla 1.21.1 applies {@link ItemTransforms} itself, so the swap is separated from
+   * it. {@code ItemRendererModelSwapMixin} calls this at the head of {@code ItemRenderer.render} and
+   * feeds the result back into the parameter, which leaves vanilla to apply the returned model's own
+   * transforms — the same order Forge produced.
+   *
+   * @param leftHand  Whether the item is held in the off hand, for models that differ by hand
+   * @return  Model to render, {@code this} to keep the wrapper
+   */
+  public BakedModel getModelForContext(ItemDisplayContext displayContext, boolean leftHand) {
+    return this;
+  }
+
+  /**
+   * Swaps the model and applies its transforms in one call, as Forge's
+   * {@code IForgeBakedModel.applyTransform} did.
+   *
+   * <p>Kept for callers written against that shape; the render path uses
+   * {@link #getModelForContext} instead, since vanilla applies the transform itself.
    */
   public BakedModel applyTransform(ItemDisplayContext displayContext, PoseStack poseStack, boolean applyLeftHandTransform) {
-    getTransforms().getTransform(displayContext).apply(applyLeftHandTransform, poseStack);
-    return this;
+    BakedModel model = getModelForContext(displayContext, applyLeftHandTransform);
+    model.getTransforms().getTransform(displayContext).apply(applyLeftHandTransform, poseStack);
+    return model;
   }
 }

@@ -2,7 +2,6 @@ package slimeknights.tconstruct.library.client.model;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -47,15 +46,11 @@ public class UniqueGuiModel implements IUnbakedGeometry<UniqueGuiModel> {
   }
 
   /**
-   * Wrapper that swaps the model for the GUI
+   * Wrapper that swaps the model for the GUI.
    *
-   * <p>PORT: the swap itself is inert on Fabric. Forge routed every item render through
-   * {@code IForgeBakedModel.applyTransform}; vanilla 1.21.1 applies {@link ItemTransforms} inline in
-   * {@code ItemRenderer.render} with no hook to swap the model, so this needs an {@code ItemRenderer}
-   * mixin before the GUI variant appears. The geometry itself bakes correctly either way — the base
-   * variant is what renders in every context until that hook lands. Both branches now do what
-   * Forge's default {@code applyTransform} did for a plain baked model, since {@code gui} and
-   * {@code originalModel} are vanilla models with no such method of their own.
+   * <p>Fabric port: Forge routed every item render through {@code IForgeBakedModel.applyTransform};
+   * vanilla applies {@link ItemTransforms} inline in {@code ItemRenderer.render} with no hook of its
+   * own, so {@code ItemRendererModelSwapMixin} calls {@link #getModelForContext} there instead.
    */
   public static class Baked extends BakedModelWrapper<BakedModel> {
     private final BakedModel gui;
@@ -66,10 +61,8 @@ public class UniqueGuiModel implements IUnbakedGeometry<UniqueGuiModel> {
     }
 
     @Override
-    public BakedModel applyTransform(ItemDisplayContext itemDisplay, PoseStack mat, boolean applyLeftHandTransform) {
-      BakedModel model = itemDisplay == ItemDisplayContext.GUI ? gui : originalModel;
-      model.getTransforms().getTransform(itemDisplay).apply(applyLeftHandTransform, mat);
-      return model;
+    public BakedModel getModelForContext(ItemDisplayContext itemDisplay, boolean leftHand) {
+      return itemDisplay == ItemDisplayContext.GUI ? gui : originalModel;
     }
   }
 

@@ -948,10 +948,96 @@ Confirmed in a running client: 139 material render infos, 139 blocks given their
 render layer, 72 fluid textures registered for rendering, and zero model, mixin or bake
 errors.
 
-One fidelity gap worth recording: vanilla's item renderer discards baked vertex colours
-(Forge patched that call site), so materials that tint a greyscale sprite render grey on
-items; blocks are unaffected and the data is written correctly, so it lights up when a
-renderer hook lands.
+One fidelity gap was recorded here and is **closed in slice 3**: vanilla's item renderer
+discarded baked vertex colours, so materials that tint a greyscale sprite rendered grey on
+items. Reproducing Forge's patch to that call site turned out to be one mixin.
+
+### Phase 5, slice 3: the tool model — **DONE, all 122 tool models resolve in a running client**
+
+`tconstruct:tool` is the loader behind 122 model files and every tool the mod ships. It was the
+last of the six geometry consumers still parked, and it does not just place a texture: it bakes
+one layer per tool part in the part's material, then one per visible modifier, into four
+variants of the same item (right hand, left hand, a small one, and a flat one for the GUI).
+
+- **The last two model utilities** were written: `ReversedListBuilder`, which exists so layers can
+  be *assembled* top down and *emitted* bottom up, and `IModelBuilder`, a thin wrapper over
+  vanilla's `SimpleBakedModel.Builder`.
+- **The modifier model tree** came in whole — both generations of it, since the tool model reads
+  both: the live `ModifierModelMapManager` reading `tinkering/modifiers/sprites` (77 files), and
+  the deprecated per-tool manager behind it. Its 14 sprite types register from a new
+  `ModifierModelLoaders`; Forge did that from `TinkerClient`, which is still unported, and without
+  it every entry richer than a bare texture path failed to parse — 105 errors in the first run,
+  each one a modifier that would have drawn nothing.
+- **Banner patterns** needed two 1.21 changes. `BannerPattern.byHash` is gone along with the hash
+  itself, so the model reads the registry id `BannerModule` already writes. And the pattern list
+  could not come from `Sheets.SHIELD_MATERIALS`, which is private and empty during resource
+  loading — the same finding as slice 2's sprite source, so both now share
+  `BannerPatternTextures`.
+- **`ItemLayerPixels` is settled rather than deferred.** Upstream traced each layer's silhouette
+  itself and trimmed the trace against this record; vanilla's `ItemModelGenerator`, which this port
+  feeds instead, draws a layer's front as *one full-size quad* and lets the texture's alpha cut the
+  shape. There is no per-pixel face to trim, and the picture is right without it: overlapping
+  layers are coplanar, so under `GL_LEQUAL` the last one drawn wins, and `ReversedListBuilder`
+  guarantees that is the topmost. The cost is overdraw on a heavily modified tool, paid once per
+  cached bake. The class says so in full.
+
+**Two Forge patches to `ItemRenderer` had to be reproduced as mixins**, and each was carrying a
+visible feature:
+
+- *Model swapping.* Forge routed every item render through `applyTransform`, which let a model
+  hand back a different variant per display context. Vanilla applies `ItemTransforms` inline with
+  no such hook, so without it every context drew the large right-handed variant — a tool in the
+  inventory would show the side faces of its layers. The mixin swaps the model into the parameter
+  at the head of `render` and lets vanilla apply the swapped model's own transforms, which needs
+  one injection instead of two. `UniqueGuiModel` had the same override sitting inert since slice 1;
+  it fires now too.
+- *Baked vertex colours and light.* A `BakedQuad` carries a colour and a lightmap per vertex, and
+  vanilla's item path reads neither — `renderQuadList` calls the `putBulkData` overload that passes
+  `readExistingColor = false` and overwrites the lightmap outright. This is what slice 2 recorded
+  as "materials that tint a greyscale sprite render grey on items". It is more than materials:
+  every dyed, potion-tinted and fluid-tinted modifier overlay, and every modifier declaring a
+  `luminosity` — fiery, glowing, haste, lightspeed, unbreakable. The redirect passes the baked
+  colour through and takes the brighter of the two light levels per channel. Vanilla models bake
+  opaque white with a zero lightmap, and both compose, so nothing else changes.
+
+**Item properties** came with it, because they are what the tool models' `overrides` read. Two
+1.21 obstacles: `ItemProperties.register` is private (widened, as Forge had an open registration),
+and it only accepts a `ClampedItemPropertyFunction`, whose `call` clamps to `[0,1]` — while
+`tconstruct:charging` reaches 2.5 and `tconstruct:ammo` reaches 2 to *name* a variant rather than
+give a fraction. Clamping would have collapsed those onto one model; overriding `call` keeps them.
+Vanilla resolves an unregistered property to zero rather than complaining, so the whole class of
+bug is silent: broken tools would have kept their intact texture and a drawn bow never changed
+pose.
+
+**A crash the round found by accident, unrelated to models.** One validation run was taken into a
+world, and a skeleton ticking there threw `ArrayIndexOutOfBoundsException: Index 6 out of bounds
+for length 6` out of `EquipmentContext`. 1.21 added the `BODY` equipment slot for animal armour, taking the count
+from six to seven, and four classes sized arrays to a literal six and indexed them by
+`EquipmentSlot#getFilterFlag()` — `EquipmentContext`, `ModifierMaxLevel`, `AttributeModule` and
+`SlotInChargeModule`. Any armoured wolf, horse or llama in range crashed the server tick. They now
+size from `Util.EQUIPMENT_SLOTS`. That fix is verified by inspection only — the acceptance run below
+stops at the title screen, so a world run belongs in the next round's checks.
+
+Smaller things settled on the way: the `tconstruct:smashing` tank helper registers (its modifier
+model needed it), `ISafeManagerReloadListener` lost the `if (true)` left over from removing
+Forge's loading-state guard, and the tool tint handler and the four client reload listeners are
+wired.
+
+**Making the result checkable.** The bridge falls through silently for an unregistered loader — by
+design, since another mod's `loader` key is none of our business — which is exactly how slice 1's
+regression stayed hidden. It now reports what each loader claimed once per reload, so a missing
+registration reads as a number rather than as nothing:
+
+```
+Resolved 236 models through custom geometry: tconstruct:fluid_container=71,
+tconstruct:fluid_texture=2, tconstruct:gui=1, tconstruct:material=29,
+tconstruct:material_block=3, tconstruct:tank=8, tconstruct:tool=122
+```
+
+All 122 tool models resolve. The rest of the run is clean too: 139 material render infos, 139
+blocks given their declared render layer, 43 shield banner sprites, 72 fluids registered for
+rendering, and zero hits for parent errors, discarded resource packs, missing models, missing
+textures, atlas parse failures, modifier-map parse failures or mixin failures.
 
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
