@@ -104,6 +104,21 @@ public abstract class BakedModelWrapper<T extends BakedModel> implements BakedMo
   }
 
   /**
+   * Swaps a model for its display-context variant and applies that variant's transforms.
+   *
+   * <p>Shim for Forge's {@code ForgeHooksClient.handleCameraTransforms}, for the render paths that
+   * place an item model by hand rather than going through {@code ItemRenderer.render} — where
+   * {@code ItemRendererModelSwapMixin} does the same job.
+   */
+  public static BakedModel applyTransform(BakedModel model, ItemDisplayContext displayContext, PoseStack poseStack, boolean leftHand) {
+    if (model instanceof BakedModelWrapper<?> wrapper) {
+      return wrapper.applyTransform(displayContext, poseStack, leftHand);
+    }
+    model.getTransforms().getTransform(displayContext).apply(leftHand, poseStack);
+    return model;
+  }
+
+  /**
    * Swaps the model and applies its transforms in one call, as Forge's
    * {@code IForgeBakedModel.applyTransform} did.
    *

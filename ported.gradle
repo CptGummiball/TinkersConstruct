@@ -260,3 +260,23 @@ slimeknights/tconstruct/library/client/model/TinkerItemProperties.java
 # tconstruct:tool itself, 122 model files, the last of the six geometry consumers.
 slimeknights/tconstruct/library/client/model/tools/ToolModel.java
 slimeknights/tconstruct/tools/client/OverslimeModifierModel.java
+
+# --- Phase 5 slice 4: armor rendering ---
+# The armor model tree on Fabric's ArmorRenderer: the manager reading tinkering/armor_models, the
+# multilayer model it drives, and the texture supplier types the layers name.
+slimeknights/tconstruct/library/client/armor/**
+slimeknights/tconstruct/library/tools/item/armor/ArmorModelItem.java
+# Slimeskull draws a second model under the helmet; the fishing hook uses the same texture suppliers.
+slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
+slimeknights/tconstruct/tools/client/material/CombatFishingHookRenderer.java
+# Head models the slimeskull draws under the helmet, plus the block-model skull renderer they use.
+slimeknights/tconstruct/world/client/BlockModelSkullRenderer.java
+slimeknights/tconstruct/world/client/SkullModelHelper.java
+slimeknights/tconstruct/world/client/DragonSkullModel.java
+# The world module's client half: slime renderers, plant colours, particles, mob head models.
+slimeknights/tconstruct/world/client/**
+slimeknights/tconstruct/world/WorldClientEvents.java
+slimeknights/tconstruct/fabric/client/SkullModelRegistry.java
+# Particles: the slime splash and the tool attack sprites.
+slimeknights/tconstruct/library/client/particle/**
+slimeknights/tconstruct/fabric/client/ClientReloadListeners.java

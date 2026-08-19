@@ -1039,6 +1039,63 @@ blocks given their declared render layer, 43 shield banner sprites, 72 fluids re
 rendering, and zero hits for parent errors, discarded resource packs, missing models, missing
 textures, atlas parse failures, modifier-map parse failures or mixin failures.
 
+### Phase 5, slice 4: armor rendering + the world module's client half — **DONE, 5 armor models load clean**
+
+Tinkers armor is not a texture, it is a stack of layers named by a JSON model — dyed, trimmed,
+material-tinted, with an elytra layer on the chest — and the slimeskull additionally draws a second
+model under the helmet. Forge reached all of it through `IClientItemExtensions`, a hook on the
+item; Fabric has no such hook and does not need one.
+
+- **Fabric's `ArmorRenderer` is the better fit, and simplified the port.** It is registered per item
+  and is handed the `MultiBufferSource` directly. Forge's hook only ever saw a single
+  `VertexConsumer`, which a layered model cannot use — each layer draws with its own texture —
+  so upstream scraped the buffer off `RenderLivingEvent.Pre` into a static field. That event
+  and its listener pair are gone; the buffer is set around the one call that reads it. Items say
+  which model they want through a new `ArmorModelItem`, and the renderer registration walks the item
+  registry, so an addon needs only that interface — as much as Forge's hook asked of it. Fabric's
+  own mixin suppresses vanilla's armor layer for registered items, so nothing draws twice.
+- **`Model#renderToBuffer` lost its four float colour channels in 1.21**, replaced by one packed
+  ARGB int. That reached nine files and the `ArmorTexture` interface; composing a layer's own tint
+  over the caller's is now `FastColor.ARGB32.multiply` instead of four multiplications.
+- **Armor trims** needed the 1.21 split trim sheet (`armorTrimsSheet(true)` for the decal variant),
+  and the whole `getArmorFoilBuffer` call site lost a parameter.
+- **The combat fishing bobber** came in with them, having waited on these very texture suppliers
+  since the renderer round. Its vertex chain is rewritten for 1.21 — `addVertex`/`setColor`/`setUv`
+  and no `endVertex` — and it takes the pose rather than a separate normal matrix. Vanilla's
+  `stringVertex` went private, so the bobber's line is drawn through an access widener rather than a
+  copy of the geometry.
+
+**The world module's client half came with it**, because the slimeskull's head models are registered
+there and the slime renderers draw armor. All of it is live now: the slime and terracube renderers,
+the plant colours, the slime particles, and the mob heads.
+
+- **Modded skull types have no hook at all in 1.21.** Forge fired
+  `EntityRenderersEvent.CreateSkullModels`; vanilla builds the map in
+  `SkullBlockRenderer.createSkullRenderers` from a hardcoded list of its own types, so a
+  modded `SkullBlock.Type` renders as nothing. A mixin appends to the returned map from a
+  registry filled at client init — registration and baking have to be separate, since the entity
+  model set only exists once renderers are being built.
+- **`SlimeArmorLayer` needed a real 1.21 rewrite**, not an import swap: it reimplements vanilla's
+  humanoid armor layer to put a helmet on a slime, and every piece of that moved. `DyeableLeatherItem`
+  is gone (dye is a component), the `_layer_1` plus `_overlay` texture pair became
+  `ArmorMaterial.Layer`, the armor location cache went away, and the skull owner moved from a
+  `SkullOwner` tag to the profile component. The Tinkers branch now builds the layered model
+  directly, since `ForgeHooksClient.getArmorModel` has no counterpart outside an `ArmorRenderer` and
+  a slime's helmet is not one.
+- Two more private members opened by widener rather than copied: `BreakingItemParticle`'s
+  constructor, which the slime splash subclasses, and `SkullBlockRenderer.SKIN_BY_TYPE`, which names
+  a texture per skull type. `ItemRenderer.renderModelLists` joins them, for the block-model skull
+  that draws an item model inside an entity model — and that skull's camera-transform call became a
+  static on `BakedModelWrapper`, the same swap the tool model's mixin performs.
+- `ClientEventBase` lost the `BlockColors`/`ItemColors` parameters from all three helpers: Forge
+  handed those to the registration event, Fabric registers statically.
+
+Confirmed in a running client: **5 armor models loaded**, no item left naming a model that does not
+exist, all 236 custom-geometry models still resolving, and zero hits for missing models, missing
+textures, atlas failures, modifier-map failures or mixin failures. What a title-screen run cannot
+show is armor actually drawn on a body — that needs a world, and belongs in the next round's checks
+alongside the `BODY` equipment slot fix from slice 3.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

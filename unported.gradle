@@ -119,9 +119,9 @@ slimeknights/tconstruct/fluids/FluidClientEvents.java
 slimeknights/tconstruct/fluids/data/**
 
 # --- world module: pieces deferred from the phase-4 gate-in ---
-# client renderers/colors (phase 5)
-slimeknights/tconstruct/world/WorldClientEvents.java
-slimeknights/tconstruct/world/client/**
+# (armor round) the world module's client half gated in whole: the slime and terracube renderers,
+# the plant colours, the slime particles, and the mob head models the slimeskull draws under a
+# helmet. WorldClientEvents is now called from the client entrypoint.
 # datagen providers (phase 7)
 slimeknights/tconstruct/world/data/**
 # (event-layer round) WorldEvents + AncientToolItemListing gated in: shim visibility/drops
@@ -194,14 +194,11 @@ slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
 slimeknights/tconstruct/tools/client/ClientInteractionHandler.java
 slimeknights/tconstruct/tools/client/ModifierClientEvents.java
 slimeknights/tconstruct/tools/client/RayTracer.java
-slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
 slimeknights/tconstruct/tools/client/ToolContainerScreen.java
 slimeknights/tconstruct/tools/client/ToolRenderEvents.java
 # (renderer round) CrystalshotRenderer, FluidEffectProjectileRenderer, ThrownToolRenderer and
-# ThrownShurikenRenderer gated in, along with a ToolClientEvents holding just their registrations.
-# The fishing bobber renderer stays parked: it reads MaterialRenderInfoLoader and the armor texture
-# suppliers (both unported), and 1.21 made FishingHookRenderer#stringVertex private.
-slimeknights/tconstruct/tools/client/material/CombatFishingHookRenderer.java
+# ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
+# gated in with the armor texture suppliers they read.
 slimeknights/tconstruct/tools/data/client/**
 slimeknights/tconstruct/tools/data/sprite/**
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle

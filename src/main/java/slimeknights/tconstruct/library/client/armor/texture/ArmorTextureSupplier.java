@@ -40,10 +40,15 @@ public interface ArmorTextureSupplier extends IHaveLoader {
   /** Pair of texture and color */
   interface ArmorTexture {
     /** Empty instance since caches don't support caching null. */
-    ArmorTexture EMPTY = (model, matrices, bufferSource, packedLight, packedOverlay, red, green, blue, alpha, hasGlint) -> {};
+    ArmorTexture EMPTY = (model, matrices, bufferSource, packedLight, packedOverlay, color, hasGlint) -> {};
 
-    /** Renders this texture to the given model */
-    void renderTexture(Model model, PoseStack matrices, MultiBufferSource bufferSource, int packedLight, int packedOverlay, float red, float green, float blue, float alpha, boolean hasGlint);
+    /**
+     * Renders this texture to the given model.
+     *
+     * @param color  Packed ARGB tint. 1.21 replaced the four float channels {@code Model} used to
+     *               take with this single value; -1 is untinted.
+     */
+    void renderTexture(Model model, PoseStack matrices, MultiBufferSource bufferSource, int packedLight, int packedOverlay, int color, boolean hasGlint);
   }
 
   /** Texture variants, armor is used for helmet, chestplate, and boots, while leggings is leggings and wings is on chest for elytra */

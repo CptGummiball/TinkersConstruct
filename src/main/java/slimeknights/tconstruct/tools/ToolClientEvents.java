@@ -15,6 +15,11 @@ import slimeknights.mantle.client.ResourceColorManager;
 import slimeknights.mantle.event.MinecraftForge;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
+import slimeknights.tconstruct.fabric.client.ClientReloadListeners;
+import slimeknights.tconstruct.library.client.armor.ArmorModelManager;
+import slimeknights.tconstruct.library.client.armor.TinkerArmorRenderer;
+import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureLoaders;
+import slimeknights.tconstruct.library.client.armor.texture.TrimArmorTextureSupplier;
 import slimeknights.tconstruct.library.client.model.DynamicTextureLoader;
 import slimeknights.tconstruct.library.client.model.TinkerItemProperties;
 import slimeknights.tconstruct.library.client.model.tools.ToolModel;
@@ -31,12 +36,15 @@ import slimeknights.tconstruct.library.client.modifiers.TrimModifierModel;
 import slimeknights.tconstruct.library.client.modifiers.model.ModifierModelLoaders;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.ModifierManager;
+import slimeknights.tconstruct.library.utils.HarvestTiers;
 import slimeknights.tconstruct.library.utils.Util;
 import slimeknights.tconstruct.tools.client.OverslimeModifierModel;
 import slimeknights.tconstruct.tools.item.ModifierCrystalItem;
 import slimeknights.tconstruct.tools.modules.ranged.ammo.SmashingModule;
 
 import slimeknights.tconstruct.tools.client.CrystalshotRenderer;
+import slimeknights.tconstruct.tools.client.SlimeskullArmorModel;
+import slimeknights.tconstruct.tools.client.material.CombatFishingHookRenderer;
 import slimeknights.tconstruct.tools.client.FluidEffectProjectileRenderer;
 import slimeknights.tconstruct.tools.client.material.ThrownShurikenRenderer;
 import slimeknights.tconstruct.tools.client.material.ThrownToolRenderer;
@@ -70,6 +78,11 @@ public class ToolClientEvents extends ClientEventBase {
     EntityRendererRegistry.<ThrownTool>register(TinkerTools.thrownTool.get(), ThrownToolRenderer::new);
     EntityRendererRegistry.register(TinkerModifiers.fluidSpitEntity.get(), FluidEffectProjectileRenderer::new);
     EntityRendererRegistry.register(TinkerModifiers.fireball.get(), context -> new ThrownItemRenderer<>(context, 0.75f, true));
+    EntityRendererRegistry.register(TinkerTools.fishingHook.get(), CombatFishingHookRenderer::new);
+
+    // armor: the layer types a model can name, then a renderer per item that names a model
+    ArmorTextureLoaders.init();
+    TinkerArmorRenderer.init();
 
     // the legacy manager posts its registration event on its first reload, so this listener has to
     // be in place before the reload listeners registered below ever run
@@ -141,14 +154,16 @@ public class ToolClientEvents extends ClientEventBase {
    *
    * <p>Forge collected these through {@code RegisterClientReloadListenersEvent}; on Fabric each one
    * registers itself with {@code ResourceManagerHelper} and carries an id for reload ordering.
-   * SlimeskullArmorModel, HarvestTiers, ArmorModelManager and TrimArmorTextureSupplier are not here
-   * yet, as they belong to the armor slice.
    */
   private static void addResourceListeners() {
     ModifierModelManager.init();
     ModifierModelMapManager.init();
     DynamicTextureLoader.init();
+    ArmorModelManager.init();
     ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(MODIFIER_RELOAD_LISTENER);
+    ClientReloadListeners.register(TConstruct.getResource("slimeskull_models"), SlimeskullArmorModel.RELOAD_LISTENER);
+    ClientReloadListeners.register(TConstruct.getResource("harvest_tiers"), HarvestTiers.RELOAD_LISTENER);
+    ClientReloadListeners.register(TConstruct.getResource("armor_trim_cache"), TrimArmorTextureSupplier.CACHE_INVALIDATOR);
   }
 
   /** Registers the modifier models the legacy per-tool manager can name */
@@ -220,12 +235,6 @@ public class ToolClientEvents extends ClientEventBase {
     ColorProviderRegistry.ITEM.register(ToolModel.COLOR_HANDLER, item);
   }
 
-  // PORT: the fishing bobber renderer waits on the material render info slice. Forge registered
-  //   CombatFishingHookRenderer for TinkerTools.fishingHook; the renderer needs
-  //   MaterialRenderInfoLoader, library.client.armor.texture.ArmorTextureSupplier and
-  //   TintedArmorTexture, none of which are ported, and 1.21 made
-  //   FishingHookRenderer#stringVertex private so the line drawing has to be recreated.
-
   // PORT: keybinds and the input handling wait on the tool interaction slice. Forge registered
   //   HELMET_INTERACT (z) and LEGGINGS_INTERACT (i) through RegisterKeyMappingsEvent, then listened
   //   to PlayerTickEvent and MovementInputUpdateEvent to send TinkerControlPacket and to apply the
@@ -235,7 +244,7 @@ public class ToolClientEvents extends ClientEventBase {
   // PORT: the tool container screen and the book's fallback parts still wait. Forge did both from
   //   FMLClientSetupEvent: MenuScreens.register for TinkerTools.toolContainer with
   //   ToolContainerScreen, and AbstractMaterialContent.registerFallbackPart for the fake ingot and
-  //   storage block. AbstractArmorModel.init() belongs to the armor slice.
+  //   storage block.
 
   // PORT: particle factories wait on the particle slice. Forge registered AttackParticle.Factory as
   //   a sprite set for hammerAttackParticle, axeAttackParticle and bonkAttackParticle through

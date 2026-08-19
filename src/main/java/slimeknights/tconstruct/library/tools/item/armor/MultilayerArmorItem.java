@@ -6,7 +6,7 @@ import slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinition;
 
 /** Armor model that applies multiple texture layers in order */
-public class MultilayerArmorItem extends ModifiableArmorItem {
+public class MultilayerArmorItem extends ModifiableArmorItem implements ArmorModelItem {
   private final ResourceLocation name;
   public MultilayerArmorItem(ModifiableArmorMaterial material, ArmorItem.Type slot, Properties properties) {
     this(material, slot, properties, material.getId());
@@ -26,5 +26,8 @@ public class MultilayerArmorItem extends ModifiableArmorItem {
     this.name = name;
   }
 
-  // phase 5: Forge getArmorTexture and initializeClient armor model dispatch return with the client armor system
+  @Override
+  public ResourceLocation getArmorModelName() {
+    return name;
+  }
 }

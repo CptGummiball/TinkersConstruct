@@ -55,6 +55,7 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     // each *ClientEvents class; the two below carry only their renderer registrations so far.
     slimeknights.tconstruct.tools.ToolClientEvents.init();
     slimeknights.tconstruct.gadgets.GadgetClientEvents.init();
+    slimeknights.tconstruct.world.WorldClientEvents.init();
 
     // Further client modules are wired in as each one finishes porting; see PORTING.md.
   }

@@ -246,3 +246,16 @@ accessible field net/minecraft/client/Minecraft itemColors Lnet/minecraft/client
 # Forge exposed an open registration. Every tconstruct:tool model names tconstruct:broken and
 # tconstruct:charging in its overrides, which resolve to zero unless these are registered.
 accessible method net/minecraft/client/renderer/item/ItemProperties register (Lnet/minecraft/world/item/Item;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/item/ClampedItemPropertyFunction;)V
+# --- Phase 5, armor rendering ---
+# ItemRenderer.renderModelLists — the block-model skull draws an item model by hand inside an
+# entity model; Forge exposed this through its AT for the same reason.
+accessible method net/minecraft/client/renderer/entity/ItemRenderer renderModelLists (Lnet/minecraft/client/resources/model/BakedModel;Lnet/minecraft/world/item/ItemStack;IILcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;)V
+# FishingHookRenderer.stringVertex — the combat bobber reuses vanilla's line geometry rather than
+# copying it; 1.21 made the helper private.
+accessible method net/minecraft/client/renderer/entity/FishingHookRenderer stringVertex (FFFLcom/mojang/blaze3d/vertex/VertexConsumer;Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FF)V
+# SkullBlockRenderer.SKIN_BY_TYPE — the mod adds its own SkullBlock.Type values and has to name a
+# texture for each; vanilla keeps the map private, Forge exposed it through its AT.
+accessible field net/minecraft/client/renderer/blockentity/SkullBlockRenderer SKIN_BY_TYPE Ljava/util/Map;
+# BreakingItemParticle's constructor — the slime splash particle subclasses it; vanilla keeps the
+# constructor package-private, Forge's AT opened it.
+accessible method net/minecraft/client/particle/BreakingItemParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDDLnet/minecraft/world/item/ItemStack;)V
