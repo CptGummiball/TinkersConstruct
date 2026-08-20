@@ -290,4 +290,3 @@ accessible field net/minecraft/client/gui/font/FontManager fontSets Ljava/util/M
 # models find their texture names. Both fields are protected in 1.21.
 accessible field net/minecraft/client/renderer/block/model/BlockModel textureMap Ljava/util/Map;
 accessible field net/minecraft/client/renderer/block/model/BlockModel parent Lnet/minecraft/client/renderer/block/model/BlockModel;
-

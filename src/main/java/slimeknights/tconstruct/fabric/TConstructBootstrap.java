@@ -122,6 +122,9 @@ public class TConstructBootstrap implements ModInitializer {
     slimeknights.tconstruct.common.TinkerTags.init();
     slimeknights.tconstruct.library.recipe.TinkerRecipeTypes.init();
     slimeknights.tconstruct.library.materials.MaterialRegistry.init();
+    // commands register their tag sources against the material registry, so they follow it
+    slimeknights.mantle.command.MantleCommand.init();
+    slimeknights.tconstruct.shared.command.TConstructCommand.init();
     slimeknights.tconstruct.library.tools.definition.ToolDefinitionLoader.init();
     slimeknights.tconstruct.library.tools.layout.StationSlotLayoutLoader.init();
     slimeknights.tconstruct.library.utils.DomainDisplayName.init();

@@ -201,8 +201,10 @@ public final class MaterialRegistry {
     return INSTANCE.registry.getVisibleMaterials();
   }
 
-  // getTagSource() (mantle TagSource + MaterialTagSource) is cut until the command layer
-  // ports; it existed solely for /tconstruct material tag commands.
+  /** Tag source for the /tconstruct and /mantle tag commands */
+  public static slimeknights.mantle.command.argument.TagSource<IMaterial> getTagSource() {
+    return new slimeknights.tconstruct.shared.command.argument.MaterialTagSource(INSTANCE.materialManager);
+  }
 
 
   /* Stats */

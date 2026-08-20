@@ -89,6 +89,7 @@ public class TinkerNetwork extends NetworkWrapper {
     instance.registerPacket(UpdateToolDefinitionDataPacket.class, UpdateToolDefinitionDataPacket::new, NetworkDirection.PLAY_TO_CLIENT);
     instance.registerPacket(UpdateTinkerSlotLayoutsPacket.class, UpdateTinkerSlotLayoutsPacket::new, NetworkDirection.PLAY_TO_CLIENT);
     instance.registerPacket(UpdateFluidEffectsPacket.class, UpdateFluidEffectsPacket::decode, NetworkDirection.PLAY_TO_CLIENT);
+    instance.registerPacket(slimeknights.tconstruct.shared.network.GeneratePartTexturesPacket.class, slimeknights.tconstruct.shared.network.GeneratePartTexturesPacket::new, NetworkDirection.PLAY_TO_CLIENT);
 
     // tables
     instance.registerPacket(StationTabPacket.class, StationTabPacket::new, NetworkDirection.PLAY_TO_SERVER);

@@ -61,6 +61,15 @@ public class BookScreen extends Screen {
 
   /** Page index meaning the cover is showing */
   public static final int COVER_PAGE = -1;
+  /** Width of one page half of the book texture, used by the export command to size its render target */
+  public static final int PAGE_WIDTH_UNSCALED = 206;
+  /** Height of the book texture, used by the export command to size its render target */
+  public static final int PAGE_HEIGHT_UNSCALED = 200;
+
+  /** When false the page-turn arrows are not created; the export command renders spreads without them */
+  public boolean drawArrows = true;
+  /** When false the vanilla screen background stays out, so exported pages keep a transparent backdrop */
+  public boolean drawBackground = true;
 
   public final BookData book;
   private final PageUpdater updater;
@@ -106,6 +115,10 @@ public class BookScreen extends Screen {
     int color = this.book.appearance.arrowColor;
     int hover = this.book.appearance.arrowColorHover;
 
+    if (!drawArrows) {
+      buildPages();
+      return;
+    }
     this.previousButton = this.addRenderableWidget(new ArrowButton(texture,
       this.bookLeft + LEFT_PAGE_X, this.bookTop + PAGE_Y + PAGE_HEIGHT + 2, ArrowType.LEFT, color, hover, b -> previousPage()));
     this.nextButton = this.addRenderableWidget(new ArrowButton(texture,
@@ -153,6 +166,18 @@ public class BookScreen extends Screen {
     this.page = this.history.pop();
     buildPages();
     savePage();
+  }
+
+  /** Advances one spread for the export command, reporting whether the page actually moved */
+  public boolean advancePageForExport() {
+    int before = this.page;
+    nextPage();
+    return this.page != before;
+  }
+
+  /** Current left page index, {@link #COVER_PAGE} for the cover; for the export command's file names */
+  public int getPageForExport() {
+    return this.page;
   }
 
   public void nextPage() {
@@ -219,7 +244,9 @@ public class BookScreen extends Screen {
 
   @Override
   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-    this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+    if (drawBackground) {
+      this.renderBackground(graphics, mouseX, mouseY, partialTicks);
+    }
     RenderSystem.enableBlend();
 
     if (this.page == COVER_PAGE) {

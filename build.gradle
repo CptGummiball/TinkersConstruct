@@ -132,6 +132,12 @@ loom {
             vmArg '-Dtconstruct.blockHarness=true'
             runDir 'run'
         }
+        clientCommands {
+            inherit clientWorld
+            name 'Minecraft Client (command harness)'
+            vmArg '-Dtconstruct.commandHarness=true'
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server

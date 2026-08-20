@@ -97,14 +97,10 @@ slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 
 # --- shared module: pieces deferred from the phase-4 gate-in ---
 # client work (phase 5)
-slimeknights/tconstruct/shared/TinkerClient.java
 # (model data round) CommonsClientEvents + the fluid particle gated in; the part-texture
 # generation command stays with the datagen phase.
-slimeknights/tconstruct/shared/client/ClientGeneratePartTexturesCommand.java
 # commands step: argument types + MaterialRegistry.getTagSource decision
-slimeknights/tconstruct/shared/command/**
 # server->client packet whose handler is the phase-5 texture-gen command
-slimeknights/tconstruct/shared/network/GeneratePartTexturesPacket.java
 # datagen providers (phase 7)
 slimeknights/tconstruct/shared/data/**
 # (event-layer round) CommonsEvents + AchievementEvents gated in on the shim bus
@@ -149,6 +145,8 @@ slimeknights/tconstruct/library/recipe/material/MaterialsConsumerBuilder.java
 slimeknights/tconstruct/library/recipe/material/ShapedMaterialConsumerBuilder.java
 slimeknights/tconstruct/library/recipe/melting/MaterialMeltingRecipeBuilder.java
 slimeknights/tconstruct/library/recipe/melting/MeltingRecipeBuilder.java
+# generate melting_recipes serializes through the recipe builders above, so it waits with them
+slimeknights/tconstruct/shared/command/subcommand/GenerateMeltingRecipesCommand.java
 slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractModifierRecipeBuilder.java
 slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractMultilevelModifierRecipeBuilder.java
 slimeknights/tconstruct/library/recipe/modifiers/adding/IncrementalModifierRecipeBuilder.java
@@ -179,13 +177,14 @@ slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # (renderer round) smeltery/client/render/** and smeltery/client/util/** gated in, along with the
 # renderer and reload-listener registrations in SmelteryClientEvents; only the model-loader and
 # ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
-slimeknights/tconstruct/smeltery/data/**
+slimeknights/tconstruct/smeltery/data/Byproduct.java
+slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
+slimeknights/tconstruct/smeltery/data/SmelteryRecipeProvider.java
 # --- Phase 5 client model slice: what stayed out ---
 # (tool model round) ToolModel and the whole library/client/modifiers tree gated in, along with
 # ReversedListBuilder and the IModelBuilder shim. tconstruct:tool is live.
 # Datagen-only: the sprite generator info hanging off a material render info; it reaches into
 # library/client/data, which is the phase-7 texture generation tree.
-slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
 
 # --- tools round parks ---
 # client rendering + models (phase 5)
@@ -195,7 +194,6 @@ slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
 # ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
 # gated in with the armor texture suppliers they read.
 slimeknights/tconstruct/tools/data/client/**
-slimeknights/tconstruct/tools/data/sprite/**
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
 slimeknights/tconstruct/tools/data/ArmorModelProvider.java
 slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java

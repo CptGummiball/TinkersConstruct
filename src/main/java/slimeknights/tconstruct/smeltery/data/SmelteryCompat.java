@@ -3,9 +3,8 @@ package slimeknights.tconstruct.smeltery.data;
 import lombok.Getter;
 import net.minecraft.core.HolderSet.Named;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.fluids.ForgeFlowingFluid;
+import slimeknights.mantle.transfer.fluid.ForgeFlowingFluid;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import org.jetbrains.annotations.Nullable;
 import slimeknights.mantle.registration.object.FluidObject;
@@ -129,7 +128,7 @@ public enum SmelteryCompat {
   /** Checks if the given tag exists */
   @SuppressWarnings("deprecation")
   private static boolean ingotPresent(String name) {
-    Optional<Named<Item>> tag = BuiltInRegistries.ITEM.getTag(ItemTags.create(commonResource("ingots/" + name)));
+    Optional<Named<Item>> tag = BuiltInRegistries.ITEM.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, commonResource("ingots/" + name)));
     return tag.isPresent() && tag.get().size() > 0;
   }
 }

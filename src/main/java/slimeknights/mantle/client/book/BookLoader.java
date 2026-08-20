@@ -114,6 +114,16 @@ public final class BookLoader {
     return BOOKS.get(id);
   }
 
+  /** All registered book ids, for command suggestions */
+  public static java.util.Set<ResourceLocation> getAllBooks() {
+    return java.util.Collections.unmodifiableSet(BOOKS.keySet());
+  }
+
+  /** Drops every book's built data, forcing a rebuild on next open; cheaper than a resource reload when writing book JSON */
+  public static void resetAllBooks() {
+    BOOKS.values().forEach(BookData::reset);
+  }
+
   /** Registers a page content type under the id its JSON names */
   public static void registerPageType(ResourceLocation id, Class<? extends PageContent> clazz) {
     Class<? extends PageContent> existing = PAGE_TYPES.put(id, clazz);

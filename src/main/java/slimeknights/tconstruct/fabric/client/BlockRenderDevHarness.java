@@ -96,7 +96,20 @@ public final class BlockRenderDevHarness {
       Screenshot.grab(minecraft.gameDirectory, "blocks_model_data.png", minecraft.getMainRenderTarget(),
                       message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
     }
-    if (ticks > 80) {
+    if (ticks == 80) {
+      // stand inside the clear glass: the transparent overlay mixin must show the glass texture
+      // instead of vanilla's opaque black wall
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
+        var serverPlayer = server.getPlayerList().getPlayers().get(0);
+        serverPlayer.teleportTo(serverPlayer.serverLevel(), ORIGIN.getX() + 0.5, ORIGIN.getY(), ORIGIN.getZ() + 5.5, 180, 0);
+      }
+    }
+    if (ticks == 95) {
+      Screenshot.grab(minecraft.gameDirectory, "blocks_overlay.png", minecraft.getMainRenderTarget(),
+                      message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
+    }
+    if (ticks > 115) {
       TConstruct.LOG.info("[block harness] done");
       minecraft.stop();
     }
@@ -167,6 +180,11 @@ public final class BlockRenderDevHarness {
       // a two-high pane column: panes connect through their own predicate and multipart models
       level.setBlock(ORIGIN.offset(5, 0, 3), TinkerCommons.clearGlassPane.get().defaultBlockState(), 3);
       level.setBlock(ORIGIN.offset(5, 1, 3), TinkerCommons.clearGlassPane.get().defaultBlockState(), 3);
+
+      // a soul glass block to stand in: the transparent-overlay tag must swap vanilla's opaque
+      // in-a-block wall for the see-through version when the harness steps inside later
+      level.setBlock(ORIGIN.offset(0, 0, 5), TinkerCommons.soulGlass.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(0, 1, 5), TinkerCommons.soulGlass.get().defaultBlockState(), 3);
 
       // the slime-metal storage blocks: queen's slime is the colored_block loader (baked glow),
       // slimesteel and cinderslime are forge:composite (opaque frame + translucent overlay)

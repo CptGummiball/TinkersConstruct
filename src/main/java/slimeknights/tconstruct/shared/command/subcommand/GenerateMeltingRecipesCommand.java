@@ -30,11 +30,9 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fluids.capability.IFluidHandlerItem;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.FluidTank;
 import org.apache.commons.lang3.mutable.MutableInt;
 import slimeknights.mantle.command.GeneratePackHelper;
 import slimeknights.mantle.command.MantleCommand;
@@ -147,11 +145,12 @@ public class GenerateMeltingRecipesCommand {
 
     // iterate all recipes and try adding a melting recipe
     MeltingCache cache = new MeltingCache();
-    for (Recipe<?> recipe : level.getRecipeManager().getAllRecipesFor((RecipeType<T>) recipeType.get())) {
+    for (net.minecraft.world.item.crafting.RecipeHolder<?> holder : level.getRecipeManager().getAllRecipesFor((RecipeType<T>) recipeType.get())) {
       // skip any recipes that are specifically blacklisted
-      if (skipRecipes.contains(recipe.getId())) {
+      if (skipRecipes.contains(holder.id())) {
         continue;
       }
+      Recipe<?> recipe = holder.value();
       ItemStack resultStack = recipe.getResultItem(access);
       // don't bother with results that have NBT unless its a damagable item, in which case we ignore NBT and hope for the best
       // also skip anything already meltable
@@ -301,7 +300,7 @@ public class GenerateMeltingRecipesCommand {
 
     /** Creates a transfer from a fluid stack instance */
     public static MeltingResult from(FluidStack fluid) {
-      return new MeltingResult(fluid, null, Math.max(100, fluid.getFluid().getFluidType().getTemperature(fluid) - 300));
+      return new MeltingResult(fluid, null, Math.max(100, slimeknights.tconstruct.library.recipe.melting.IMeltingRecipe.getTemperature(fluid)));
     }
 
     /** Creates a copy of this with the given amount */
@@ -432,12 +431,12 @@ public class GenerateMeltingRecipesCommand {
       if (item instanceof BucketItem bucket) {
         Fluid fluid = bucket.getFluid();
         if (fluid != Fluids.EMPTY) {
-          return MeltingResult.from(new FluidStack(fluid, FluidType.BUCKET_VOLUME));
+          return MeltingResult.from(new FluidStack(fluid, FluidStack.BUCKET_VOLUME));
         }
       }
       // fluid capability check
       try {
-        IFluidHandlerItem capability = LogicHelper.orElseNull(stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM));
+        IFluidHandler capability = slimeknights.mantle.transfer.TransferUtil.getFluidHandlerItem(stack).orElse(null);
         if (capability != null) {
           FluidStack contained = capability.getFluidInTank(0);
           if (!contained.isEmpty()) {

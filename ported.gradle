@@ -19,6 +19,11 @@ slimeknights/mantle/recipe/condition/ConditionHelper.java
 slimeknights/mantle/Mantle.java
 slimeknights/mantle/util/typed/**
 slimeknights/mantle/util/JsonHelper.java
+slimeknights/mantle/util/TablePrinter.java
+slimeknights/mantle/command/**
+slimeknights/mantle/data/datamap/**
+slimeknights/mantle/data/GenericDataProvider.java
+slimeknights/mantle/data/ExistingFileHelper.java
 slimeknights/mantle/util/RegistryHelper.java
 slimeknights/mantle/registration/object/IdAwareObject.java
 slimeknights/mantle/data/JsonCodec.java
@@ -199,6 +204,22 @@ slimeknights/tconstruct/library/client/materials/package-info.java
 slimeknights/tconstruct/library/client/materials/MaterialTextureField.java
 slimeknights/tconstruct/library/client/materials/MaterialRenderInfo.java
 slimeknights/tconstruct/library/client/materials/MaterialRenderInfoLoader.java
+slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
+slimeknights/tconstruct/library/client/data/GenericTextureGenerator.java
+slimeknights/tconstruct/library/client/data/spritetransformer/**
+slimeknights/tconstruct/library/client/data/util/package-info.java
+slimeknights/tconstruct/library/client/data/util/AbstractSpriteReader.java
+slimeknights/tconstruct/library/client/data/util/ResourceManagerSpriteReader.java
+slimeknights/tconstruct/library/client/data/util/DataGenSpriteReader.java
+slimeknights/tconstruct/library/client/data/material/package-info.java
+slimeknights/tconstruct/library/client/data/material/MaterialPartTextureGenerator.java
+slimeknights/tconstruct/library/client/data/material/AbstractMaterialSpriteProvider.java
+slimeknights/tconstruct/library/client/data/material/AbstractPartSpriteProvider.java
+slimeknights/tconstruct/library/client/data/material/GeneratorPartTextureJsonGenerator.java
+slimeknights/tconstruct/library/client/data/material/TrimMaterialPaletteGenerator.java
+slimeknights/tconstruct/tools/data/sprite/**
+slimeknights/tconstruct/smeltery/data/SmelteryCompat.java
+slimeknights/tconstruct/smeltery/data/package-info.java
 # Block geometry: the fluid-textured smeltery components and the tanks.
 slimeknights/tconstruct/library/client/model/block/package-info.java
 slimeknights/tconstruct/library/client/model/block/IncrementalFluidCuboid.java

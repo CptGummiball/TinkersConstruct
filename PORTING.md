@@ -1546,7 +1546,69 @@ init hook was added for them. If an addon compat phase needs them, wire the call
 entrypoint before the first resource reload.
 
 
-- [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
+### Phase 5, slice 10: the command layer — **DONE; phase 5 complete**
+
+The last parked pieces of phase 5: `/tconstruct` with its argument types and subcommands, the
+Mantle command framework it builds on, the client commands, the part texture generator they feed,
+and the two client hooks that had no home (block overlay, recipe cache reload).
+
+**Server commands.** `/tconstruct` registers modifiers/materials/tool_stats/slots/durability, the
+two report tables and `generate part_textures` + `generate hidden_fluids_tag`;
+`generate melting_recipes` waits for phase 7, since it serializes through the datagen recipe
+builders. `/mantle tags view|entries|dump|for|preference` and `/mantle sources data` came with the
+framework: TagSource/RegistryTagSource/TagSourceArgument port nearly clean, and Tinkers plugs its
+material and modifier registries in as custom tag sources — `MaterialRegistry.getTagSource()` is
+restored for exactly that. Forge's `TablePrinter` and `ModIdArgument` were rewritten
+(`slimeknights.mantle.util` / `.command`). Registration moved to `CommandRegistrationCallback`;
+the deferred argument-type register was already Fabric-shaped.
+
+**The hard-won lesson of the slice**: the server syncs its command tree to every joining client,
+and each argument type in the tree must be in the argument type registry — an unregistered one
+does not fail at registration but disconnects the client on join with the opaque message
+*"Invalid player data"* / *"Couldn't place player in world: Unrecognized argument type"*. The
+mod_id argument hit it; anything adding argument types must register them.
+
+**Client commands** live under `/mantle_client` rather than upstream's `/mantle`: Fabric consumes
+any typed command whose root literal exists in the client dispatcher, so sharing the root would
+swallow the server half. `book open`, `book export_images [scale]` (per book or per domain) and
+`clear_book_cache` are in; `export_html` stayed out — the reconstructed book elements carry no
+HTML serialization, and that export exists to feed SlimeKnights' website.
+
+**The book image export** could not keep upstream's shape. Upstream rendered every spread into an
+offscreen target in one call; on 1.21 too much of the gui pipeline fights that —
+`Screen.renderBlurredBackground` re-binds the main target *unconditionally* (blurred or not),
+every `GuiGraphics.blit` resets the blend function, and the net effect was pages accumulating at
+quarter alpha (measured: paper pixel 174 = texture 232 × 0.25 + backdrop 153 × 0.75, exactly).
+The port drives the export across real frames instead: open the screen, capture the freshly
+rendered window cropped to the book rectangle at a pinned gui scale, turn the page, repeat. The
+result is pixel-identical with the game; the trade is the world showing through the book's
+rounded corners and a few frames per spread.
+
+**Part texture generation** works end to end: `/tconstruct generate part_textures all` sends
+`GeneratePartTexturesPacket` (registered PLAY_TO_CLIENT), and the client generator reads the
+render info generators, traces the grey sprites and writes a complete resource pack — 10 427
+textures in ~5.5 s. That pulled the runtime slice of `library/client/data` through the gate
+(sprite transformers, sprite readers, `MaterialPartTextureGenerator`, `MaterialGeneratorInfo`)
+with a minimal `ExistingFileHelper` shim for the datagen signatures phase 7 will flesh out.
+`assets/mantle/lang/en_us.json` came over wholesale — the port had no Mantle lang at all, which
+showed as raw keys in command feedback.
+
+**TinkerClient** shrank to what nothing else had claimed: the sprite transformer serializers, and
+the transparent block overlay, now fed by `ScreenEffectRendererMixin`. 1.21's
+`getViewBlockingState` drops the block position, so the redirect repeats vanilla's eight-point
+scan keeping the position; soul glass from inside shows the glass texture instead of vanilla's
+opaque wall (harness-verified). `ClientPacketListenerRecipesUpdatedMixin` replaces
+`RecipesUpdatedEvent` for the recipe cache reload.
+
+**Validation.** New `runClientCommands` harness joins a world and proves five things in one run:
+both command roots registered; `/tconstruct modifiers @s add tconstruct:haste 1` lands on the held
+tool (asserted on the stack, not just chat); `/mantle tags view minecraft:item minecraft:planks`
+lists the tag; the part texture pipeline writes its 10 427 files; the book export writes 98
+readable spreads. The block harness gained the soul-glass overlay shot. Chat protocol screenshot
+kept as the visual record.
+
+
+- [x] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
