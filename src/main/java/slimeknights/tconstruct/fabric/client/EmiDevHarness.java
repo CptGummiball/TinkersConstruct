@@ -22,7 +22,8 @@ public final class EmiDevHarness {
   private static final List<EmiRecipeCategory> CATEGORIES = List.of(
     TConstructEmiPlugin.CASTING_TABLE, TConstructEmiPlugin.CASTING_BASIN, TConstructEmiPlugin.MELTING,
     TConstructEmiPlugin.FOUNDRY, TConstructEmiPlugin.ALLOY, TConstructEmiPlugin.ENTITY_MELTING,
-    TConstructEmiPlugin.MOLDING);
+    TConstructEmiPlugin.MOLDING, TConstructEmiPlugin.MODIFIERS, TConstructEmiPlugin.MODIFIER_WORKTABLE,
+    TConstructEmiPlugin.TOOL_BUILDING, TConstructEmiPlugin.PART_BUILDER, TConstructEmiPlugin.SEVERING);
 
   private static int ticks = 0;
   private static int category = 0;

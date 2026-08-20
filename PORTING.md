@@ -1646,6 +1646,33 @@ for tools/parts, recipe-fill handlers, fluid-unit tooltips (ingots/blocks) on th
 card renders its tank empty (likely the retextured table recipes).
 
 
+### Phase 6, slice 12: EMI, wave 2 — the tables family; the JEI replacement is complete
+
+The remaining five categories: **modifiers** (273 pages — the five station inputs with their
+purpose icons when empty, the modifier named and iconed at the top, level bounds, the slot cost
+drawn from the same data-keyed model sprites the creative slot item uses, requirement errors as
+tooltips, tool before and after), **modifier worktable**, **tool building** (the station layout's
+part slots over the giant translucent tool render, materials cycling in sync with the result),
+**part builder** (pattern face drawn from its texture, material cost, colored material name) and
+**severing** (the spinning entity box, shared with entity melting through a base-class helper).
+
+Modifiers are first-class EMI stacks now (`ModifierEmiStack`): keyed by modifier id, rendered
+through the modifier icon manager, named with the level — so they work as outputs, as cycling
+worktable options, and as the workstation icons of the severing and melting categories.
+Tools, tool parts and potion buckets get `Comparison.compareComponents`, so material variants
+stay distinct in the index instead of collapsing onto one entry.
+
+Two early-init traps worth remembering: EMI scans entrypoints long before datapacks load, so
+category icons must not call `getRenderTool` in static init (it caches whatever it built first —
+the icons resolve lazily on first draw); and the worktable/severing display interfaces carry no
+recipe ids on 1.21, so those EMI recipes go id-less.
+
+**Still open on EMI**, none blocking the pack: recipe-fill handlers for the tinker station and
+crafting station, ids for the recipes mantle's helper strips holders from, the empty-looking
+first casting card (retextured table recipes), and `tag.*` translations (the convention postdates
+upstream's lang file; EMI shows raw ids in dev mode).
+
+
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
