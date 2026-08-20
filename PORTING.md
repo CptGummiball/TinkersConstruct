@@ -1445,10 +1445,57 @@ rebaked model.
 
 **One thing the harness found and this slice does not fix**: the tank draws no fluid, and neither do
 the faucets, channels or casting basins. It is not model data — the renderer runs, finds its fluid
-cuboid, and resolves the fluid's sprite; the quads simply never reach the screen. Lighting and
-upload sorting are both ruled out, and swapping in a vanilla render type crashes on the vertex
-format, which proves the vertices are written. That leaves the custom `mantle_fluid` render type,
-and it belongs to the renderer slice rather than this one.
+cuboid, and resolves the fluid's sprite; the quads simply never reach the screen. Handed to the next
+slice with `mantle_fluid`, the custom render type, named as the suspect. **It was not the render
+type** — see slice 8.
+
+### Phase 5, slice 8: render layers — **DONE; 42 blocks were on the wrong one**
+
+Every fluid a block entity draws was invisible: tanks, gauges, the smeltery and foundry contents,
+faucets, channels, casting tables and basins. Slice 7 handed this over with the custom
+`mantle_fluid` render type named as the suspect, on the grounds that a custom type goes into the
+shared buffer rather than a fixed one. That was wrong, and worth writing down as a lesson: the
+suspect was the piece of the port that looked least like vanilla, which is a bias, not evidence.
+
+Two experiments closed it in one sitting:
+
+1. **Drawing the same quads through a vanilla type of the same vertex format** — `RenderType.text`,
+   which shares `POSITION_COLOR_TEX_LIGHTMAP`, the translucent transparency and the lightmap, and is
+   known to flush in that pass because name tags use it. Still nothing. The render type was
+   exonerated.
+2. **Drawing the same cuboid three blocks wide, floating above the tank.** It rendered perfectly.
+   So the pipeline, shader, flush, culling, colour and light were all fine, and the fluid was simply
+   invisible *inside the block* — which turns the question from "why is nothing drawn" into "what is
+   in front of it".
+
+What was in front of it was the tank's own window. The clue had been in every screenshot: the window
+was **pure black**, which is what a see-through texture looks like when its block is on the solid
+layer.
+
+Forge let a model JSON carry `"render_type"` and honored it. Vanilla and Fabric only know a per-block
+mapping, so `BlockRenderTypes` walks each block's blockstate to the models it names and applies what
+they declare — the models stay the single source of truth. But it read only the leaf model, on a
+comment's assurance that *"following parents is unnecessary as the generator writes it on the leaf"*.
+
+It does not. A tank's blockstate names `seared_fuel_tank`, which is nothing but a parent link to
+`block/template/tank`, and the template is where `render_type` is written. **42 blocks** were
+therefore left on the solid layer: every tank and gauge, every drain, duct, chute and faucet, the
+alloyer, the fluid cannons, the foundry controller, the clear glass and panes, the platforms. Their
+transparent texels rendered opaque black and hid whatever was behind them — the fluid included.
+
+The resolver follows the parent chain now, capped at eight links. Blocks receiving a declared render
+type went from 139 to 181, exactly the 42 the scan predicted.
+
+**This is the third time the same mistake has surfaced in this port**, and the pattern is worth
+naming: *most of Tinkers' models are a texture override on top of a shared template, so anything
+read off "the model" has to be read off the parent chain.* It cost the custom geometry (175 models,
+slice 7), the render types (42 blocks, here), and before those the fluid textures baked into the
+bucket models. Any future code that reads a key out of a model JSON should walk parents by default.
+
+The harness scene grew to cover it: a casting basin with fluid, which exercises a different block
+entity renderer, and two panes of clear glass, which exercise the cutout layer with no renderer at
+all. Both were opaque black before this and are correct now.
+
 
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.

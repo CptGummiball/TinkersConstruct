@@ -126,11 +126,34 @@ public class BlockRenderTypes {
     }
   }
 
-  /** Reads the render type a model declares, following parents is unnecessary as the generator writes it on the leaf */
+  /** How far up a parent chain to look before assuming the models loop */
+  private static final int MAX_PARENTS = 8;
+
+  /**
+   * Reads the render type a model declares, following the parent chain to find it.
+   *
+   * <p>Most of Tinkers' blocks are a texture override on top of a shared template, and the template
+   * is where {@code render_type} is written: a tank's blockstate names {@code seared_fuel_tank},
+   * which is nothing but a parent link to {@code block/template/tank}. Stopping at the leaf leaves
+   * 42 blocks — every tank, gauge, drain, duct, faucet and glass pane — on the solid layer, where
+   * their transparent texels turn opaque black and hide whatever is behind them.
+   */
   @Nullable
   private static RenderType readRenderType(ResourceManager manager, ResourceLocation model) {
-    JsonObject json = readJson(manager, ResourceLocation.fromNamespaceAndPath(model.getNamespace(), "models/" + model.getPath() + ".json"));
-    if (json == null || !json.has("render_type")) {
+    JsonObject json = null;
+    ResourceLocation current = model;
+    for (int i = 0; i <= MAX_PARENTS && current != null; i++) {
+      JsonObject read = readJson(manager, ResourceLocation.fromNamespaceAndPath(current.getNamespace(), "models/" + current.getPath() + ".json"));
+      if (read == null) {
+        break;
+      }
+      if (read.has("render_type")) {
+        json = read;
+        break;
+      }
+      current = read.has("parent") ? ResourceLocation.parse(GsonHelper.getAsString(read, "parent")) : null;
+    }
+    if (json == null) {
       return null;
     }
     return switch (GsonHelper.getAsString(json, "render_type")) {

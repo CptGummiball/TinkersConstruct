@@ -13,6 +13,9 @@ import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.fluids.TinkerFluids;
+import slimeknights.tconstruct.library.recipe.FluidValues;
+import slimeknights.tconstruct.shared.TinkerCommons;
+import slimeknights.tconstruct.smeltery.block.entity.CastingBlockEntity;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock.TankType;
 import slimeknights.tconstruct.smeltery.block.entity.component.TankBlockEntity;
@@ -141,9 +144,20 @@ public final class BlockRenderDevHarness {
       level.setBlock(tankPos, TinkerSmeltery.searedTank.get(TankType.FUEL_TANK).defaultBlockState(), 3);
       fillTank(level, tankPos);
 
+      // A casting basin with fluid and a pane of clear glass. Neither is about model data: both are
+      // here because a block whose render_type is declared by a parent template used to land on the
+      // solid layer, where a see-through texture turns opaque black and hides what is behind it.
+      BlockPos basinPos = ORIGIN.offset(4, 0, 1);
+      level.setBlock(basinPos, TinkerSmeltery.searedBasin.get().defaultBlockState(), 3);
+      if (level.getBlockEntity(basinPos) instanceof CastingBlockEntity basin) {
+        basin.updateFluidTo(new FluidStack(TinkerFluids.moltenIron.get(), FluidValues.INGOT * 4));
+      }
+      level.setBlock(ORIGIN.offset(4, 0, -2), TinkerCommons.clearGlass.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(4, 1, -2), TinkerCommons.clearGlass.get().defaultBlockState(), 3);
+
       // stand back and look at the row
       server.getPlayerList().getPlayers().forEach(player -> {
-        player.teleportTo(level, ORIGIN.getX() + 0.5, ORIGIN.getY() + 1, ORIGIN.getZ() + 6.5, 180, 20);
+        player.teleportTo(level, ORIGIN.getX() + 1.5, ORIGIN.getY() + 1, ORIGIN.getZ() + 7.5, 180, 18);
         player.setNoGravity(true);
       });
     });

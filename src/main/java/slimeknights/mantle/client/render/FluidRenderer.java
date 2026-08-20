@@ -45,11 +45,10 @@ public final class FluidRenderer {
 
   /* Fluid properties */
 
-  // PORT: Tinkers' own fluids have no sprites until something registers them with Fabric's
-  //   FluidRenderHandlerRegistry. On Forge that came from mantle.fluid.texture.ClientTextureFluidType
-  //   reading the generated mantle/fluid_texture data; that package is still parked, so until it
-  //   lands these renderers draw nothing for molten fluids (vanilla fluids already have handlers).
-  //   Every lookup below is null safe so the gap shows as missing fluid, not as a crash.
+  // Sprites come from Fabric's FluidRenderHandlerRegistry, which TextureFluidRenderHandler fills
+  // from the generated mantle/fluid_texture data; on Forge that job belonged to a client fluid type
+  // extension. Every lookup below stays null safe, so a fluid nobody registered shows as missing
+  // fluid rather than as a crash.
 
   /** Gets the still sprite for a fluid, or null if the fluid has no sprites */
   @Nullable
