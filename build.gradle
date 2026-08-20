@@ -145,6 +145,12 @@ loom {
             vmArg '-Dtconstruct.emiHarness=true'
             runDir 'run'
         }
+        clientCompat {
+            inherit clientWorld
+            name 'Minecraft Client (pack compat harness)'
+            vmArg '-Dtconstruct.compatHarness=true'
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server
@@ -187,6 +193,14 @@ dependencies {
 
     // Jade: block info overlay of the GummiCraft pack; dev runtime only, the harness photographs its tank display
     modLocalRuntime "maven.modrinth:jade:${jade_version}"
+
+    // Pack compat testing: -PcompatMods=<dir> loads the pack's own jars (unify, oritech, ...)
+    // into the dev runtime for the clientCompat harness. Off unless the property is set.
+    if (project.hasProperty('compatMods')) {
+        fileTree(dir: project.property('compatMods'), include: '*.jar').each { jar ->
+            modLocalRuntime files(jar)
+        }
+    }
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

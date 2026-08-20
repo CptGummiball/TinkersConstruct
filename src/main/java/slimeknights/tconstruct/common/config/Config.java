@@ -26,6 +26,7 @@ public class Config {
    */
   public static class Common {
     public final BooleanValue shouldSpawnWithTinkersBook;
+    public final ConfigValue<List<? extends String>> tagPreferences;
     public final List<ConfigurableAction> toolTweaks;
     public final BooleanValue syncKnockbackResistance;
     public final EnumValue<ToolSyncType> toolInventorySync;
@@ -68,6 +69,13 @@ public class Config {
         .translation("tconstruct.configgui.shouldSpawnWithTinkersBook")
         .worldRestart()
         .define("shouldSpawnWithTinkersBook", true);
+
+      this.tagPreferences = builder
+        .comment("Namespace priority when a recipe outputs a tag (e.g. #c:ingots/steel) and several mods provide an entry.",
+          "Earlier namespaces win; namespaces not listed rank after all listed ones, alphabetically by item id.",
+          "Packs running an output unifier (such as unify) should mirror its priority order here, so smeltery casts match unified crafting outputs.")
+        .translation("tconstruct.configgui.tagPreferences")
+        .defineList("tagPreferences", List.of("minecraft", "tconstruct"), entry -> entry instanceof String);
 
       // 1.21 note: the fire/blast protection slot tweaks are gone. Enchantments moved into
       // a datapack registry (Enchantments.* are now just ResourceKeys), so per-slot
@@ -405,6 +413,8 @@ public class Config {
 
   /** Registers any relevant listeners for config */
   public static void init() {
+    // hand the tag preference order to mantle; the supplier keeps config reloads live
+    slimeknights.mantle.recipe.helper.TagPreference.setPreferences(() -> COMMON.tagPreferences.get());
     // Forge Config API Port keeps the ForgeConfigSpec API; only registration differs.
     ForgeConfigRegistry.INSTANCE.register(TConstruct.MOD_ID, ModConfig.Type.COMMON, Config.commonSpec);
     ForgeConfigRegistry.INSTANCE.register(TConstruct.MOD_ID, ModConfig.Type.CLIENT, Config.clientSpec);

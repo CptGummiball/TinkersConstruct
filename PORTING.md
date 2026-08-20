@@ -1701,6 +1701,41 @@ instance and not in the release pack. The steel-ingot verification stays schedul
 pack-boot slice, against the mrpack's mod set.
 
 
+### Phase 6, slice 14: the pack compat test — Unify and the steel ingot
+
+The user's agreed acceptance test, run for real: with the test environment's mods loaded (the
+repo-root mrpack's `unify-1.21.1-0.0.5`, oritech, energized power and their dependency closure,
+pulled by hash from the mrpack index into the dev runtime via `-PcompatMods`), does a steel ingot
+cast in the smeltery come out as the same item Unify makes every other mod's recipes produce?
+
+**First run: FAIL, and the reason is structural.** Unify rewrites static recipe outputs at load —
+all 8 crafting recipes yielding a steel ingot became `energizedpower:steel_ingot`. Tinkers'
+casting outputs are *tag-based* (`#c:ingots/steel`) and resolve at lookup time through mantle's
+`TagPreference`, which Unify cannot see — and the port's TagPreference was a fixed rule that
+ranked `tconstruct` second. Two unifiers, two winners: the smeltery cast `tconstruct:steel_ingot`
+while everything else made energized power's.
+
+**The fix: TagPreference is config-driven again**, as it was on Forge. `tagPreferences` in
+Tinkers' common config is a namespace priority list (default `["minecraft", "tconstruct"]`,
+preserving standalone behavior); mantle receives it through a supplier so config reloads stay
+live. With the pack-aligned list — `["minecraft", "techreborn", "modern_industrialization",
+"energizedpower"]`, mirroring `config/unify/main.json` plus the observed alphabetical fallback —
+the harness reports PASS: casting and crafting agree on `energizedpower:steel_ingot`.
+
+**For the pack**: that config line belongs in the mrpack's overrides
+(`config/tconstruct-common.toml`, `[gameplay] tagPreferences`), kept in sync with unify's
+`namespacePriorities` whenever the pack's preferred tech mod changes.
+
+**Environment notes.** Loom 1.7.4 refuses to remap jars built by newer Loom versions; the local
+test copies have the informational `Fabric-Loom-Version` manifest line stripped (hashes verified
+against the mrpack index beforehand). File-based mod dependencies skip jar-in-jar extraction, so
+the nested libraries (endec, kotlin stdlib, architectury's energy, ...) are unpacked alongside.
+The fabric loader in dev moved 0.16.14 → 0.17.3, which geckolib in the target environment
+requires; the pack itself already runs a newer loader. Trinkets was sighted for completeness:
+upstream Tinkers ships no trinket/curio integration and its armor uses vanilla slots, so there is
+nothing to port there.
+
+
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

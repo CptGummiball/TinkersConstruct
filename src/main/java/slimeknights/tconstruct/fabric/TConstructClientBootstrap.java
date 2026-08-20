@@ -69,6 +69,7 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     slimeknights.tconstruct.fabric.client.BookDevHarness.init();
     slimeknights.tconstruct.fabric.client.BlockRenderDevHarness.init();
     slimeknights.tconstruct.fabric.client.CommandDevHarness.init();
+    slimeknights.tconstruct.fabric.client.CompatDevHarness.init();
     // the EMI harness links against EMI classes, so the flag gate sits out here
     if (Boolean.getBoolean("tconstruct.emiHarness")) {
       slimeknights.tconstruct.fabric.client.EmiDevHarness.init();
