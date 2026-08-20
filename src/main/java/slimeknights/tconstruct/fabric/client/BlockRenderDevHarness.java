@@ -24,8 +24,13 @@ import slimeknights.tconstruct.tables.TinkerTables;
  *
  * <p>Model data is delivered while a chunk mesh is built, so nothing about it shows up in a compile
  * or in a log: a tank with the wiring broken renders as an empty tank, and a retextured table
- * renders as its default wood. The only check is to place one and look. Enabled with
- * {@code -Dtconstruct.blockHarness=true}.
+ * renders as its default wood. The only check is to place one and look.
+ *
+ * <p>The scene is two rows. The back row is what a player gets by placing the block, and is the row
+ * to compare against the Forge build. The front row is the same blocks retextured, in gold and
+ * diamond — colours chosen because they cannot be mistaken for the default, which is the whole point
+ * of a check: a retexture that silently did nothing would otherwise look exactly like one that
+ * worked. Enabled with {@code -Dtconstruct.blockHarness=true}.
  */
 public final class BlockRenderDevHarness {
   private BlockRenderDevHarness() {}
@@ -51,16 +56,18 @@ public final class BlockRenderDevHarness {
       return;
     }
     ticks++;
+    if (ticks == 1) {
+      // a dev window loses focus while the harness runs, and singleplayer pauses when it does
+      minecraft.options.pauseOnLostFocus = false;
+      minecraft.options.menuBackgroundBlurriness().set(0);
+      // the overlay is not what is being checked, and the join spam covers the whole scene
+      minecraft.options.hideGui = true;
+    }
     if (!built) {
       if (ticks < 60) {
         return;
       }
       built = true;
-      minecraft.options.menuBackgroundBlurriness().set(0);
-      // the overlay is not what is being checked, and the join spam covers the whole scene
-      minecraft.options.hideGui = true;
-      // a dev window loses focus while the harness runs, and singleplayer pauses when it does
-      minecraft.options.pauseOnLostFocus = false;
       minecraft.gui.getChat().clearMessages(true);
       minecraft.getToasts().clear();
       buildScene(minecraft);
@@ -70,15 +77,17 @@ public final class BlockRenderDevHarness {
     // give the chunk time to rebuild and the block entity data time to sync back to the client
     if (ticks == 55) {
       // what the client believes about the tank, which is what its model and renderer see
-      if (minecraft.level.getBlockEntity(ORIGIN.offset(-2, 0, 0)) instanceof TankBlockEntity tank) {
+      if (minecraft.level.getBlockEntity(ORIGIN.offset(2, 0, 1)) instanceof TankBlockEntity tank) {
         TConstruct.LOG.info("[block harness] client tank holds {}, {} fluid cuboids registered", tank.getTank().getFluid(),
                             slimeknights.mantle.client.render.FluidCuboid.REGISTRY.get(tank.getBlockState(), java.util.List.of()).size());
       } else {
         TConstruct.LOG.warn("[block harness] client has no tank block entity");
       }
     }
-    if (ticks == 60) {
+    if (ticks == 58) {
       minecraft.setScreen(null);
+    }
+    if (ticks == 60) {
       Screenshot.grab(minecraft.gameDirectory, "blocks_model_data.png", minecraft.getMainRenderTarget(),
                       message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
     }
@@ -115,18 +124,26 @@ public final class BlockRenderDevHarness {
         }
       }
 
-      // a tank with fluid in it: the model reads the fluid and its capacity from the block entity
-      BlockPos tankPos = ORIGIN.offset(-2, 0, 0);
+      // Back row: exactly what a player gets by placing the block, with no texture chosen. This is
+      // the row to compare against the Forge build — anything but the default look here is a bug.
+      level.setBlock(ORIGIN.offset(-2, 0, -2), TinkerTables.craftingStation.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(0, 0, -2), TinkerSmeltery.searedDrain.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(2, 0, -2), TinkerSmeltery.searedTank.get(TankType.FUEL_TANK).defaultBlockState(), 3);
+
+      // Front row: the same blocks retextured. Gold and diamond are chosen precisely because they
+      // cannot be mistaken for the default — a retexture that silently did nothing would otherwise
+      // look identical to one that worked.
+      retexture(level, ORIGIN.offset(-2, 0, 1), TinkerTables.craftingStation.get().defaultBlockState(), "minecraft:gold_block");
+      retexture(level, ORIGIN.offset(0, 0, 1), TinkerSmeltery.searedDrain.get().defaultBlockState(), "minecraft:diamond_block");
+
+      // and a tank with fluid in it: the model reads the fluid and its capacity from the block entity
+      BlockPos tankPos = ORIGIN.offset(2, 0, 1);
       level.setBlock(tankPos, TinkerSmeltery.searedTank.get(TankType.FUEL_TANK).defaultBlockState(), 3);
       fillTank(level, tankPos);
 
-      // two retextured blocks: the model swaps its texture for the one the block entity names
-      retexture(level, ORIGIN.offset(0, 0, 0), TinkerTables.craftingStation.get().defaultBlockState(), "minecraft:gold_block");
-      retexture(level, ORIGIN.offset(2, 0, 0), TinkerSmeltery.searedDrain.get().defaultBlockState(), "minecraft:diamond_block");
-
       // stand back and look at the row
       server.getPlayerList().getPlayers().forEach(player -> {
-        player.teleportTo(level, ORIGIN.getX() + 0.5, ORIGIN.getY(), ORIGIN.getZ() + 4.5, 180, 12);
+        player.teleportTo(level, ORIGIN.getX() + 0.5, ORIGIN.getY() + 1, ORIGIN.getZ() + 6.5, 180, 20);
         player.setNoGravity(true);
       });
     });
