@@ -11,6 +11,6 @@
   ],
   "result": {
     "amount": 100,
-    "fluid": "minecraft:milk"
+    "fluid": "tconstruct:milk"
   }
 }

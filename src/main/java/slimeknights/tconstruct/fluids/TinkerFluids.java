@@ -116,6 +116,14 @@ public final class TinkerFluids extends TinkerModule {
   public static final ItemObject<Item> meatSoupBowl = ITEMS.register("meat_soup", () -> new ContainerFoodItem(new Item.Properties().food(TinkerFood.MEAT_SOUP).stacksTo(1).craftRemainder(Items.BOWL)));
 
   // potion
+  /**
+   * PORT: Forge registered a milk fluid under the vanilla namespace and upstream's skeleton
+   * melting recipes output it; Fabric has no standard milk fluid, so the port carries its own.
+   * The bucket form is the vanilla milk bucket rather than a new item, and the {@code c:milk}
+   * tag lines it up with whatever milk other pack mods bring along.
+   */
+  public static final FluidObject<UnplaceableFluid> milk = FLUIDS.register("milk").type(cool().descriptionId("fluid.tconstruct.milk").density(1030).viscosity(1030).temperature(320).sound(SoundAction.BUCKET_FILL, SoundEvents.BUCKET_FILL).sound(SoundAction.BUCKET_EMPTY, SoundEvents.BUCKET_EMPTY)).bucket(() -> Items.MILK_BUCKET).commonTag().unplacable();
+
   public static final FluidObject<UnplaceableFluid> potion = FLUIDS.register("potion").type(() -> new PotionFluidType(cool().descriptionId("item.minecraft.potion.effect.empty").density(1100).viscosity(1100).temperature(315).sound(SoundAction.BUCKET_FILL, SoundEvents.BOTTLE_FILL).sound(SoundAction.BUCKET_EMPTY, SoundEvents.BOTTLE_EMPTY))).bucket(fluid -> new PotionBucketItem(fluid, RegistrationHelper.BUCKET_PROPS)).commonTag().unplacable();
   public static final ItemObject<Item> splashBottle = ITEMS.register("splash_bottle", () -> new BottleItem(Items.SPLASH_POTION, ITEM_PROPS));
   public static final ItemObject<Item> lingeringBottle = ITEMS.register("lingering_bottle", () -> new BottleItem(Items.LINGERING_POTION, ITEM_PROPS));

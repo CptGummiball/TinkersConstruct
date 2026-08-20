@@ -109,7 +109,21 @@ public final class BlockRenderDevHarness {
       Screenshot.grab(minecraft.gameDirectory, "blocks_overlay.png", minecraft.getMainRenderTarget(),
                       message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
     }
-    if (ticks > 115) {
+    if (ticks == 100) {
+      // stand before the filled tank looking at it: Jade (dev runtime) shows its overlay with the
+      // fluid bar, proving the block-level fluid storage bridge answers lookups
+      minecraft.options.hideGui = false; // Jade draws in the gui layer, F1 would hide it
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
+        var serverPlayer = server.getPlayerList().getPlayers().get(0);
+        serverPlayer.teleportTo(serverPlayer.serverLevel(), ORIGIN.getX() + 2.5, ORIGIN.getY(), ORIGIN.getZ() + 4.5, 180, 20);
+      }
+    }
+    if (ticks == 130) {
+      Screenshot.grab(minecraft.gameDirectory, "blocks_jade.png", minecraft.getMainRenderTarget(),
+                      message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
+    }
+    if (ticks > 150) {
       TConstruct.LOG.info("[block harness] done");
       minecraft.stop();
     }

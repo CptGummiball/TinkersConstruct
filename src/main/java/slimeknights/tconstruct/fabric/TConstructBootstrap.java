@@ -61,6 +61,7 @@ public class TConstructBootstrap implements ModInitializer {
     slimeknights.tconstruct.common.network.TinkerNetwork.setup();
     slimeknights.mantle.recipe.MantleRecipes.init();
     FluidContainerTransferManager.INSTANCE.init();
+    TinkerFluidStorage.registerBlockBridges();
     // transfer types referenced by the shipped data files; Forge Mantle registered these in
     // its mod constructor
     FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(FillFluidContainerTransfer.ID, FillFluidContainerTransfer.DESERIALIZER);

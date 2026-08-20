@@ -27,6 +27,7 @@ repositories {
     maven { name = 'BlameJared';    url = 'https://maven.blamejared.com' }
     maven { name = 'Architectury';  url = 'https://maven.architectury.dev/' }
     maven { name = 'Shedaniel';     url = 'https://maven.shedaniel.me/' }
+    maven { name = 'Modrinth';      url = 'https://api.modrinth.com/maven'; content { includeGroup 'maven.modrinth' } }
     maven {
         name = 'CurseMaven'; url = 'https://cursemaven.com'
         content { includeGroup 'curse.maven' }
@@ -183,6 +184,9 @@ dependencies {
     // EMI: recipe viewer of the GummiCraft pack; compile against the api, run the full jar in dev
     modCompileOnly "dev.emi:emi-fabric:${emi_version}:api"
     modLocalRuntime "dev.emi:emi-fabric:${emi_version}"
+
+    // Jade: block info overlay of the GummiCraft pack; dev runtime only, the harness photographs its tank display
+    modLocalRuntime "maven.modrinth:jade:${jade_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

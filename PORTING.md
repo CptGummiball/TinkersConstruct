@@ -1673,6 +1673,34 @@ first casting card (retextured table recipes), and `tag.*` translations (the con
 upstream's lang file; EMI shows raw ids in dev mode).
 
 
+### Phase 6, slice 13: the block transfer bridge, milk, and Jade
+
+**The gap that mattered: nothing exposed Tinkers' blocks to Fabric's storage lookups.** The
+`FluidStorageBridge` (mantle handler → Fabric `Storage<FluidVariant>`) existed since the transfer
+layer port and was never registered for blocks — items had their wiring, blocks had none, so
+pipes, pumps and Jade saw no storage on tanks, melters, smelteries or casting blocks.
+`TinkerFluidStorage.registerBlockBridges()` adds sided fallbacks for both fluids and items,
+gated on mantle's `ICapabilityProvider` so only Tinkers/Mantle block entities answer, and firing
+only where no block-specific handler already matched. Verified end to end with Jade 15.10.5 in
+the dev runtime: the harness stands before the filled fuel tank and Jade's overlay reads
+*Molten Iron 3B* off the bridge (one F1 lesson included: the harness had `hideGui` on, which
+hides Jade too).
+
+**Milk.** Forge registered a milk fluid under the vanilla namespace and upstream's two skeleton
+melting recipes output `minecraft:milk`; they had failed to parse since phase 4. Fabric has no
+standard milk, so the port registers `tconstruct:milk` — an unplaceable fluid whose bucket form
+is the *vanilla* milk bucket (the delayed-supplier bucket wiring from slice 11 handles the
+existing-item case), tagged `c:milk` for whatever milk other pack mods bring, with hand-made
+white textures until the phase-7 datagen owns them. The two generated recipe JSONs now point at
+it; the phase-7 datagen provider must carry the same substitution. Recipe parse errors on world
+load: two → zero.
+
+**Unify, located.** The mod is `unify-1.21.1-0.0.5.jar` and lives only in the user's test
+environment — the mrpack in the repo root (`GummiCraft 1.2.81.mrpack`), not in the installed
+instance and not in the release pack. The steel-ingot verification stays scheduled for the
+pack-boot slice, against the mrpack's mod set.
+
+
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

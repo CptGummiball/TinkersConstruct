@@ -4232,5 +4232,6 @@
   "emi.category.tconstruct.modifier_worktable": "Modifier Worktable",
   "emi.category.tconstruct.tool_building": "Tool Building",
   "emi.category.tconstruct.part_builder": "Part Builder",
-  "emi.category.tconstruct.severing": "Severing"
+  "emi.category.tconstruct.severing": "Severing",
+  "fluid.tconstruct.milk": "Milk"
 }
