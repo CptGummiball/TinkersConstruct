@@ -57,6 +57,12 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     slimeknights.tconstruct.gadgets.GadgetClientEvents.init();
     slimeknights.tconstruct.world.WorldClientEvents.init();
 
+    // The guide books. Registration is cheap; the books themselves build lazily on first open,
+    // since their content depends on the recipes and datapack registries of the world being played.
+    slimeknights.mantle.client.book.BookLoader.init();
+    slimeknights.tconstruct.library.client.book.TinkerBook.initBook();
+    slimeknights.tconstruct.fabric.client.BookDevHarness.init();
+
     // Further client modules are wired in as each one finishes porting; see PORTING.md.
   }
 }

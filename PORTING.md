@@ -1253,6 +1253,116 @@ This run also clears two things earlier slices could not check: the `BODY` equip
 slice 3 (nothing throws while entities tick) and the armour renderers from slice 4 loading against a
 real player.
 
+### Phase 5, slice 6: the guide books — **DONE; all 1043 pages build and render**
+
+The six guide books are the largest single piece of content Tinkers' ships: 4.566 JSON files across
+eight languages, and the only in-game documentation the mod has. They are also the one part of this
+port that could not be *ported*, because the framework behind them was never vendored.
+
+**Mantle's book framework did not exist here and is written from scratch.** Every earlier round
+copied Mantle's classes and adjusted them; `slimeknights.mantle.client.book` had no counterpart in
+the tree, since nothing before this slice referenced it. The 32 files in
+`library/client/book` are TConstruct's own and port normally, but they are written against ~30
+Mantle types that had to be reconstructed. Two sources pinned the shape precisely enough to do that
+without guessing:
+
+- **The call sites.** The TConstruct pages name every method and field they use, down to
+  `PageContent#addTitle(list, title, large, color)` and `ItemElement.ITEM_SIZE_HARDCODED`. The
+  compiler is a complete specification of the API surface.
+- **The data.** 4.566 page files say exactly which keys each content type reads, which page types
+  exist (`mantle:text`, `image_text`, `text_image`, `showcase`, `crafting`, `index`, `blank`,
+  `structure`, `right_padding`), and which shapes the item references come in.
+
+What the shipped data does *not* pin is layout — page size, margins, where the paper sits inside the
+frame. Those came out of the book textures themselves: each book's page texture holds the open-book
+frame at 412×200, the paper spread at 399×184, and a strip of arrow sprites down its right edge, all
+measurable from the alpha channel. `BookScreen` is laid out against those measurements, and the
+arrows are blitted from that strip, which is why each book's arrows match its own palette.
+
+| Piece | Notes |
+| --- | --- |
+| `data` | `BookData`, `SectionData`, `PageData`, `BookAppearance`, and the element model (`TextData`, `TextComponentData`, `ImageData`, `ItemStackData`) |
+| `data.content` | 13 page types: text, image, image_text, text_image, showcase, crafting, index, listing, structure, page_icon_list, blank, left/right padding |
+| `repository` | `BookRepository` + `FileRepository`, with the language fallback chain |
+| `transformer` | `BookTransformer`, `SectionTransformer`, `ContentGroupingSectionTransformer`, the index pass and the padding pass |
+| `screen.book` | `BookScreen`, `ArrowButton` and ten elements |
+| `util.html` | `HtmlSerializable`/`HtmlElement`/`HtmlGroup` for the book export |
+
+A few places where the reconstruction had to make a decision rather than copy one:
+
+- **Colours in `appearance.json` are written as bare `0xE5C682`.** That is not JSON, and Gson in
+  lenient mode hands it over as a *string*, which the default integer adapter rejects outright. The
+  book Gson installs its own integer adapter that takes both forms; the files have been written that
+  way since 1.12 and are not worth migrating.
+- **`Component.Serializer` is no longer a Gson adapter in 1.21.** `TinkerBook` registered it for the
+  tooltip strings on showcase pages; Mantle now supplies the equivalent and registers it by default.
+- **63 item references use Forge's `forge:nbt` ingredient** to pin a tool's materials or a creative
+  slot's type. That serializer does not exist here and 1.21 moved stack NBT into components, so the
+  `nbt` block is applied as `custom_data` — where this port already keeps tool data — with `Damage`
+  lifted out to its own component. Every existing reference keeps working.
+- **Slot backgrounds are drawn rather than blitted.** Forge Mantle had its own GUI sheet for them;
+  drawing them from primitives avoids shipping a second set of assets and lets each book's
+  `slotColor` tint the fill instead of a fixed grey sprite.
+- **The multiblock preview draws the structure block by block** through the normal block renderer,
+  with rotate and layer controls. The two structures are a few dozen blocks each, so the simple
+  path costs nothing and every block looks exactly as it does in the world.
+- **Generated listings split themselves across pages.** A section index is built from whatever tag
+  injection produced — the encyclopedia's upgrade listing runs to seventy-odd entries — so the
+  listing measures the page and opens a second column, then a second page, instead of running off
+  the bottom. Column breaks and extra headings named by an index page's `operations` still apply.
+
+**The three book items are unblocked.** `AbstractBookItem`/`LecternBookItem`/`ILecternBookItem` were
+parked on "needs the book module and its packets". The lectern hook moved from Forge's
+`RightClickBlock` event to Fabric's `UseBlockCallback`, `Slot#getSlotIndex` became
+`getContainerSlot`, `TooltipContext` lost its side flag (asking the client for its player is the
+same test), and `Player#closeContainer` is access-widened. Four packets carry the reader's place:
+three client→server, one per way a book can be held, plus the lectern open packet. `TinkerBookItem`
+extends `AbstractBookItem` again, with the book lookup behind a nested class so a dedicated server
+never resolves the screen classes.
+
+#### A harness, because a book only fails once it is read
+
+`runClientBook` joins a world, loads all six books, **builds every page**, checks every item a page
+wants to draw for a missing model, screenshots thirteen representative spreads and quits. Building
+all thousand pages is the part that matters: a page's content class only runs when the page is
+opened, so nothing short of opening all of them proves anything. It found five failures that a
+compiling build and a title screen both missed:
+
+1. **`ArmorItem.Type.BODY` again** — the fifth appearance of 1.21's wolf-armour slot. The armour
+   material pages walked every `ArmorItem.Type` and matched the shield plating stat against BODY by
+   ordinal, then asked the plating item map for a slot Tinkers never registers. Every armour
+   material page in every book threw. It walks the four humanoid slots now.
+2. **The fluid effects section was empty.** Upstream `return`s instead of `continue`s when an effect
+   resolves to no fluids — which happens for every compat metal whose tag is empty. With 45 effects
+   shipped, the first one is enough to drop the whole section; the encyclopedia's 46 fluid pages were
+   simply absent.
+3. **Every filled bucket and can rendered as the missing texture.** Not a book bug — a model bug the
+   book made visible, and it had two independent causes. The client fluid extension asked Fabric's
+   render handler for the fluid's sprite, but a render handler only knows *baked* sprites, which do
+   not exist while item models bake; the declared texture from the fluid texture data is asked for
+   first now. And `FluidTextureManager` loaded as an ordinary reload listener, which runs after model
+   baking, so it also loads in the model-loading preparation stage — the same fix
+   `MaterialRenderInfoLoader` already uses.
+4. **`createUnbakedItemMaskElements` was not actually masking.** It routed to vanilla's
+   `ItemModelGenerator` like its sibling, and that generator always emits one full-size front quad,
+   letting the sprite's own alpha cut the shape. Correct when the quad is textured with the sprite
+   that was traced — and wrong for a mask, because the caller textures these quads with a *different*
+   sprite, the fluid inside the container. The fluid was painted over the whole item. It now covers
+   the mask's opaque pixels with real rectangles, merged greedily into a handful of boxes.
+5. **Stat blocks drew on top of each other.** Upstream estimates a text block's height as one row per
+   entry, with a `TODO: calculate actual height to properly wrap long lines?` next to it. A plating
+   durability line lists five numbers and wraps, so the next block started too high. The text
+   elements measure themselves now and the material pages ask.
+
+Findings 3 and 4 are outside this slice — they affect all 71 filled buckets, the copper can and the
+potion bucket everywhere in the game, not just in the book — but the harness found them here and
+they are fixed here.
+
+Final state: **1.043 pages across six books, 0 failures to build**, every page type rendered and
+looked at, the item path exercised end to end (right-click the book, turn a page, the page is
+written back through the server). The only recipe errors left in the log are still the two
+`minecraft:milk` ones phase 6 owes.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

@@ -115,6 +115,14 @@ loom {
             programArgs '--quickPlaySingleplayer', (project.findProperty('quickPlayWorld') ?: 'New World')
             runDir 'run'
         }
+        // Dev only: joins a world, loads every guide book, builds each page, screenshots the
+        // index spreads and quits. A book only fails once it is read, so reading it is the check.
+        clientBook {
+            inherit clientWorld
+            name 'Minecraft Client (book harness)'
+            vmArg '-Dtconstruct.bookHarness=true'
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server

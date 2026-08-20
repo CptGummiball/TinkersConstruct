@@ -51,10 +51,8 @@ slimeknights/mantle/block/entity/DefaultRetexturedBlockEntity.java
 # registration on the items that want it, done where those items register.
 slimeknights/mantle/item/ConstantFluidContainerWrapper.java
 slimeknights/mantle/item/ContainerFoodItem.java
-# Lectern book interaction, needs the book module (phase 5) and its packets.
-slimeknights/mantle/item/LecternBookItem.java
-slimeknights/mantle/item/AbstractBookItem.java
-slimeknights/mantle/item/ILecternBookItem.java
+# (book round) the three book items gated in: the lectern hook moved from Forge's
+# RightClickBlock event to Fabric's UseBlockCallback, and the five page packets now exist.
 
 
 # --- library/utils ---

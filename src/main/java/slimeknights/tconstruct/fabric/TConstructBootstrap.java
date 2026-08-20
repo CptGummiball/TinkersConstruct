@@ -4,6 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredientSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.mantle.fluid.transfer.EmptyFluidContainerTransfer;
 import slimeknights.mantle.fluid.transfer.FillFluidContainerTransfer;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
@@ -89,6 +90,9 @@ public class TConstructBootstrap implements ModInitializer {
     TagFilledCondition.SERIALIZER.register();
     TagEmptyCondition.SERIALIZER.register();
     TagCombinationCondition.SERIALIZER.register();
+    // tconstruct:tag_not_empty is the same condition under an older name; five book sections
+    // guard themselves with it, and an unknown condition type is a hard parse failure.
+    new TagFilledCondition.Serializer<>(TConstruct.getResource("tag_not_empty"), TagFilledCondition::new).register();
 
     // Sound events; Forge registered these through its deferred register. Data files
     // reference them by id (fluid effects above all), so they must exist before datapack load.

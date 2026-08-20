@@ -34,6 +34,8 @@ import slimeknights.tconstruct.common.ClientEventBase;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.fabric.client.ClientReloadListeners;
+import slimeknights.tconstruct.library.client.book.content.AbstractMaterialContent;
+import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 import slimeknights.tconstruct.library.client.armor.ArmorModelManager;
 import slimeknights.tconstruct.library.client.armor.TinkerArmorRenderer;
 import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureLoaders;
@@ -100,6 +102,8 @@ public class ToolClientEvents extends ClientEventBase {
     // must precede the first resource load: the block atlas definition names this source, and
     // an unknown type there makes the whole definition fail to parse
     slimeknights.tconstruct.tools.client.ShieldBannerModifierSpriteSource.register();
+
+    registerBookFallbacks();
 
     EntityRendererRegistry.register(TinkerTools.indestructibleItem.get(), ItemEntityRenderer::new);
     EntityRendererRegistry.register(TinkerTools.crystalshotEntity.get(), CrystalshotRenderer::new);
@@ -386,8 +390,14 @@ public class ToolClientEvents extends ClientEventBase {
     }
   }
 
-  // PORT: the book's fallback parts still wait on the book slice. Forge called
-  //   AbstractMaterialContent.registerFallbackPart from FMLClientSetupEvent for the fake ingot and
-  //   storage block the material pages show.
-
+  /**
+   * Items the material pages fall back to when a material has no part builder recipe.
+   *
+   * <p>Compat alloys such as bronze often have no ingot of their own, so the page would have
+   * nothing to draw. The fake ingot and storage block stand in, which is what they exist for.
+   */
+  private static void registerBookFallbacks() {
+    AbstractMaterialContent.registerFallbackPart(TinkerToolParts.fakeIngot);
+    AbstractMaterialContent.registerFallbackPart(() -> (IMaterialItem)TinkerToolParts.fakeStorageBlock.asItem());
+  }
 }

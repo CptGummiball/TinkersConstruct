@@ -58,7 +58,22 @@ public interface IClientFluidTypeExtensions {
       return stack.isEmpty() ? FluidVariant.of(fluid) : stack.getVariant();
     }
 
+    /**
+     * Texture name for one of the fluid's two sprites.
+     *
+     * <p>A fluid that declared its own textures is answered from that data rather than from
+     * Fabric's render handler. The handler only knows <em>baked</em> sprites, which do not exist
+     * while item models bake — every filled bucket and can would bake against the missing texture
+     * and stay that way until the next resource reload. The declared texture is a plain location
+     * and is available whenever the data has loaded.
+     */
     private ResourceLocation sprite(FluidStack stack, int index) {
+      Fluid actual = stack.isEmpty() ? this.fluid : stack.getFluid();
+      if (slimeknights.mantle.fluid.texture.FluidTextureManager.hasData(actual)) {
+        return index == STILL
+               ? slimeknights.mantle.fluid.texture.FluidTextureManager.getStillTexture(actual)
+               : slimeknights.mantle.fluid.texture.FluidTextureManager.getFlowingTexture(actual);
+      }
       TextureAtlasSprite[] sprites = FluidVariantRendering.getSprites(variant(stack));
       if (sprites == null || sprites.length <= index || sprites[index] == null) {
         return MissingTextureAtlasSprite.getLocation();

@@ -57,8 +57,9 @@ public abstract class AbstractBookItem extends LecternBookItem {
   @Override
   public void appendHoverText(ItemStack stack, TooltipContext world, List<Component> tooltip, TooltipFlag flag) {
     // if the stack is in the player inventory, show the right click to open tooltip
-    if (world != null && world.isClientSide) {
-      Player player = SafeClientAccess.getPlayer();
+    // 1.21's TooltipContext carries no side flag; asking the client for its player is the same test
+    Player player = SafeClientAccess.getPlayer();
+    {
       if (player != null && isValidContainer(player.containerMenu)) {
         Inventory inventory = player.getInventory();
         if (inventory.items.contains(stack) || inventory.offhand.contains(stack)) {
@@ -95,7 +96,8 @@ public abstract class AbstractBookItem extends LecternBookItem {
       if (player.level().isClientSide) {
         player.containerMenu.resumeRemoteUpdates();
         player.closeContainer();
-        openScreen(player, slot.getSlotIndex(), stack);
+        // 1.21 renamed Slot#getSlotIndex; the container-relative index is what the packet needs
+        openScreen(player, slot.getContainerSlot(), stack);
       }
       return true;
     }

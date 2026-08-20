@@ -40,6 +40,9 @@ public final class UnbakedGeometryHelper {
   private static final ItemModelGenerator ITEM_MODEL_GENERATOR = new ItemModelGenerator();
   /** Texture name the generated elements reference; must be one of {@link ItemModelGenerator#LAYERS}. */
   private static final String LAYER = "layer0";
+  /** Depth of a mask layer, a hair in front of the 7.5 to 8.5 slab a generated item layer occupies */
+  private static final float MASK_FRONT = 7.44F;
+  private static final float MASK_BACK = 8.56F;
 
   /**
    * Builds the elements of a flat item layer from the sprite that will texture it.
@@ -54,15 +57,81 @@ public final class UnbakedGeometryHelper {
   /**
    * Builds the elements of a layer shaped by a mask rather than by its own texture.
    *
-   * <p>The distinction from {@link #createUnbakedItemElements} is only which sprite is traced: the
-   * caller bakes these with a sprite getter that returns a different texture — the fluid inside a
-   * container — so the fluid shows exactly where the container's mask is opaque and nowhere else.
+   * <p>This cannot go through {@link ItemModelGenerator} the way {@link #createUnbakedItemElements}
+   * does. That generator always emits one full-size front quad and lets the sprite's own alpha cut
+   * the shape out — correct when the quad is textured with the very sprite that was traced, and
+   * wrong here, because the caller textures these quads with a <em>different</em> sprite: the fluid
+   * inside the container. A full quad would then paint the fluid over the whole item, which is
+   * exactly what every filled bucket looked like before this was written out properly.
+   *
+   * <p>So the mask's opaque pixels are covered with real rectangles instead. Runs are merged
+   * greedily, first along a row and then downwards, which turns a typical container mask into a
+   * handful of boxes rather than one per pixel.
    *
    * @param tintIndex  Tint index the faces report
    * @param contents   Mask sprite whose opaque area the elements cover
    */
   public static List<BlockElement> createUnbakedItemMaskElements(int tintIndex, SpriteContents contents) {
-    return trace(tintIndex, contents);
+    int width = contents.width();
+    int height = contents.height();
+    if (width <= 0 || height <= 0) {
+      return List.of();
+    }
+    boolean[] opaque = new boolean[width * height];
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        opaque[y * width + x] = !contents.isTransparent(0, x, y);
+      }
+    }
+
+    List<BlockElement> elements = new ArrayList<>();
+    boolean[] used = new boolean[width * height];
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        if (!opaque[y * width + x] || used[y * width + x]) {
+          continue;
+        }
+        // widen along the row
+        int right = x;
+        while (right + 1 < width && opaque[y * width + right + 1] && !used[y * width + right + 1]) {
+          right++;
+        }
+        // then deepen while the whole run stays opaque
+        int bottom = y;
+        deepen:
+        while (bottom + 1 < height) {
+          for (int column = x; column <= right; column++) {
+            int index = (bottom + 1) * width + column;
+            if (!opaque[index] || used[index]) {
+              break deepen;
+            }
+          }
+          bottom++;
+        }
+        for (int row = y; row <= bottom; row++) {
+          for (int column = x; column <= right; column++) {
+            used[row * width + column] = true;
+          }
+        }
+        elements.add(maskElement(tintIndex, x, y, right + 1, bottom + 1, width, height));
+      }
+    }
+    return elements;
+  }
+
+  /** Builds one box of the mask, in the same coordinate space a generated item layer uses */
+  private static BlockElement maskElement(int tintIndex, int left, int top, int right, int bottom, int width, int height) {
+    float scaleX = 16F / width;
+    float scaleY = 16F / height;
+    // the model's y axis runs upwards while the sprite's runs downwards
+    org.joml.Vector3f from = new org.joml.Vector3f(left * scaleX, 16 - bottom * scaleY, MASK_FRONT);
+    org.joml.Vector3f to = new org.joml.Vector3f(right * scaleX, 16 - top * scaleY, MASK_BACK);
+    Map<Direction,BlockElementFace> faces = new java.util.EnumMap<>(Direction.class);
+    faces.put(Direction.SOUTH, new BlockElementFace(null, tintIndex, LAYER,
+      new net.minecraft.client.renderer.block.model.BlockFaceUV(new float[]{left * scaleX, top * scaleY, right * scaleX, bottom * scaleY}, 0)));
+    faces.put(Direction.NORTH, new BlockElementFace(null, tintIndex, LAYER,
+      new net.minecraft.client.renderer.block.model.BlockFaceUV(new float[]{right * scaleX, top * scaleY, left * scaleX, bottom * scaleY}, 0)));
+    return new BlockElement(from, to, faces, null, true);
   }
 
   /** Runs the vanilla generator over one sprite and renumbers the faces to the wanted tint index. */

@@ -283,3 +283,13 @@ slimeknights/tconstruct/fabric/client/ClientReloadListeners.java
 
 # --- Phase 5 slice 5: tool interaction, overlays and the tool inventory screen ---
 slimeknights/tconstruct/tools/client/**
+
+# --- Phase 5 slice 6: the book system ---
+# Mantle's book framework, written from scratch: none of it was vendored, since nothing before this
+# slice referenced it. The data model and loader...
+slimeknights/mantle/client/book/**
+# ...the screen and its elements (client/screen/** already gated in)...
+slimeknights/mantle/util/html/**
+# ...and the three book items, unblocked now that the screen and the page packets exist.
+slimeknights/tconstruct/library/client/book/**
+slimeknights/tconstruct/library/TinkerBookIDs.java

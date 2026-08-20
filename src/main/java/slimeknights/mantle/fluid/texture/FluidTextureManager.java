@@ -1,6 +1,7 @@
 package slimeknights.mantle.fluid.texture;
 
 import com.google.gson.JsonElement;
+import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin;
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -17,6 +18,7 @@ import slimeknights.mantle.util.JsonHelper;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Loads the textures each fluid renders with.
@@ -38,8 +40,19 @@ public class FluidTextureManager implements SimpleSynchronousResourceReloadListe
 
   private FluidTextureManager() {}
 
-  /** Registers the reload listener; call once from the client entrypoint */
+  /**
+   * Registers the loaders; call once from the client entrypoint.
+   *
+   * <p>Loaded twice on purpose. Item models for filled containers bake the fluid's sprite into
+   * themselves, and model baking happens before an ordinary reload listener has run — the buckets
+   * would bake against the missing texture and keep it until the next reload. The model-loading
+   * preparation stage fills the table in time for that; the reload listener then runs on the main
+   * thread, where registering render handlers is safe.
+   */
   public static void init() {
+    PreparableModelLoadingPlugin.register(
+      (manager, executor) -> CompletableFuture.runAsync(() -> INSTANCE.loadTextures(manager), executor),
+      (ignored, context) -> {});
     ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
   }
 
@@ -50,6 +63,14 @@ public class FluidTextureManager implements SimpleSynchronousResourceReloadListe
 
   @Override
   public void onResourceManagerReload(ResourceManager resourceManager) {
+    loadTextures(resourceManager);
+    // which fluids need a render handler is only known once the textures are read, and the
+    // registry is global, so this registers on the first load and is a no-op afterwards
+    TextureFluidRenderHandler.register();
+  }
+
+  /** Reads the fluid texture files into the lookup table */
+  private void loadTextures(ResourceManager resourceManager) {
     long time = System.nanoTime();
     Map<ResourceLocation,JsonElement> jsons = new HashMap<>();
     SimpleJsonResourceReloadListener.scanDirectory(resourceManager, FOLDER, JsonHelper.DEFAULT_GSON, jsons);
@@ -67,9 +88,6 @@ public class FluidTextureManager implements SimpleSynchronousResourceReloadListe
     }
     this.textures = map;
     Mantle.logger.info("Loaded {} fluid textures in {} ms", map.size(), (System.nanoTime() - time) / 1000000f);
-    // which fluids need a render handler is only known once the textures are read, and the
-    // registry is global, so this registers on the first load and is a no-op afterwards
-    TextureFluidRenderHandler.register();
   }
 
   /** Gets the texture for the given fluid, falling back to water so lookups never fail */

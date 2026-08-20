@@ -275,3 +275,7 @@ accessible method net/minecraft/client/gui/Gui renderSlot (Lnet/minecraft/client
 accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
 accessible field net/minecraft/client/renderer/LevelRenderer destroyingBlocks Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
 accessible method net/minecraft/client/renderer/LevelRenderer renderHitOutline (Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;DDDLnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V
+
+# Player.closeContainer — Mantle's book item closes the open container before reopening the book
+# on top of it, so the reader returns to the same page. Protected in 1.21.
+accessible method net/minecraft/world/entity/player/Player closeContainer ()V

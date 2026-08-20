@@ -9,7 +9,10 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import slimeknights.mantle.util.BlockEntityHelper;
 
 /**
@@ -34,27 +37,32 @@ public abstract class LecternBookItem extends TooltipItem implements ILecternBoo
   }
 
   /**
-   * Event handler to control the lectern GUI
+   * Takes over the lectern interaction when the lectern holds one of our books.
+   *
+   * <p>Forge fired {@code RightClickBlock} and let the handler cancel it; Fabric's
+   * {@link UseBlockCallback} does the same by returning a result other than PASS. Server side only,
+   * because the client does not know what the lectern holds until the open packet arrives.
    */
-  public static void interactWithBlock(PlayerInteractEvent.RightClickBlock event) {
-    Level world = event.getLevel();
-    // client side has no access to the book, so just skip
-    if (world.isClientSide() || event.getEntity().isShiftKeyDown()) {
-      return;
-    }
-    // must be a lectern, and have the TE
-    BlockPos pos = event.getPos();
-    BlockState state = world.getBlockState(pos);
-    if (state.is(Blocks.LECTERN)) {
-      BlockEntityHelper.get(LecternBlockEntity.class, world, pos)
-											 .ifPresent(te -> {
-                        ItemStack book = te.getBook();
-                        if (!book.isEmpty() && book.getItem() instanceof ILecternBookItem
-                            && ((ILecternBookItem) book.getItem()).openLecternScreen(world, pos, event.getEntity(), book)) {
-                          event.setCanceled(true);
-                        }
-                      });
-    }
+  public static void init() {
+    UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+      if (world.isClientSide() || player.isShiftKeyDown()) {
+        return InteractionResult.PASS;
+      }
+      BlockPos pos = hit.getBlockPos();
+      BlockState state = world.getBlockState(pos);
+      if (!state.is(Blocks.LECTERN)) {
+        return InteractionResult.PASS;
+      }
+      return BlockEntityHelper.get(LecternBlockEntity.class, world, pos)
+        .map(te -> {
+          ItemStack book = te.getBook();
+          if (!book.isEmpty() && book.getItem() instanceof ILecternBookItem lectern
+              && lectern.openLecternScreen(world, pos, player, book)) {
+            return InteractionResult.SUCCESS;
+          }
+          return InteractionResult.PASS;
+        })
+        .orElse(InteractionResult.PASS);
+    });
   }
-
 }
