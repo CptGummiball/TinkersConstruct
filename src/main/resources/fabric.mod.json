@@ -25,6 +25,9 @@
     "client": [
       "slimeknights.tconstruct.fabric.TConstructClientBootstrap"
     ],
+    "emi": [
+      "slimeknights.tconstruct.plugin.emi.TConstructEmiPlugin"
+    ],
     "cardinal-components": [
       "slimeknights.tconstruct.fabric.TinkerComponents"
     ]

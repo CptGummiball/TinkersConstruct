@@ -139,10 +139,15 @@ public final class ToolBuildHandler {
       }
       // add all materials to the parent, conditionally to search
       if (!added) {
+        // two materials can collapse to the same build when each only fits parts the other
+        // does not: every disallowed part falls back to the first material of its type, and which
+        // material is first depends on registry order. Vanilla treats a repeated tab entry as a
+        // crash, so only the first of each distinct build is offered.
+        java.util.Set<ItemStack> unique = net.minecraft.world.item.ItemStackLinkedSet.createTypeAndComponentsSet();
         for (IMaterial material : MaterialRegistry.getInstance().getVisibleMaterials()) {
           // if we added it and we want a single material, we are done
           ItemStack tool = createSingleMaterial(item, MaterialVariant.of(material));
-          if (!tool.isEmpty()) {
+          if (!tool.isEmpty() && unique.add(tool)) {
             tab.accept(tool);
             // if filter is set we wanted just the 1 item
             if (!showOnlyMaterial.isEmpty()) {

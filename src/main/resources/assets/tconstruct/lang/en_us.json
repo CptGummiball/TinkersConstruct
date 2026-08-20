@@ -4218,6 +4218,14 @@
   "advancements.tconstruct.world.piggybackpack.title": "Pig Piggyback",
   "advancements.tconstruct.world.piggybackpack.description": "Pick up a pig with a piggybackpack",
   "advancements.tconstruct.world.ancient_tools.title": "Archeologists",
-  "advancements.tconstruct.world.ancient_tools.description": "Discover all original types of ancient tool"
-}
+  "advancements.tconstruct.world.ancient_tools.description": "Discover all original types of ancient tool",
 
+  "_comment.emi": "category titles for the EMI integration",
+  "emi.category.tconstruct.casting_table": "Casting Table",
+  "emi.category.tconstruct.casting_basin": "Casting Basin",
+  "emi.category.tconstruct.melting": "Melting",
+  "emi.category.tconstruct.foundry": "Foundry",
+  "emi.category.tconstruct.alloy": "Alloying",
+  "emi.category.tconstruct.entity_melting": "Entity Melting",
+  "emi.category.tconstruct.molding": "Molding"
+}

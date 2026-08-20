@@ -219,6 +219,7 @@ slimeknights/tconstruct/library/client/data/material/GeneratorPartTextureJsonGen
 slimeknights/tconstruct/library/client/data/material/TrimMaterialPaletteGenerator.java
 slimeknights/tconstruct/tools/data/sprite/**
 slimeknights/tconstruct/smeltery/data/SmelteryCompat.java
+slimeknights/tconstruct/plugin/emi/**
 slimeknights/tconstruct/smeltery/data/package-info.java
 # Block geometry: the fluid-textured smeltery components and the tanks.
 slimeknights/tconstruct/library/client/model/block/package-info.java

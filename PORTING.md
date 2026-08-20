@@ -1609,6 +1609,43 @@ kept as the visual record.
 
 
 - [x] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
+### Phase 6, slice 11: EMI, wave 1 — the smeltery family, plus three creative-tab crashes
+
+EMI 1.1.24 is the pack's recipe viewer, so the Forge build's JEI plugin (49 classes) is being
+rewritten against EMI's API in two waves. Wave 1 is the smeltery family: **casting table, casting
+basin, melting, foundry, alloying, entity melting and molding**, with the fuel display (fluid fuels
+per temperature, the solid-fuel slot when the melter could run on coal), byproducts cycling through
+the foundry tank, workstations, and the catch-all default entity melting recipe. The categories
+draw with the same background textures the JEI plugin shipped, so the cards look the way Forge
+players know them; amounts convert at 81 droplets per millibucket. The plugin loads through the
+`emi` entrypoint, so a pack without EMI never touches the classes; `runClientEmi` joins a world,
+opens all seven categories through `EmiApi.displayRecipeCategory` and photographs each.
+
+**EMI's index build surfaced three crashes that had been waiting in the creative tabs** — nothing
+had opened a creative inventory since phase 3:
+
+- **`TagCompat.getOrCreateTag` silently discarded every mutation.** `CustomData.of` copies its
+  argument (verified in the bytecode: `CompoundTag.copy` before the constructor), so the "anchored
+  live tag" contract the port documented was never true. Every creative slot variant came out
+  identical and vanilla's duplicate check tripped. The method now returns the component's own tree
+  via `getUnsafe()`. Anything that mutates after `getOrCreateTag` was affected — the crystalshot
+  variants among them.
+- **The potion bucket had been air since phase 3.** Registration is eager on Fabric, so
+  `unplacable()` constructed the fluid before assigning the builder's bucket supplier;
+  `flowing()` had the delayed-supplier wiring for exactly this and `unplacable()` did not. The
+  potion bucket item existed but no fluid knew about it.
+- **Two order-sensitive duplicate tab entries**: the arrow cast (gold only, no sand forms) was
+  accepted once per cast-variant pass, and two tool materials can collapse to the same single-material
+  build when each only fits parts the other does not — which build the fallback picks depends on
+  material registry order, so upstream never saw it. Tool variants deduplicate now.
+
+**Held for wave 2**: the tables family (modifiers, worktable, part builder, tool building,
+severing), recipe ids on the EMI recipes (mantle's recipe helper drops holders), stack comparisons
+for tools/parts, recipe-fill handlers, fluid-unit tooltips (ingots/blocks) on the tanks, the
+`tag.*` translations EMI's dev mode lists as missing, and a look at why the first casting-table
+card renders its tank empty (likely the retextured table recipes).
+
+
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

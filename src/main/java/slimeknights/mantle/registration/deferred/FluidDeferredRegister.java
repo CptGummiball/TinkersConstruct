@@ -203,10 +203,20 @@ public class FluidDeferredRegister extends DeferredRegisterWrapper<Fluid> {
       if (type == null) {
         this.type();
       }
+      // registration is eager on Fabric, so the fluid constructor runs inside registerFluid and
+      // reads the builder's bucket right away — the delayed supplier stands in until the bucket
+      // item exists, the same wiring flowing() uses. Without it the potion bucket was air forever.
+      DelayedSupplier<Item> bucketDelayed = null;
+      if (bucketFactory != null) {
+        bucketDelayed = new DelayedSupplier<>();
+        this.bucket = bucketDelayed;
+      }
       RegistryObject<F> fluid = registerFluid(name, () -> constructor.apply(this));
       stillDelayed.setSupplier(fluid);
       if (bucketFactory != null) {
-        this.bucket = itemRegister.register(name + "_bucket", () -> bucketFactory.apply(fluid));
+        RegistryObject<Item> bucketObject = itemRegister.register(name + "_bucket", () -> bucketFactory.apply(fluid));
+        bucketDelayed.setSupplier(bucketObject);
+        this.bucket = bucketObject;
       }
       // associate the type for FluidType.of() lookups and Fabric attribute handlers
       type.get().register(fluid.get());

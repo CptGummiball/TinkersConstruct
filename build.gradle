@@ -138,6 +138,12 @@ loom {
             vmArg '-Dtconstruct.commandHarness=true'
             runDir 'run'
         }
+        clientEmi {
+            inherit clientWorld
+            name 'Minecraft Client (EMI harness)'
+            vmArg '-Dtconstruct.emiHarness=true'
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server
@@ -173,6 +179,10 @@ dependencies {
 
     // Fabric's de-facto energy API (the pack's Oritech requires it); Tinkers exposes tool energy through it
     modImplementation "teamreborn:energy:${team_reborn_energy_version}"
+
+    // EMI: recipe viewer of the GummiCraft pack; compile against the api, run the full jar in dev
+    modCompileOnly "dev.emi:emi-fabric:${emi_version}:api"
+    modLocalRuntime "dev.emi:emi-fabric:${emi_version}"
 
     compileOnly 'org.projectlombok:lombok:1.18.34'
     annotationProcessor 'org.projectlombok:lombok:1.18.34'

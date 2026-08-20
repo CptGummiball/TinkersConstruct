@@ -45,16 +45,18 @@ public final class TagCompat {
   /**
    * Reads the legacy tag, creating and attaching an empty one when absent.
    *
-   * <p>Mutation contract, matching 1.20's live tag: the returned instance is anchored as a
-   * <i>fresh</i> component on the stack, so mutating it mutates the stack. Because the
-   * component instance is new, snapshots vanilla took earlier (change detection, copies)
-   * still hold the previous instance and correctly observe a change.
+   * <p>Mutation contract, matching 1.20's live tag: the returned instance is the component's own
+   * tree, so mutating it mutates the stack. It must be the component's instance and not the one
+   * handed to {@link CustomData#of(CompoundTag)} — {@code of} copies its argument, which silently
+   * discarded every mutation made through this method until the creative slot item put two
+   * identical variants in a creative tab and vanilla noticed. Mutate immediately after calling;
+   * holding the tag across {@link ItemStack#copy()} would alias the copies' data.
    */
   public static CompoundTag getOrCreateTag(ItemStack stack) {
     CustomData data = stack.get(DataComponents.CUSTOM_DATA);
     CompoundTag tag = data == null ? new CompoundTag() : data.copyTag();
     stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-    return tag;
+    return java.util.Objects.requireNonNull(stack.get(DataComponents.CUSTOM_DATA)).getUnsafe();
   }
 
   /**

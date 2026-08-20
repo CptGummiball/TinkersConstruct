@@ -600,6 +600,9 @@ public final class TinkerSmeltery extends TinkerModule {
 
     // casts
     addCasts(output, CastItemObject::get);
+    // the arrow cast has no sand forms, so it goes with the gold pass only — in every pass it
+    // would land in the tab twice, which vanilla treats as a crash
+    output.accept(arrowCast);
     output.accept(blankSandCast);
     addCasts(output, CastItemObject::getSand);
     output.accept(blankRedSandCast);
@@ -652,7 +655,6 @@ public final class TinkerSmeltery extends TinkerModule {
     // ranged
     accept(output, getter, bowLimbCast);
     accept(output, getter, bowGripCast);
-    output.accept(arrowCast);
     // no binding cast
     // armor
     accept(output, getter, helmetPlatingCast);
