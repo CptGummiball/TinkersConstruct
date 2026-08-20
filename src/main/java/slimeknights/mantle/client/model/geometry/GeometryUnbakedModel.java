@@ -109,6 +109,20 @@ public class GeometryUnbakedModel extends BlockModel {
   }
 
   /**
+   * Bakes a model that inherits this geometry rather than declaring it.
+   *
+   * <p>Most of Tinkers' blocks are a texture override on top of a template that carries the loader,
+   * so this is the common path rather than the exception. The geometry is this model's, but the
+   * context is built from the child, which is what makes the child's textures and transforms the
+   * ones that get baked. Called from the {@code BlockModel.bake} mixin.
+   */
+  public BakedModel bakeChild(BlockModel child, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState state) {
+    BlockGeometryBakingContext childContext = new BlockGeometryBakingContext(child, location);
+    ItemOverrides overrides = child.getOverrides().isEmpty() ? ItemOverrides.EMPTY : new ItemOverrides(baker, child, child.getOverrides());
+    return geometry.bake(childContext, baker, spriteGetter, state, overrides, location);
+  }
+
+  /**
    * Builds the overrides declared by the JSON's own {@code "overrides"} block.
    * Mirrors the private {@code BlockModel#getItemOverrides}, which is what vanilla baking uses.
    */

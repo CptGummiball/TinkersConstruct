@@ -1,5 +1,6 @@
 package slimeknights.mantle.block.entity;
 
+import net.fabricmc.fabric.api.blockview.v2.RenderDataBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -7,14 +8,54 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import slimeknights.mantle.client.model.data.ModelData;
 
 import javax.annotation.Nullable;
 
-public class MantleBlockEntity extends BlockEntity implements slimeknights.mantle.transfer.cap.ICapabilityProvider {
+public class MantleBlockEntity extends BlockEntity
+    implements slimeknights.mantle.transfer.cap.ICapabilityProvider, RenderDataBlockEntity {
 
   public MantleBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
     super(type, pos, state);
+  }
+
+  /* Model data: what a block entity tells its model about itself, for models that vary per block */
+
+  /**
+   * Extra state this block entity's model needs, such as which block it is retextured with.
+   *
+   * <p>Forge's {@code BlockEntity#getModelData}, kept under the same name so the overrides port
+   * unchanged. Fabric calls the same idea a render attachment and reads it through the block view
+   * during a chunk rebuild, which {@link #getRenderData()} below bridges.
+   */
+  public ModelData getModelData() {
+    return ModelData.EMPTY;
+  }
+
+  @Nullable
+  @Override
+  public Object getRenderData() {
+    ModelData data = getModelData();
+    // null means "nothing attached", which is cheaper for the renderer than an empty bag
+    return data == ModelData.EMPTY ? null : data;
+  }
+
+  /**
+   * Asks for this block's model to be rebuilt because {@link #getModelData()} changed.
+   *
+   * <p>Forge tracked model data separately from the chunk mesh and could refresh just that; Fabric
+   * reads the attachment while the mesh is built, so the only way to pick up a change is to rebuild
+   * the section. Client side only — on the server the block update that follows does the same job
+   * for everyone.
+   */
+  public void requestModelDataUpdate() {
+    Level level = getLevel();
+    if (level != null && level.isClientSide) {
+      BlockState state = getBlockState();
+      level.setBlocksDirty(getBlockPos(), state, state);
+    }
   }
 
   /* Capabilities: the shimmed Forge surface used by the smeltery's internal wiring.

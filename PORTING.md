@@ -1363,6 +1363,93 @@ looked at, the item path exercised end to end (right-click the book, turn a page
 written back through the server). The only recipe errors left in the log are still the two
 `minecraft:milk` ones phase 6 owes.
 
+### Phase 5, slice 7: model data delivery — **DONE; 175 models were baking wrong**
+
+Forge asked every block entity for its `ModelData` during a chunk rebuild and threaded the result
+through `BakedModel.getQuads`. Vanilla 1.21.1 has no such parameter, so every data-driven block in
+the mod had been rendering its base variant since the model slice: a retextured crafting station
+showed oak, a seared drain showed seared brick, a tank showed nothing inside.
+
+**Fabric calls the same idea a render attachment**, and reads it through the block view during the
+chunk rebuild. Three pieces connect the two ends:
+
+- `MantleBlockEntity` gains `getModelData()` back under its Forge name, and implements Fabric's
+  `RenderDataBlockEntity` to hand the same value over as the attachment. Every block entity in the
+  mod descends from it, so the seven that carry model data — tanks, drains, ducts, the smeltery and
+  foundry controllers, the retextured tables, the material blocks — port unchanged.
+- `BakedModelWrapper` declares itself a non-vanilla model and takes over `emitBlockQuads`, which is
+  the callback that *does* get the block view. The renderer only knows how to ask a model the
+  vanilla way, so the data is bound to a small view of the wrapper that answers with it.
+- `requestModelDataUpdate()` returns as a section rebuild. Forge tracked model data separately from
+  the chunk mesh and could refresh just that; Fabric reads the attachment while the mesh is built,
+  so the only way to pick a change up is to rebuild.
+
+That put the data in front of the models — and then two more things had to be true before any of it
+showed.
+
+#### `mantle:retextured` had no geometry at all
+
+Mantle's model loaders were never vendored: only the support classes Tinkers' own geometry called
+were written. Two of those — the texture-name expansion and the baking context that performs the
+swap — are the hard half of `mantle:retextured`, so the geometry around them is written here: an
+unbaked model that reads the `retextured` name list, and a baked one that rebakes itself once per
+distinct texture and keeps the result. Seven models name it directly and twenty more inherit it.
+
+Still unwritten, and still falling through to the vanilla parse of their JSON: `mantle:connected`
+(135 models), `mantle:item_layer` (18), `mantle:nbt_key` (2), `mantle:colored_block` (1).
+
+#### A child model does not inherit its parent's geometry — and 175 models are children
+
+This was recorded as a known limit when the geometry bridge was built, with the note that the only
+models affected were 16 tool pose variants. The count was wrong, and the survey that produced it
+predates most of the loaders being registered. Walking every model's parent chain gives:
+
+| Loader | Declares it | Inherits it |
+| --- | --- | --- |
+| `tconstruct:tank` | 8 | **44** |
+| `tconstruct:tool` | 122 | **68** |
+| `mantle:connected` | 135 | 25 |
+| `mantle:retextured` | 7 | **20** |
+| `tconstruct:fluid_texture` | 2 | **10** |
+| others | — | 8 |
+
+Every tank and gauge in the mod is a child of `tconstruct:block/template/tank`, and every seared
+component is a child of `template/io`. None of them ran their loader. A `BlockModel.bake` mixin now
+walks the parent chain for a geometry model and bakes through it, building the context from the
+model being baked so the child's own textures and transforms are the ones used — which is what
+Forge's patched `BlockModel.bake` did, for the same reason.
+
+#### The rest of the client
+
+- **`CommonsClientEvents`**: the books are set in the unicode font. They are written in eight
+  languages against a fixed page width, and the default font's per-glyph widths differ enough
+  between scripts to break the layout. Also the fluid particle, ported off Forge's client fluid
+  extension.
+- **`FluidClientEvents`**: eleven fluids draw translucent, through `BlockRenderLayerMap` rather than
+  `ItemBlockRenderTypes`, which is not safe to mutate on Fabric. The potion bucket's tint reads the
+  `potion_contents` component.
+- **`TableClientEvents`**: the tinkers' chest colours, the last thing waiting on "the colour slice".
+  The item reads `dyed_color`, which is where 1.21 moved what `DyeableLeatherItem` used to answer.
+- **`getRenderBoundingBox`** is resolved as *not needed*, in four places. It widened the box a
+  per-block-entity frustum test used; vanilla has no such test, so every block entity in a visible
+  section renders however far outside its own block it draws.
+
+#### Verified by building the scene and looking at it
+
+`runClientBlocks` clears a room in the sky, places a retextured crafting station, a retextured
+seared drain and a filled tank, points the camera at them and photographs the result. Model data is
+delivered while a chunk mesh is built, so nothing about it shows up in a compile or a log — a tank
+with the wiring broken renders as an empty tank. The station's legs are gold and the drain is
+diamond, which is the whole chain end to end: block entity → render attachment → `emitBlockQuads` →
+rebaked model.
+
+**One thing the harness found and this slice does not fix**: the tank draws no fluid, and neither do
+the faucets, channels or casting basins. It is not model data — the renderer runs, finds its fluid
+cuboid, and resolves the fluid's sprite; the quads simply never reach the screen. Lighting and
+upload sorting are both ruled out, and swapping in a vanilla render type crashes on the vertex
+format, which proves the vertices are written. That leaves the custom `mantle_fluid` render type,
+and it belongs to the renderer slice rather than this one.
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
 - [ ] **7 — Datagen & documentation.**

@@ -1,5 +1,7 @@
 package slimeknights.tconstruct.library.client.model;
 
+import slimeknights.mantle.Mantle;
+import slimeknights.mantle.client.model.RetexturedModel;
 import slimeknights.mantle.client.model.geometry.GeometryLoaderRegistry;
 import slimeknights.mantle.client.model.geometry.GeometryModelLoadingPlugin;
 import slimeknights.tconstruct.TConstruct;
@@ -38,10 +40,14 @@ public final class TinkerModelLoaders {
     GeometryLoaderRegistry.register(TConstruct.getResource("material_block"), MaterialBlockModel.LOADER);
     GeometryLoaderRegistry.register(TConstruct.getResource("tool"), ToolModel.LOADER);
 
-    // Mantle's own loaders (connected, item_layer, retextured, nbt_key, colored_block) have no
-    // geometry source in this tree at all — only the support classes Tinkers' models needed were
-    // written — so the 135 mantle:connected and 18 mantle:item_layer models still fall through to
-    // the vanilla parse of their JSON, which is what happened before this bridge existed.
+    // Mantle's own loaders. Written here rather than copied, since Mantle's geometry sources are
+    // not in this tree; retextured is the one the tables and smeltery components need, and it is
+    // what carries a block entity's chosen texture into its model.
+    GeometryLoaderRegistry.register(Mantle.getResource("retextured"), RetexturedModel.Geometry.LOADER);
+
+    // Still unwritten: connected (135 models), item_layer (18), nbt_key (2) and colored_block (1).
+    // Those fall through to the vanilla parse of their JSON, which is what happened before this
+    // bridge existed — a connected texture shows its base variant rather than nothing.
 
     // must come last: the plugin snapshots nothing, but registering loaders after the first
     // resource reload has begun would silently miss that reload's models

@@ -5,6 +5,9 @@ import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import slimeknights.mantle.client.render.InventoryBlockEntityRenderer;
 import slimeknights.mantle.client.render.RenderItem;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
+import net.minecraft.world.item.component.DyedItemColor;
+import slimeknights.tconstruct.tables.block.entity.chest.TinkersChestBlockEntity;
 import slimeknights.tconstruct.common.ClientEventBase;
 import slimeknights.tconstruct.library.TinkerItemDisplays;
 import slimeknights.tconstruct.shared.block.entity.TableBlockEntity;
@@ -26,6 +29,7 @@ import slimeknights.tconstruct.tables.client.inventory.TinkerStationScreen;
 public class TableClientEvents extends ClientEventBase {
   /** Registers the table menu screens */
   public static void init() {
+    registerColors();
     MenuScreens.register(TinkerTables.craftingStationContainer.get(), CraftingStationScreen::new);
     MenuScreens.register(TinkerTables.tinkerStationContainer.get(), TinkerStationScreen::new);
     MenuScreens.register(TinkerTables.partBuilderContainer.get(), PartBuilderScreen::new);
@@ -45,8 +49,23 @@ public class TableClientEvents extends ClientEventBase {
     BlockEntityRendererRegistry.register(TinkerTables.partBuilderTile.get(), tableRenderer);
   }
 
-  // PORT: colour handlers wait on the colour slice. Forge registered a block colour reading
-  //   TinkersChestBlockEntity#getColor and an item colour reading DyeableLeatherItem#getColor
-  //   (removed in 1.21 in favour of the DYED_COLOR data component) for TinkerTables.tinkersChest,
-  //   via RegisterColorHandlersEvent; the Fabric equivalent is ColorProviderRegistry.
+  /**
+   * Colours for the tinkers' chest, which is dyed like leather armour.
+   *
+   * <p>The block reads the dye off its block entity; the item reads the {@code dyed_color}
+   * component, which is where 1.21 moved what {@code DyeableLeatherItem} used to answer.
+   */
+  private static void registerColors() {
+    ColorProviderRegistry.BLOCK.register(
+      (state, view, pos, index) -> {
+        if (index == 0 && view != null && pos != null && view.getBlockEntity(pos) instanceof TinkersChestBlockEntity chest) {
+          return chest.getColor();
+        }
+        return -1;
+      },
+      TinkerTables.tinkersChest.get());
+    ColorProviderRegistry.ITEM.register(
+      (stack, index) -> index == 0 ? DyedItemColor.getOrDefault(stack, TinkersChestBlockEntity.DEFAULT_COLOR) : -1,
+      TinkerTables.tinkersChest.asItem());
+  }
 }

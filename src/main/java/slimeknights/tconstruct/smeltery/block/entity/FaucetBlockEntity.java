@@ -317,7 +317,9 @@ public class FaucetBlockEntity extends MantleBlockEntity {
     }
   }
 
-  // phase 5: Forge getRenderBoundingBox returns with the client render layer
+  // Forge's getRenderBoundingBox is not needed here. It widened the box a per-block-entity
+  // frustum test used, and vanilla has no such test — every block entity in a visible section
+  // renders, however far outside its own block it draws.
 
 
   /* NBT and networking */

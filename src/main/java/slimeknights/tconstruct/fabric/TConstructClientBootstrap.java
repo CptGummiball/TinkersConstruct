@@ -49,6 +49,8 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     slimeknights.tconstruct.library.client.materials.MaterialTooltipCache.init();
     FluidTooltipHandler.init();
     ModifierIconManager.init();
+    slimeknights.tconstruct.shared.CommonsClientEvents.init();
+    slimeknights.tconstruct.fluids.FluidClientEvents.init();
     TableClientEvents.init();
     SmelteryClientEvents.init();
     // Block entity and entity renderers: Forge registered these from EntityRenderersEvent inside
@@ -62,6 +64,7 @@ public class TConstructClientBootstrap implements ClientModInitializer {
     slimeknights.mantle.client.book.BookLoader.init();
     slimeknights.tconstruct.library.client.book.TinkerBook.initBook();
     slimeknights.tconstruct.fabric.client.BookDevHarness.init();
+    slimeknights.tconstruct.fabric.client.BlockRenderDevHarness.init();
 
     // Further client modules are wired in as each one finishes porting; see PORTING.md.
   }

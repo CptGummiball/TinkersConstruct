@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.tconstruct.library.client.SafeClient;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.fluid.FluidTankAnimated;
 import slimeknights.tconstruct.library.fluid.IFluidTankUpdater;
@@ -83,7 +84,7 @@ public interface ITankBlockEntity extends IFluidTankUpdater, FluidUpdatePacket.I
 
     // update the block model
     if (isFluidInModel()) {
-      // phase 5: SafeClient.updateFluidModel returns with the client model system
+      SafeClient.updateFluidModel(getTE(), tank, oldAmount, newAmount);
     }
   }
 

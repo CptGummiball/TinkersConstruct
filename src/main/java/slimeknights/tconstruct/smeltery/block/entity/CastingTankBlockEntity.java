@@ -253,7 +253,7 @@ public class CastingTankBlockEntity extends TableBlockEntity implements ITankBlo
     tryToProcessItem();
     if (this.level != null) {
       TankBlockEntity.updateLight(this, tank);
-      // phase 5: Forge requestModelDataUpdate returns with the client model system
+      requestModelDataUpdate();
     }
   }
 

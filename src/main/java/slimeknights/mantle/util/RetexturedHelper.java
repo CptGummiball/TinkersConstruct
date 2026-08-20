@@ -22,6 +22,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.Mantle;
+import slimeknights.mantle.client.model.data.ModelData;
 import slimeknights.mantle.client.model.data.ModelProperty;
 
 import javax.annotation.Nullable;
@@ -168,15 +169,21 @@ public final class RetexturedHelper {
     // update the texture in BE data
     Level level = self.getLevel();
     if (level != null && level.isClientSide) {
-      // Forge's requestModelDataUpdate has no Fabric counterpart; the block update below
-      // already triggers the chunk rebuild that re-reads render data.
+      // the block update rebuilds the section, which is when the render attachment is re-read
       BlockState state = self.getBlockState();
       level.sendBlockUpdated(self.getBlockPos(), state, state, 0);
     }
   }
 
-  // getModelDataBuilder/getModelData (Forge ModelData) return with the client model
-  // system in phase 5, backed by Fabric's RenderDataBlockEntity instead.
+  /** Creates a model data builder carrying the given texture block */
+  public static ModelData.Builder getModelDataBuilder(@Nullable Block block) {
+    return ModelData.builder().with(BLOCK_PROPERTY, block == null ? Blocks.AIR : block);
+  }
+
+  /** Model data carrying the given texture block, for a block entity's render attachment */
+  public static ModelData getModelData(@Nullable Block block) {
+    return getModelDataBuilder(block).build();
+  }
 
 
   /* Block */

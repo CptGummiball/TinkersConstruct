@@ -279,3 +279,9 @@ accessible method net/minecraft/client/renderer/LevelRenderer renderHitOutline (
 # Player.closeContainer — Mantle's book item closes the open container before reopening the book
 # on top of it, so the reader returns to the same page. Protected in 1.21.
 accessible method net/minecraft/world/entity/player/Player closeContainer ()V
+
+# Minecraft.fontManager and FontManager.fontSets — the books are set in the unicode font, which
+# needs the FontSet behind Minecraft.UNIFORM_FONT. FontManager only exposes createFont(), which
+# always returns the default font.
+accessible field net/minecraft/client/Minecraft fontManager Lnet/minecraft/client/gui/font/FontManager;
+accessible field net/minecraft/client/gui/font/FontManager fontSets Ljava/util/Map;

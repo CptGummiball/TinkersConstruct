@@ -1,20 +1,26 @@
 package slimeknights.mantle.client.model;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.fabric.api.blockview.v2.FabricBlockView;
+import net.fabricmc.fabric.api.renderer.v1.model.FabricBakedModel;
+import net.fabricmc.fabric.api.renderer.v1.render.RenderContext;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.client.model.data.ModelData;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Baked model that delegates everything to another baked model, so subclasses only override what
@@ -30,11 +36,90 @@ import java.util.List;
  *
  * @param <T> wrapped model type
  */
-public abstract class BakedModelWrapper<T extends BakedModel> implements BakedModel {
+public abstract class BakedModelWrapper<T extends BakedModel> implements BakedModel, FabricBakedModel {
   protected final T originalModel;
 
   protected BakedModelWrapper(T originalModel) {
     this.originalModel = originalModel;
+  }
+
+  /* Model data delivery */
+
+  @Override
+  public boolean isVanillaAdapter() {
+    // false is what buys the emitBlockQuads call below; a vanilla adapter is read through the plain
+    // getQuads alone, which is exactly the call that has nowhere to put the model data
+    return false;
+  }
+
+  /**
+   * Hands this model the block entity's model data, which is the job Forge's renderer did.
+   *
+   * <p>Forge asked every block entity for its {@link ModelData} during a chunk rebuild and threaded
+   * the result through {@code BakedModel.getQuads}; vanilla 1.21.1 has no such parameter. Fabric
+   * calls the same idea a render attachment and offers this callback instead, which does get the
+   * block view — and the block view is where the attachment lives.
+   *
+   * <p>Item rendering is untouched: it never used model data, it goes through {@code ItemOverrides},
+   * and the default {@code emitItemQuads} encodes this model the ordinary way.
+   */
+  @Override
+  public void emitBlockQuads(BlockAndTintGetter view, BlockState state, BlockPos pos, Supplier<RandomSource> random, RenderContext context) {
+    ModelData data = ModelData.EMPTY;
+    if (view instanceof FabricBlockView fabricView && fabricView.getBlockEntityRenderData(pos) instanceof ModelData attached) {
+      data = attached;
+    }
+    // the renderer only knows how to ask a model the vanilla way, so the data is bound to a view of
+    // this model that answers with it. Only chunk rebuilds land here, so the wrapper is cheap enough
+    context.bakedModelConsumer().accept(new Bound(this, data), state);
+  }
+
+  /**
+   * View of a wrapped model with one set of model data already chosen.
+   *
+   * <p>Exists so the renderer's plain {@code getQuads} call reaches the data-carrying overload; every
+   * other question is answered by the wrapper itself.
+   */
+  private record Bound(BakedModelWrapper<?> parent, ModelData data) implements BakedModel {
+    @Override
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource random) {
+      return this.parent.getQuads(state, side, random, this.data, null);
+    }
+
+    @Override
+    public boolean useAmbientOcclusion() {
+      return this.parent.useAmbientOcclusion();
+    }
+
+    @Override
+    public boolean isGui3d() {
+      return this.parent.isGui3d();
+    }
+
+    @Override
+    public boolean usesBlockLight() {
+      return this.parent.usesBlockLight();
+    }
+
+    @Override
+    public boolean isCustomRenderer() {
+      return this.parent.isCustomRenderer();
+    }
+
+    @Override
+    public TextureAtlasSprite getParticleIcon() {
+      return this.parent.getParticleIcon(this.data);
+    }
+
+    @Override
+    public ItemTransforms getTransforms() {
+      return this.parent.getTransforms();
+    }
+
+    @Override
+    public ItemOverrides getOverrides() {
+      return this.parent.getOverrides();
+    }
   }
 
   @Override

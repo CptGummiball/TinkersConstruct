@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
 /**
  * Filtered drain tile entity
  */
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
   private static final String TAG_ITEM = "item";
   private static final Component TITLE = TConstruct.makeTranslation("gui", "duct");
@@ -84,9 +86,16 @@ public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
     return LazyOptional.of(() -> new DuctTankWrapper(capability.orElse(emptyInstance), itemHandler));
   }
 
+  @Override
+  public ModelData getModelData() {
+    return RetexturedHelper.getModelDataBuilder(getTexture())
+                           .with(ModelProperties.FLUID_STACK, itemHandler.getFluid())
+                           .build();
+  }
+
   /** Updates the fluid in model data */
   public void updateFluid() {
-    // phase 5: Forge requestModelDataUpdate returns with the client model system
+    requestModelDataUpdate();
     assert level != null;
     BlockState state = getBlockState();
     level.sendBlockUpdated(worldPosition, state, state, 48);

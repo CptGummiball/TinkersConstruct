@@ -16,13 +16,8 @@ import java.util.List;
  * Baked model that rebakes itself from the data it is handed, caching the result.
  *
  * <p>Subclasses implement the data-carrying {@code getQuads} overload and leave the rest to
- * {@link BakedModelWrapper}, which routes the vanilla three-argument call into it.
- *
- * <p>PORT: upstream Mantle made the vanilla overload throw, on the grounds that Forge's renderer
- * always supplied model data and reaching the plain call meant a bug. Vanilla 1.21.1 has only the
- * plain call, so throwing would take down every block render; the inherited delegation with
- * {@link ModelData#EMPTY} is what the wrapper does instead, and a data-driven subclass falls back
- * to its base variant until render attachments are wired up (see {@link ModelData}).
+ * {@link BakedModelWrapper}, which routes the vanilla three-argument call into it and delivers the
+ * block entity's model data through Fabric's renderer.
  *
  * @param <T> wrapped model type
  */

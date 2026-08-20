@@ -7,8 +7,10 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
+import slimeknights.mantle.client.model.data.ModelData;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.fabric.ContentLookups;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 
@@ -33,9 +35,10 @@ public class MaterialBlockEntity extends MantleBlockEntity {
     this(ContentLookups.materialBlockEntityType(), pos, state);
   }
 
-  // getModelData (Forge ModelData with ModelProperties.MATERIAL) is client model plumbing;
-  // the Fabric render-data equivalent registers with the client module (phase 5). The
-  // material itself still syncs through the update tag below.
+  @Override
+  public ModelData getModelData() {
+    return ModelData.builder().with(ModelProperties.MATERIAL, material).build();
+  }
 
   /** Called to update the material on the block. */
   public void setMaterial(MaterialVariantId material) {

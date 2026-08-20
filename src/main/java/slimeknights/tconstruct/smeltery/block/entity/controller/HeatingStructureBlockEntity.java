@@ -32,6 +32,8 @@ import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.block.entity.NameableBlockEntity;
 import slimeknights.mantle.util.BlockEntityHelper;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.common.multiblock.IMasterLogic;
 import slimeknights.tconstruct.common.multiblock.IServantLogic;
@@ -488,7 +490,7 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
     if (level != null && level.isClientSide) {
       // update ourself
       this.displayFluid = fluid.copy();
-      // phase 5: Forge requestModelDataUpdate returns with the client model system
+      requestModelDataUpdate();
       BlockState state = getBlockState();
       level.sendBlockUpdated(worldPosition, state, state, 48);
       updateListeners(displayFluid);
@@ -505,7 +507,9 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
     this.setChangedFast();
   }
 
-  // phase 5: Forge's getRenderBoundingBox extension returns with the client render layer
+  // Forge's getRenderBoundingBox is not needed here. It widened the box a per-block-entity
+  // frustum test used, and vanilla has no such test — every block entity in a visible section
+  // renders, however far outside its own block it draws.
 
   /* Heating helpers */
 
@@ -583,6 +587,13 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   @Override
   public String getTextureName() {
     return RetexturedHelper.getTextureName(texture);
+  }
+
+  @Override
+  public ModelData getModelData() {
+    return RetexturedHelper.getModelDataBuilder(texture)
+                           .with(ModelProperties.FLUID_STACK, displayFluid)
+                           .build();
   }
 
   @Override

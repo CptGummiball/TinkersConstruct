@@ -19,6 +19,7 @@ import slimeknights.mantle.transfer.fluid.EmptyFluidHandler;
 import slimeknights.mantle.transfer.item.IItemHandler;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
 import slimeknights.mantle.inventory.EmptyItemHandler;
+import slimeknights.mantle.client.model.data.ModelData;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.mantle.util.WeakConsumerWrapper;
 import slimeknights.tconstruct.common.multiblock.IMasterLogic;
@@ -148,6 +149,11 @@ public abstract class SmelteryInputOutputBlockEntity<T> extends SmelteryComponen
   @Override
   public String getTextureName() {
     return RetexturedHelper.getTextureName(texture);
+  }
+
+  @Override
+  public ModelData getModelData() {
+    return RetexturedHelper.getModelDataBuilder(texture).build();
   }
 
   @Override

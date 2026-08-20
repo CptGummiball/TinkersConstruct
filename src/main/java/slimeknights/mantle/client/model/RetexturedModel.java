@@ -10,15 +10,48 @@ import net.minecraft.world.inventory.InventoryMenu;
 import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
 import slimeknights.mantle.client.model.util.SimpleBlockModel;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonObject;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.client.resources.model.UnbakedModel;
+import net.minecraft.core.Direction;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.util.DynamicBakedWrapper;
+import slimeknights.mantle.client.model.util.ModelHelper;
+import slimeknights.mantle.util.JsonHelper;
+import slimeknights.mantle.util.RetexturedHelper;
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * Support for models whose textures are swapped at render time for a block chosen in NBT.
  *
- * <p>Upstream Mantle also registers this as a {@code mantle:retextured} geometry loader; that
- * loader has no source in this tree, so only the two pieces Tinkers' own geometry calls are here —
- * the texture-name expansion and the baking context that performs the swap.
+ * <p>Holds three things: the texture-name expansion, the baking context that performs the swap, and
+ * the {@code mantle:retextured} geometry itself. Tinkers' own geometry calls the first two directly
+ * for the anvils and the seared components; the geometry below is what the tables and the smeltery
+ * components name in their model JSON.
  */
 public final class RetexturedModel {
   private RetexturedModel() {}
@@ -133,6 +166,108 @@ public final class RetexturedModel {
     @Override
     public boolean isComponentVisible(String component, boolean fallback) {
       return base.isComponentVisible(component, fallback);
+    }
+  }
+
+  /**
+   * The {@code mantle:retextured} geometry: a plain block model plus the list of texture names that
+   * follow the block the block entity was retextured with.
+   */
+  public static class Geometry implements IUnbakedGeometry<Geometry> {
+    /** Shared loader instance */
+    public static final IGeometryLoader<Geometry> LOADER = Geometry::deserialize;
+
+    private final SimpleBlockModel model;
+    private final Set<String> retextured;
+
+    public Geometry(SimpleBlockModel model, Set<String> retextured) {
+      this.model = model;
+      this.retextured = retextured;
+    }
+
+    @Override
+    public void resolveParents(Function<ResourceLocation,UnbakedModel> modelGetter, IGeometryBakingContext context) {
+      this.model.resolveParents(modelGetter, context);
+    }
+
+    @Override
+    public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, ItemOverrides overrides, ResourceLocation location) {
+      BakedModel baked = this.model.bake(owner, baker, spriteGetter, transform, overrides, location);
+      return new Baked(baked, owner, this.model, transform, getAllRetextured(owner, this.model, this.retextured));
+    }
+
+    /** Deserializes this model from JSON */
+    public static Geometry deserialize(JsonObject json, JsonDeserializationContext context) {
+      SimpleBlockModel model = SimpleBlockModel.deserialize(json, context);
+      Set<String> retextured = json.has("retextured")
+                               ? ImmutableSet.copyOf(JsonHelper.parseList(json, "retextured", GsonHelper::convertToString))
+                               : Set.of();
+      return new Geometry(model, retextured);
+    }
+  }
+
+  /**
+   * Baked {@code mantle:retextured} model.
+   *
+   * <p>Rebakes itself once per distinct texture and keeps the result: a world full of retextured
+   * seared components resolves to a handful of models rather than one per block.
+   */
+  public static class Baked extends DynamicBakedWrapper<BakedModel> {
+    private final IGeometryBakingContext owner;
+    private final SimpleBlockModel model;
+    private final ModelState transform;
+    private final Set<String> retextured;
+    private final Map<ResourceLocation,BakedModel> cache = new ConcurrentHashMap<>();
+
+    /** Item form: the stack names its texture in NBT, exactly as the block entity does */
+    private final ItemOverrides overrides = new ItemOverrides() {
+      @Nullable
+      @Override
+      public BakedModel resolve(BakedModel original, ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed) {
+        Block block = RetexturedHelper.getTexture(stack);
+        return block == Blocks.AIR ? original : getCachedModel(block);
+      }
+    };
+
+    public Baked(BakedModel baked, IGeometryBakingContext owner, SimpleBlockModel model, ModelState transform, Set<String> retextured) {
+      super(baked);
+      this.owner = owner;
+      this.model = model;
+      this.transform = transform;
+      this.retextured = retextured;
+    }
+
+    /** Bakes a copy of this model with the given block's particle texture in place of the retextured names */
+    private BakedModel bakeWith(ResourceLocation texture) {
+      return this.model.bakeDynamic(new RetexturedContext(this.owner, this.retextured, texture), this.transform);
+    }
+
+    /** Model for the given block, baking it on first use */
+    public BakedModel getCachedModel(Block block) {
+      return this.cache.computeIfAbsent(ModelHelper.getParticleTexture(block), this::bakeWith);
+    }
+
+    @Override
+    public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction side, RandomSource random, ModelData data, @Nullable RenderType renderType) {
+      Block block = data.get(RetexturedHelper.BLOCK_PROPERTY);
+      if (block != null && block != Blocks.AIR) {
+        return ModelHelper.getQuads(getCachedModel(block), state, side, random, data, renderType);
+      }
+      return ModelHelper.getQuads(this.originalModel, state, side, random, data, renderType);
+    }
+
+    @Override
+    public TextureAtlasSprite getParticleIcon(ModelData data) {
+      Block block = data.get(RetexturedHelper.BLOCK_PROPERTY);
+      if (block != null && block != Blocks.AIR) {
+        return ModelHelper.getParticleIcon(getCachedModel(block), data);
+      }
+      return super.getParticleIcon(data);
+    }
+
+    @Override
+    public ItemOverrides getOverrides() {
+      return this.overrides;
     }
   }
 }

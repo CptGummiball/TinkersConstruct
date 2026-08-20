@@ -293,3 +293,7 @@ slimeknights/mantle/util/html/**
 # ...and the three book items, unblocked now that the screen and the page packets exist.
 slimeknights/tconstruct/library/client/book/**
 slimeknights/tconstruct/library/TinkerBookIDs.java
+
+# --- Phase 5 slice 7: model data delivery and the last client events ---
+# The side-guarded tank model refresh; the guard is gone, the seam stays.
+slimeknights/tconstruct/library/client/SafeClient.java

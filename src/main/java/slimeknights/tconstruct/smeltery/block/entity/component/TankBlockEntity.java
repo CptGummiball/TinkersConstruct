@@ -23,6 +23,8 @@ import slimeknights.mantle.transfer.fluid.IFluidHandler;
 import slimeknights.tconstruct.common.multiblock.IMasterLogic;
 import slimeknights.tconstruct.library.fluid.FluidTankAnimated;
 import slimeknights.tconstruct.library.utils.NBTTags;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock;
 import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock.TankType;
@@ -126,8 +128,16 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
     ITankBlockEntity.super.onTankContentsChanged();
     if (this.level != null) {
       updateLight(this, tank);
-      // phase 5: Forge requestModelDataUpdate returns with the client model system
+      requestModelDataUpdate();
     }
+  }
+
+  @Override
+  public ModelData getModelData() {
+    return ModelData.builder()
+                    .with(ModelProperties.FLUID_STACK, tank.getFluid())
+                    .with(ModelProperties.TANK_CAPACITY, tank.getCapacity())
+                    .build();
   }
 
   @Override

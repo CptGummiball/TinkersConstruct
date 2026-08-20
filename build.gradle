@@ -123,6 +123,15 @@ loom {
             vmArg '-Dtconstruct.bookHarness=true'
             runDir 'run'
         }
+        // Dev only: builds a row of blocks whose models depend on block entity state, photographs
+        // them and quits. Model data is delivered while a chunk mesh is built, so a broken wiring
+        // is invisible in a log — a tank just renders empty.
+        clientBlocks {
+            inherit clientWorld
+            name 'Minecraft Client (block harness)'
+            vmArg '-Dtconstruct.blockHarness=true'
+            runDir 'run'
+        }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
             inherit server

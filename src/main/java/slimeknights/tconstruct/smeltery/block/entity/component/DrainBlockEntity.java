@@ -16,6 +16,8 @@ import javax.annotation.Nonnull;
 /**
  * Fluid IO extension to display controller fluid
  */
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 public class DrainBlockEntity extends SmelteryFluidIO implements IDisplayFluidListener {
   @Getter
   private FluidStack displayFluid = FluidStack.EMPTY;
@@ -29,11 +31,18 @@ public class DrainBlockEntity extends SmelteryFluidIO implements IDisplayFluidLi
   }
 
   @Override
+  public ModelData getModelData() {
+    return RetexturedHelper.getModelDataBuilder(getTexture())
+                           .with(ModelProperties.FLUID_STACK, displayFluid)
+                           .build();
+  }
+
+  @Override
   public void notifyDisplayFluidUpdated(FluidStack fluid) {
     if (!fluid.isFluidEqual(displayFluid)) {
       // no need to copy as the fluid was copied by the caller
       displayFluid = fluid;
-      // phase 5: Forge requestModelDataUpdate returns with the client model system
+      requestModelDataUpdate();
       assert level != null;
       BlockState state = getBlockState();
       level.sendBlockUpdated(worldPosition, state, state, 48);

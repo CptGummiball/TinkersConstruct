@@ -43,8 +43,8 @@ slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
 # Waits on OffhandCooldownTracker (phase-3 tool logic: events + TinkerData capability).
 # mantle.util.OffhandCooldownTracker itself is not copied in yet.
 
-# Retextured-block system: carries Forge ModelData, belongs to the client model phase.
-slimeknights/mantle/block/entity/DefaultRetexturedBlockEntity.java
+# (model data round) the retextured block entity gated in: ModelData is delivered as a Fabric
+# render attachment now, so a retextured block shows the block it copied again.
 
 # --- mantle.item stragglers, zero TConstruct users each ---
 # Forge item-capability provider pattern; Fabric equivalent is FluidStorage.ITEM
@@ -98,8 +98,9 @@ slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 # --- shared module: pieces deferred from the phase-4 gate-in ---
 # client work (phase 5)
 slimeknights/tconstruct/shared/TinkerClient.java
-slimeknights/tconstruct/shared/CommonsClientEvents.java
-slimeknights/tconstruct/shared/client/**
+# (model data round) CommonsClientEvents + the fluid particle gated in; the part-texture
+# generation command stays with the datagen phase.
+slimeknights/tconstruct/shared/client/ClientGeneratePartTexturesCommand.java
 # commands step: argument types + MaterialRegistry.getTagSource decision
 slimeknights/tconstruct/shared/command/**
 # server->client packet whose handler is the phase-5 texture-gen command
@@ -111,8 +112,8 @@ slimeknights/tconstruct/shared/data/**
 # the charge-bar icon overlay with phase 5
 
 # --- fluids module: pieces deferred from the phase-4 gate-in ---
-# client render/tint handlers (phase 5)
-slimeknights/tconstruct/fluids/FluidClientEvents.java
+# (model data round) FluidClientEvents gated in: render layers through BlockRenderLayerMap and
+# the potion bucket colour through ColorProviderRegistry.
 # datagen providers (phase 7)
 slimeknights/tconstruct/fluids/data/**
 

@@ -10,6 +10,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import slimeknights.mantle.block.entity.IRetexturedBlockEntity;
+import slimeknights.mantle.client.model.data.ModelData;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.shared.block.entity.TableBlockEntity;
 
@@ -23,7 +24,9 @@ public abstract class RetexturedTableBlockEntity extends TableBlockEntity implem
   public RetexturedTableBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Component name, int size) {
     super(type, pos, state, name, size);
   }
-  // phase 5: Forge's getRenderBoundingBox extension returns with the client render layer
+  // Forge's getRenderBoundingBox is not needed here. It widened the box a per-block-entity
+  // frustum test used, and vanilla has no such test — every block entity in a visible section
+  // renders, however far outside its own block it draws.
 
 
   /* Textures */
@@ -41,6 +44,11 @@ public abstract class RetexturedTableBlockEntity extends TableBlockEntity implem
   @Override
   public String getTextureName() {
     return RetexturedHelper.getTextureName(texture);
+  }
+
+  @Override
+  public ModelData getModelData() {
+    return RetexturedHelper.getModelDataBuilder(texture).build();
   }
 
   private void textureUpdated() {
