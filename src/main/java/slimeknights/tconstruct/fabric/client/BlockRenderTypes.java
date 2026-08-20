@@ -151,12 +151,34 @@ public class BlockRenderTypes {
         json = read;
         break;
       }
+      // a composite model declares render types per child; the block map has one slot, so the
+      // most permissive child layer becomes the block's
+      if (read.has("children")) {
+        RenderType best = null;
+        for (Map.Entry<String,JsonElement> entry : GsonHelper.getAsJsonObject(read, "children").entrySet()) {
+          if (entry.getValue() instanceof JsonObject child && child.has("render_type")) {
+            RenderType type = parseRenderType(GsonHelper.getAsString(child, "render_type"));
+            if (type != null && (best == null || priority(type) > priority(best))) {
+              best = type;
+            }
+          }
+        }
+        if (best != null) {
+          return best;
+        }
+      }
       current = read.has("parent") ? ResourceLocation.parse(GsonHelper.getAsString(read, "parent")) : null;
     }
     if (json == null) {
       return null;
     }
-    return switch (GsonHelper.getAsString(json, "render_type")) {
+    return parseRenderType(GsonHelper.getAsString(json, "render_type"));
+  }
+
+  /** Maps a {@code render_type} value to the chunk layer it names, or null for an unknown name */
+  @Nullable
+  private static RenderType parseRenderType(String name) {
+    return switch (name) {
       case "minecraft:translucent", "translucent" -> RenderType.translucent();
       case "minecraft:cutout", "cutout" -> RenderType.cutout();
       case "minecraft:cutout_mipped", "cutout_mipped" -> RenderType.cutoutMipped();

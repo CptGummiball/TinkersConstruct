@@ -1497,8 +1497,62 @@ entity renderer, and two panes of clear glass, which exercise the cutout layer w
 all. Both were opaque black before this and are correct now.
 
 
+### Phase 5, slice 9: the last five model loaders — **DONE, all 159 models claimed**
+
+Five loader ids still fell through to the vanilla parse of their JSON: `mantle:connected`
+(135 models), `mantle:item_layer` (18), `mantle:nbt_key` (2), `mantle:colored_block` (1) and
+`forge:composite` (3). Falling through was survivable but wrong in five different ways: connected
+glass wore a full frame on every block, the slime-metal storage blocks were entirely invisible
+(their JSON has no top-level elements, only children), the glowing items neither glowed nor
+carried their baked colour, and the creative slot and crystalshot ignored their data-driven
+texture variants.
+
+What went in, from upstream Mantle 1.20 where a source existed and from scratch where not:
+
+- **`ConnectedModel` + `ConnectedModelRegistry`** (new files): the borderless-glass machinery.
+  The base model bakes normally and 63 connection variants bake lazily by rewriting faces to
+  suffixed textures and rebaking the same elements. The Fabric twist: Forge delivered the
+  connection bits through `getModelData`; here `Baked.emitBlockQuads` gets the world directly and
+  computes them from the neighbours on the spot. A blockstate-property fallback serves callers
+  without a world. Panes work through Fabric API's multipart forwarding plus the `pane` predicate.
+- **`ModelTextureIteratable`** (new file): walks a model's texture maps up the parent chain,
+  because `getMaterial` collapses `#name` hops that connected and NBT-key need to see. Needed two
+  access widener entries (`BlockModel.textureMap`, `BlockModel.parent`).
+- **`NBTKeyModel`** (new file): the name and the JSON's `nbt_key` survive from 1.20, but the data
+  now lives in `minecraft:custom_data`, read zero-copy via `CustomData.getUnsafe()` since
+  `ItemOverrides.resolve` runs every frame.
+- **`MantleItemLayerModel.Geometry`** (added to the existing static-helper class): layers with
+  baked colour, glow and tint opt-out. Every declaring model in the tree is single-layer.
+- **`ColoredBlockModel`** was already complete; it just had no registered loader — and its class
+  doc claimed nothing needs one, which was wrong: the queen's slime storage block does.
+- **`CompositeModel.Geometry`** (added): `forge:composite` for the three storage blocks pairing an
+  opaque frame with a translucent overlay. Children bake independently and merge by delegation so
+  their culled faces survive. Per-child `render_type` collapses on Fabric, so `BlockRenderTypes`
+  now lifts the most permissive child layer onto the whole block.
+- **`SimpleBlockModel.bakeWithElements`** (new method, overridden in `ColoredBlockModel`): the
+  rebake path the connected variants use, keeping per-element colours — which is why a stained
+  glass wall stays stained after its borders vanish.
+
+**Validation.** The loader plugin's per-reload log is the metric: models resolved through custom
+geometry went 243 → 402, and the per-loader counts match the tree exactly — connected=135,
+item_layer=18, nbt_key=2, colored_block=1, composite=3. The harness scene grew a 2×2 clear glass
+wall and a 2×2 blue stained one (both now seamless with only an outer rim), a two-high pane column
+(no middle seam), and the three storage blocks (visible at all, textured, queen's slime with its
+baked glow). Zero model errors in the log.
+
+**For the next slice**: `NBTKeyModel.registerExtraTexture` and `ConnectedModelRegistry`'s register
+methods are API surface addons use; nothing in this tree calls them beyond the built-ins, so no
+init hook was added for them. If an addon compat phase needs them, wire the calls into the client
+entrypoint before the first resource reload.
+
+
 - [ ] **5 — Client.** Custom baked models (tool layers, tanks, casting), renderers, screens.
 - [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
+  **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
+  pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
+  because casting/melting are custom recipe types Unify may not see. Agreed check: Unify
+  replaces the Oritech steel ingot with the Energized Power one — cast a steel ingot in the
+  smeltery and confirm which mod's ingot comes out. That single test suffices.
 - [ ] **7 — Datagen & documentation.**
 
 ## Access widener

@@ -1,5 +1,8 @@
 package slimeknights.mantle.client.model.util;
 
+import javax.annotation.Nullable;
+import java.util.Map;
+import com.mojang.datafixers.util.Either;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.mojang.math.Transformation;
@@ -61,6 +64,17 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
   /** The elements this model bakes. */
   public List<BlockElement> getElements() {
     return model.getElements();
+  }
+
+  /** Raw texture references of the wrapped model, for walking {@code #name} chains. */
+  public Map<String,Either<Material,String>> getTextures() {
+    return model.textureMap;
+  }
+
+  /** Resolved parent of the wrapped model, or null at the end of the chain. */
+  @Nullable
+  public BlockModel getParent() {
+    return model.parent;
   }
 
   @Override
@@ -149,10 +163,20 @@ public class SimpleBlockModel implements IUnbakedGeometry<SimpleBlockModel> {
    * {@link Material#sprite()} reads.
    */
   public BakedModel bakeDynamic(IGeometryBakingContext owner, ModelState transform) {
+    return bakeWithElements(owner, getElements(), transform);
+  }
+
+  /**
+   * Bakes the given elements in place of this model's own, against the given context — the
+   * connected model swaps textures by rewriting faces and rebaking through here. Same dynamic
+   * path as {@link #bakeDynamic}: sprites come from the stitched atlas.
+   * Overridden by {@link ColoredBlockModel} to keep per-element colours on the rebaked variant.
+   */
+  public BakedModel bakeWithElements(IGeometryBakingContext owner, List<BlockElement> elements, ModelState transform) {
     Function<Material,TextureAtlasSprite> spriteGetter = Material::sprite;
     SimpleBakedModel.Builder builder = bakedBuilder(owner, ItemOverrides.EMPTY).particle(spriteGetter.apply(owner.getMaterial("particle")));
     IQuadTransformer quadTransformer = applyTransform(transform, owner.getRootTransform());
-    for (BlockElement element : getElements()) {
+    for (BlockElement element : elements) {
       bakePart(builder, owner, element, spriteGetter, transform, quadTransformer, null);
     }
     return builder.build();

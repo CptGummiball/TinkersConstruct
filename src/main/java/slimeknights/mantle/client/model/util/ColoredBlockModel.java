@@ -36,8 +36,8 @@ import java.util.function.Function;
  * <p>No {@code IGeometryLoader} constant here: upstream Mantle exposes this as
  * {@code mantle:colored_block}, but {@link slimeknights.mantle.client.model.geometry.IGeometryLoader}
  * is bound to a self type and this class reports itself as an {@code IUnbakedGeometry<SimpleBlockModel>}
- * through its parent. The one model in this tree declaring that loader id is a Mantle model whose
- * geometry was never copied in, so nothing is lost; Tinkers' own users construct it directly.
+ * through its parent. The loader id is instead registered in {@code TinkerModelLoaders} with the
+ * reference typed there; the queen's slime storage block is the one model that declares it.
  *
  * <p>Two things need this. A model with a glowing part — the lit face of a smeltery controller —
  * would otherwise need a separate model and render layer per state; and a model with a
@@ -164,6 +164,22 @@ public class ColoredBlockModel extends SimpleBlockModel {
       ColorData colors = LogicHelper.getOrDefault(colorData, i, ColorData.DEFAULT);
       IQuadTransformer partTransformer = colors.color() == -1 ? quadTransformer : quadTransformer.andThen(applyColorQuadTransformer(colors.color()));
       bakePart(builder, owner, elements.get(i), colors.luminosity(), spriteGetter, rotation, partTransformer, colors.isUvLock(defaultUvLock), location);
+    }
+    return builder.build();
+  }
+
+  /** {@inheritDoc} Keeps each element's colour and light level on the rebaked variant. */
+  @Override
+  public BakedModel bakeWithElements(IGeometryBakingContext owner, List<BlockElement> elements, ModelState transform) {
+    Function<Material,TextureAtlasSprite> spriteGetter = Material::sprite;
+    SimpleBakedModel.Builder builder = bakedBuilder(owner, ItemOverrides.EMPTY).particle(spriteGetter.apply(owner.getMaterial("particle")));
+    IQuadTransformer quadTransformer = applyTransform(transform, owner.getRootTransform());
+    Transformation rotation = transform.getRotation();
+    boolean defaultUvLock = transform.isUvLocked();
+    for (int i = 0; i < elements.size(); i++) {
+      ColorData colors = LogicHelper.getOrDefault(colorData, i, ColorData.DEFAULT);
+      IQuadTransformer partTransformer = colors.color() == -1 ? quadTransformer : quadTransformer.andThen(applyColorQuadTransformer(colors.color()));
+      bakePart(builder, owner, elements.get(i), colors.luminosity(), spriteGetter, rotation, partTransformer, colors.isUvLock(defaultUvLock), null);
     }
     return builder.build();
   }

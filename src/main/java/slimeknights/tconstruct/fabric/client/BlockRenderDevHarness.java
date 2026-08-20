@@ -15,6 +15,8 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.fluids.TinkerFluids;
 import slimeknights.tconstruct.library.recipe.FluidValues;
 import slimeknights.tconstruct.shared.TinkerCommons;
+import slimeknights.tconstruct.shared.TinkerMaterials;
+import slimeknights.tconstruct.shared.block.ClearStainedGlassBlock.GlassColor;
 import slimeknights.tconstruct.smeltery.block.entity.CastingBlockEntity;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock.TankType;
@@ -152,8 +154,25 @@ public final class BlockRenderDevHarness {
       if (level.getBlockEntity(basinPos) instanceof CastingBlockEntity basin) {
         basin.updateFluidTo(new FluidStack(TinkerFluids.moltenIron.get(), FluidValues.INGOT * 4));
       }
-      level.setBlock(ORIGIN.offset(4, 0, -2), TinkerCommons.clearGlass.get().defaultBlockState(), 3);
-      level.setBlock(ORIGIN.offset(4, 1, -2), TinkerCommons.clearGlass.get().defaultBlockState(), 3);
+      // Connected textures: a 2x2 wall of clear glass and one of stained glass. With the connected
+      // loader running, the borders between the four blocks vanish and only the outer rim remains;
+      // without it every block wears a full frame. The stained wall additionally proves the baked
+      // colour survives the connection rebake.
+      for (int x = 4; x <= 5; x++) {
+        for (int y = 0; y <= 1; y++) {
+          level.setBlock(ORIGIN.offset(x, y, -2), TinkerCommons.clearGlass.get().defaultBlockState(), 3);
+          level.setBlock(ORIGIN.offset(x - 9, y, -2), TinkerCommons.clearStainedGlass.get(GlassColor.BLUE).defaultBlockState(), 3);
+        }
+      }
+      // a two-high pane column: panes connect through their own predicate and multipart models
+      level.setBlock(ORIGIN.offset(5, 0, 3), TinkerCommons.clearGlassPane.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(5, 1, 3), TinkerCommons.clearGlassPane.get().defaultBlockState(), 3);
+
+      // the slime-metal storage blocks: queen's slime is the colored_block loader (baked glow),
+      // slimesteel and cinderslime are forge:composite (opaque frame + translucent overlay)
+      level.setBlock(ORIGIN.offset(-4, 0, 3), TinkerMaterials.queensSlime.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(-3, 0, 3), TinkerMaterials.slimesteel.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(-2, 0, 3), TinkerMaterials.cinderslime.get().defaultBlockState(), 3);
 
       // stand back and look at the row
       server.getPlayerList().getPlayers().forEach(player -> {

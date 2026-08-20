@@ -1,5 +1,17 @@
 package slimeknights.mantle.client.model.util;
 
+import java.util.function.Function;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.CompositeModel;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.resources.model.UnbakedModel;
+import net.minecraft.client.resources.model.ModelBaker;
+import net.minecraft.client.resources.model.BakedModel;
+import net.minecraft.client.renderer.block.model.ItemOverrides;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.mojang.datafixers.util.Either;
 import com.mojang.math.Transformation;
 import net.minecraft.client.renderer.block.model.BakedQuad;
@@ -148,5 +160,89 @@ public final class MantleItemLayerModel {
     Material material = new Material(InventoryMenu.BLOCK_ATLAS, sprite.contents().name());
     BlockModel template = new BlockModel(null, List.of(), Map.of(LAYER, Either.left(material)), null, null, ItemTransforms.NO_TRANSFORMS, List.of());
     return ITEM_MODEL_GENERATOR.generateBlockModel($ -> sprite, template).getElements();
+  }
+
+  /* The mantle:item_layer geometry */
+
+  /** Loader for the {@code mantle:item_layer} id */
+  public static final IGeometryLoader<Geometry> LOADER = (json, context) -> {
+    List<LayerData> layers = List.of();
+    if (json.has("layers")) {
+      List<LayerData> parsed = new ArrayList<>();
+      for (JsonElement element : GsonHelper.getAsJsonArray(json, "layers")) {
+        parsed.add(LayerData.fromJson(GsonHelper.convertToJsonObject(element, "layers[]")));
+      }
+      layers = List.copyOf(parsed);
+    }
+    return new Geometry(layers);
+  };
+
+  /**
+   * Colour, glow and tint override for one {@code layerN} texture, read from the model's
+   * {@code "layers"} array running parallel to the texture indexes.
+   *
+   * <p>Upstream also reads a per-layer {@code "render_type"} here; per-model render types collapse
+   * on Fabric (see {@link RenderTypeGroup}), so the key is accepted and ignored.
+   *
+   * @param color       ARGB colour baked into the layer, or -1 for untinted
+   * @param luminosity  Block light level baked into the layer, 0 for none
+   * @param noTint      True to suppress the layer's tint index, opting out of {@code ItemColors}
+   */
+  public record LayerData(int color, int luminosity, boolean noTint) {
+    public static final LayerData DEFAULT = new LayerData(-1, 0, false);
+
+    public static LayerData fromJson(JsonObject json) {
+      int color = -1;
+      if (json.has("color")) {
+        // parsed as hex so the JSON can write "FF00FF00" rather than a signed decimal
+        color = (int) Long.parseLong(GsonHelper.getAsString(json, "color"), 16);
+      }
+      return new LayerData(color, GsonHelper.getAsInt(json, "luminosity", 0), GsonHelper.getAsBoolean(json, "no_tint", false));
+    }
+  }
+
+  /**
+   * Geometry for the {@code mantle:item_layer} loader: a vanilla layered item model whose layers
+   * can carry a baked-in colour, a glow and a tint opt-out. Every model in this tree declaring the
+   * loader is single-layer, so the layers never contend for depth.
+   */
+  public static class Geometry implements IUnbakedGeometry<Geometry> {
+    private final List<LayerData> layers;
+    private List<Material> textures = List.of();
+
+    public Geometry(List<LayerData> layers) {
+      this.layers = layers;
+    }
+
+    /** Gets the data for the given layer, defaulting to plain */
+    private LayerData getLayer(int index) {
+      return index < layers.size() ? layers.get(index) : LayerData.DEFAULT;
+    }
+
+    @Override
+    public void resolveParents(Function<ResourceLocation,UnbakedModel> modelGetter, IGeometryBakingContext owner) {
+      List<Material> builder = new ArrayList<>();
+      for (int i = 0; owner.hasMaterial("layer" + i); i++) {
+        builder.add(owner.getMaterial("layer" + i));
+      }
+      textures = List.copyOf(builder);
+    }
+
+    @Override
+    public BakedModel bake(IGeometryBakingContext owner, ModelBaker baker, Function<Material,TextureAtlasSprite> spriteGetter, ModelState transform, ItemOverrides overrides, ResourceLocation location) {
+      if (textures.isEmpty()) {
+        throw new IllegalStateException("Empty textures list for item layer model " + location);
+      }
+      TextureAtlasSprite particle = spriteGetter.apply(owner.hasMaterial("particle") ? owner.getMaterial("particle") : textures.get(0));
+      Transformation rotation = transform.getRotation();
+      ItemLayerPixels pixels = textures.size() == 1 ? null : new ItemLayerPixels();
+      CompositeModel.Baked.Builder builder = CompositeModel.Baked.builder(owner, particle, overrides, owner.getTransforms());
+      RenderTypeGroup renderType = getDefaultRenderType(owner);
+      for (int i = 0; i < textures.size(); i++) {
+        LayerData data = getLayer(i);
+        builder.addQuads(renderType, getQuadsForSprite(data.color(), data.noTint() ? -1 : i, spriteGetter.apply(textures.get(i)), rotation, data.luminosity(), pixels));
+      }
+      return builder.build();
+    }
   }
 }
