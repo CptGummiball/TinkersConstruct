@@ -135,7 +135,8 @@ public final class FluidTexture {
   @RequiredArgsConstructor
   public static class Builder {
 
-    private final FluidType fluid;
+    /** Id of the still fluid this texture belongs to; Forge keyed builders by fluid type, fabric by the fluid (see FluidTextureManager) */
+    private final ResourceLocation id;
     /**
      * Base path, make sure to include the trailing "_" or "/"
      */
@@ -165,9 +166,8 @@ public final class FluidTexture {
      * @return Builder instance
      */
     public Builder wrapId(String prefix, String suffix, boolean overlay, boolean camera) {
-      // PORT (phase 7 datagen): Forge looked the id up in its fluid-type registry, which has no
-      // Fabric counterpart. Only the datagen provider calls this, so it returns with that pass.
-      throw new UnsupportedOperationException("wrapId requires the fluid type registry; see the datagen pass");
+      textures(ResourceLocation.fromNamespaceAndPath(id.getNamespace(), prefix + id.getPath() + suffix), overlay, camera);
+      return this;
     }
 
     /**

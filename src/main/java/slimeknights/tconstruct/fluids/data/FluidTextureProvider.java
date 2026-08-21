@@ -19,6 +19,9 @@ public class FluidTextureProvider extends AbstractFluidTextureProvider {
 
   @Override
   public void addTextures() {
+    // PORT: milk used Forge's shared fluid type, which this provider never covered; the fabric
+    // port registers its own milk fluid, so skip it here to keep the generated set identical
+    skip(TinkerFluids.milk);
     // basic
     root(TinkerFluids.powderedSnow);
     root(TinkerFluids.potion).color(0xfff800f8);

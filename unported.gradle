@@ -26,8 +26,6 @@ slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 # fog and screen-overlay half has no Fabric hook and returns with a later pass.
 slimeknights/mantle/fluid/texture/ClientTextureFluidType.java
 slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
-slimeknights/mantle/fluid/texture/AbstractFluidTextureProvider.java
-slimeknights/mantle/fluid/texture/FluidTextureCameraProvider.java
 # Datagen providers, phase 7.
 # Missed in the first fluid pass:
 # (screen round) FluidTooltipHandler + FluidUnit/FluidUnitList gated in: the reload listener
@@ -103,7 +101,6 @@ slimeknights/mantle/item/ContainerFoodItem.java
 # (model data round) FluidClientEvents gated in: render layers through BlockRenderLayerMap and
 # the potion bucket colour through ColorProviderRegistry.
 # datagen providers (phase 7)
-slimeknights/tconstruct/fluids/data/FluidTextureProvider.java
 
 # --- world module: pieces deferred from the phase-4 gate-in ---
 # (armor round) the world module's client half gated in whole: the slime and terracube renderers,
@@ -143,9 +140,6 @@ slimeknights/tconstruct/fluids/data/FluidTextureProvider.java
 # ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
 # gated in with the armor texture suppliers they read.
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
-slimeknights/tconstruct/tools/data/ArmorModelProvider.java
-slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
-slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---
 # (tool inventory round) ToolContainerMenu gated in: the opening buffer became an
 # ExtendedScreenHandlerType payload, everything else is Tinkers' own slot math.

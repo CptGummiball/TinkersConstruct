@@ -15,10 +15,21 @@ import slimeknights.tconstruct.common.data.model.TinkerItemModelProvider;
 import slimeknights.tconstruct.common.data.model.TinkerSpriteSourceProvider;
 import slimeknights.tconstruct.common.data.render.RenderFluidProvider;
 import slimeknights.tconstruct.common.data.render.RenderItemProvider;
+import slimeknights.mantle.fluid.texture.FluidTextureCameraProvider;
 import slimeknights.tconstruct.fluids.data.FluidBlockstateModelProvider;
 import slimeknights.tconstruct.fluids.data.FluidBucketModelProvider;
+import slimeknights.tconstruct.fluids.data.FluidTextureProvider;
+import slimeknights.tconstruct.library.client.data.material.GeneratorPartTextureJsonGenerator;
+import slimeknights.tconstruct.library.client.data.material.MaterialPaletteDebugGenerator;
+import slimeknights.tconstruct.library.client.data.material.MaterialPartTextureGenerator;
+import slimeknights.tconstruct.tools.data.ArmorModelProvider;
 import slimeknights.tconstruct.tools.data.ToolItemModelProvider;
 import slimeknights.tconstruct.tools.data.client.ModifierModelMapProvider;
+import slimeknights.tconstruct.tools.data.material.MaterialRenderInfoProvider;
+import slimeknights.tconstruct.tools.data.material.TrimMaterialProvider;
+import slimeknights.tconstruct.tools.data.sprite.TinkerMaterialSpriteProvider;
+import slimeknights.tconstruct.tools.data.sprite.TinkerPartSpriteProvider;
+import slimeknights.tconstruct.tools.data.sprite.TinkerTrimMaterialPaletteGenerator;
 import slimeknights.tconstruct.common.data.ConfigurationDataProvider;
 import slimeknights.tconstruct.common.data.DamageTypeProvider;
 import slimeknights.tconstruct.common.data.loot.GlobalLootModifiersProvider;
@@ -102,6 +113,7 @@ public class TConstructDataGenerator implements DataGeneratorEntrypoint {
         entries.addAll(registries.lookupOrThrow(Registries.STRUCTURE));
         entries.addAll(registries.lookupOrThrow(Registries.STRUCTURE_SET));
         entries.addAll(registries.lookupOrThrow(Registries.DAMAGE_TYPE));
+        entries.addAll(registries.lookupOrThrow(Registries.TRIM_MATERIAL));
       }
 
       @Override
@@ -158,11 +170,26 @@ public class TConstructDataGenerator implements DataGeneratorEntrypoint {
     pack.addProvider((output, registries) -> new FluidBucketModelProvider(output, TConstruct.MOD_ID));
     pack.addProvider((output, registries) -> new ToolItemModelProvider(output, existingFileHelper));
     pack.addProvider((output, registries) -> new ModifierModelMapProvider(output));
+
+    // texture generators: material render info plus the generated part sprites, armor and
+    // trim palettes; the two sprite providers are shared between them like on Forge
+    TinkerMaterialSpriteProvider materialSprites = new TinkerMaterialSpriteProvider();
+    TinkerPartSpriteProvider partSprites = new TinkerPartSpriteProvider();
+    pack.addProvider((output, registries) -> new MaterialRenderInfoProvider(output, materialSprites, existingFileHelper));
+    pack.addProvider((output, registries) -> new GeneratorPartTextureJsonGenerator(output, TConstruct.MOD_ID, partSprites));
+    pack.addProvider((output, registries) -> new MaterialPartTextureGenerator(output, existingFileHelper, partSprites, materialSprites));
+    pack.addProvider((output, registries) -> new MaterialPaletteDebugGenerator(output, TConstruct.MOD_ID, materialSprites));
+    pack.addProvider((output, registries) -> new ArmorModelProvider(output));
+    pack.addProvider((output, registries) -> new TinkerTrimMaterialPaletteGenerator(output, existingFileHelper, materialSprites));
+    FluidTextureProvider[] fluidTextures = new FluidTextureProvider[1];
+    pack.addProvider((output, registries) -> fluidTextures[0] = new FluidTextureProvider(output));
+    pack.addProvider((output, registries) -> new FluidTextureCameraProvider(output, existingFileHelper, fluidTextures[0]));
   }
 
   @Override
   public void buildRegistry(RegistrySetBuilder registryBuilder) {
     WorldgenProvider.register(registryBuilder);
     DamageTypeProvider.register(registryBuilder);
+    TrimMaterialProvider.register(registryBuilder);
   }
 }

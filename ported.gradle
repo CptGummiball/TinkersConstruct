@@ -408,5 +408,10 @@ slimeknights/tconstruct/common/data/model/**
 slimeknights/tconstruct/common/data/render/**
 slimeknights/tconstruct/library/data/AbstractToolItemModelProvider.java
 slimeknights/tconstruct/library/data/AbstractModifierModelMapProvider.java
+# --- Phase 7 slice 18: texture generators ---
+slimeknights/mantle/data/client/**
+slimeknights/tconstruct/library/client/data/AbstractArmorModelProvider.java
+slimeknights/tconstruct/library/client/data/material/AbstractMaterialRenderInfoProvider.java
+slimeknights/tconstruct/library/client/data/material/MaterialPaletteDebugGenerator.java
 slimeknights/tconstruct/world/data/WorldgenProvider.java
 slimeknights/mantle/data/MantleTagsProvider.java
