@@ -16,8 +16,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:bloodshroom_hanging_sign",
-    "count": 6
-  },
-  "show_notification": true
+    "count": 6,
+    "id": "tconstruct:bloodshroom_hanging_sign"
+  }
 }

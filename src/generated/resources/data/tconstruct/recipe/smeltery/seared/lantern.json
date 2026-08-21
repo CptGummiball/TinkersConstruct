@@ -18,8 +18,7 @@
     "BBB"
   ],
   "result": {
-    "id": "tconstruct:seared_lantern",
-    "count": 3
-  },
-  "show_notification": true
+    "count": 3,
+    "id": "tconstruct:seared_lantern"
+  }
 }

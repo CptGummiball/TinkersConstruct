@@ -4,7 +4,7 @@
     "item": "tconstruct:scorched_road"
   },
   "result": {
-    "id": "tconstruct:scorched_road_stairs",
-    "count": 1
+    "count": 1,
+    "id": "tconstruct:scorched_road_stairs"
   }
 }

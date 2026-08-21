@@ -12,8 +12,7 @@
     "BBB"
   ],
   "result": {
-    "id": "tconstruct:seared_cobble_wall",
-    "count": 6
-  },
-  "show_notification": true
+    "count": 6,
+    "id": "tconstruct:seared_cobble_wall"
+  }
 }

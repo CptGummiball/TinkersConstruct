@@ -24,12 +24,10 @@
     "m m"
   ],
   "result": {
-    "item": "tconstruct:scorched_anvil",
-    "nbt": {
-      "display": {
-        "Name": "{\"translate\":\"block.tconstruct.tool_forge\"}"
-      }
-    }
-  },
-  "show_notification": true
+    "components": {
+      "minecraft:custom_name": "{\"translate\":\"block.tconstruct.tool_forge\"}"
+    },
+    "count": 1,
+    "item": "tconstruct:scorched_anvil"
+  }
 }

@@ -13,8 +13,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:greenheart_planks_stairs",
-    "count": 4
-  },
-  "show_notification": true
+    "count": 4,
+    "id": "tconstruct:greenheart_planks_stairs"
+  }
 }

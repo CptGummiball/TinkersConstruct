@@ -4,7 +4,7 @@
     "item": "tconstruct:seared_bricks"
   },
   "result": {
-    "id": "tconstruct:seared_bricks_stairs",
-    "count": 1
+    "count": 1,
+    "id": "tconstruct:seared_bricks_stairs"
   }
 }

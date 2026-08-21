@@ -11,8 +11,7 @@
     "BBB"
   ],
   "result": {
-    "id": "tconstruct:seared_paver_slab",
-    "count": 6
-  },
-  "show_notification": true
+    "count": 6,
+    "id": "tconstruct:seared_paver_slab"
+  }
 }

@@ -4,8 +4,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/uranium",
-        "forge:ore_rates/sparse"
+        "c:ores/uranium",
+        "c:ore_rates/sparse"
       ]
     }
   ],

@@ -11,8 +11,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/copper",
-        "forge:ore_rates/sparse"
+        "c:ores/copper",
+        "c:ore_rates/sparse"
       ]
     }
   ],

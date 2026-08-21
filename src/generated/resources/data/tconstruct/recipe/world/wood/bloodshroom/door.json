@@ -13,8 +13,7 @@
     "##"
   ],
   "result": {
-    "id": "tconstruct:bloodshroom_door",
-    "count": 3
-  },
-  "show_notification": true
+    "count": 3,
+    "id": "tconstruct:bloodshroom_door"
+  }
 }

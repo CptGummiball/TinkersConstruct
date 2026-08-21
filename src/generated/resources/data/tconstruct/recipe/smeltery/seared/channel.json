@@ -11,8 +11,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:seared_channel",
-    "count": 5
-  },
-  "show_notification": true
+    "count": 5,
+    "id": "tconstruct:seared_channel"
+  }
 }

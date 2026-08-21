@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "id": "tconstruct:knightmetal_ingot",
-    "count": 9
+    "count": 9,
+    "id": "tconstruct:knightmetal_ingot"
   }
 }

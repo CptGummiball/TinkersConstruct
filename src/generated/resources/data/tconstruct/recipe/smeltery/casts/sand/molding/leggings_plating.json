@@ -7,11 +7,11 @@
     "fabric:type": "fabric:any",
     "ingredients": [
       {
-        "fabric:type": "tconstruct:material",
-        "item": "tconstruct:leggings_plating"
+        "item": "tconstruct:leggings_plating_dummy"
       },
       {
-        "item": "tconstruct:leggings_plating_dummy"
+        "fabric:type": "tconstruct:material",
+        "item": "tconstruct:leggings_plating"
       }
     ]
   },

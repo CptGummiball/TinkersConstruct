@@ -13,7 +13,7 @@
     }
   ],
   "result": {
-    "id": "tconstruct:grout",
-    "count": 2
+    "count": 2,
+    "id": "tconstruct:grout"
   }
 }

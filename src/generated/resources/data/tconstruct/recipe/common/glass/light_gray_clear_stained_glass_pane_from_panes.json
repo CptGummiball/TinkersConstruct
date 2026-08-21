@@ -16,8 +16,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:light_gray_clear_stained_glass_pane",
-    "count": 8
-  },
-  "show_notification": true
+    "count": 8,
+    "id": "tconstruct:light_gray_clear_stained_glass_pane"
+  }
 }

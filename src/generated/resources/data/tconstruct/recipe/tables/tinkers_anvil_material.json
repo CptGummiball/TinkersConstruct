@@ -21,7 +21,7 @@
     "sss"
   ],
   "result": {
+    "count": 1,
     "item": "tconstruct:tinkers_anvil"
-  },
-  "show_notification": true
+  }
 }

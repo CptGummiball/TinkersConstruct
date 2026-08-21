@@ -16,8 +16,7 @@
     " X "
   ],
   "result": {
-    "id": "tconstruct:enderbark_sign",
-    "count": 3
-  },
-  "show_notification": true
+    "count": 3,
+    "id": "tconstruct:enderbark_sign"
+  }
 }

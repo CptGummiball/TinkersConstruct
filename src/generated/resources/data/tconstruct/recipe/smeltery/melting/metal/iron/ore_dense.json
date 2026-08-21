@@ -11,8 +11,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/iron",
-        "forge:ore_rates/dense"
+        "c:ores/iron",
+        "c:ore_rates/dense"
       ]
     }
   ],

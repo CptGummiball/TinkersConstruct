@@ -11,7 +11,7 @@
         "type": "tconstruct:stat_type",
         "stat_type": "tconstruct:shield_core"
       },
-      "value": 1.0
+      "value": 1
     },
     "l": {
       "tag": "c:leathers"
@@ -23,7 +23,7 @@
     "lc"
   ],
   "result": {
+    "count": 1,
     "item": "tconstruct:travelers_shield"
-  },
-  "show_notification": true
+  }
 }

@@ -20,7 +20,7 @@
     "P"
   ],
   "result": {
+    "count": 1,
     "id": "minecraft:sticky_piston"
-  },
-  "show_notification": true
+  }
 }

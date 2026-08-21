@@ -21,8 +21,7 @@
     "  ~"
   ],
   "result": {
-    "id": "minecraft:lead",
-    "count": 2
-  },
-  "show_notification": true
+    "count": 2,
+    "id": "minecraft:lead"
+  }
 }

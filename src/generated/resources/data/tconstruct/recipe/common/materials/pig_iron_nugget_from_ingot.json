@@ -8,7 +8,7 @@
     }
   ],
   "result": {
-    "id": "tconstruct:pig_iron_nugget",
-    "count": 9
+    "count": 9,
+    "id": "tconstruct:pig_iron_nugget"
   }
 }

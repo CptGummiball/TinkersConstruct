@@ -21,7 +21,7 @@
     "sss"
   ],
   "result": {
+    "count": 1,
     "item": "tconstruct:scorched_anvil"
-  },
-  "show_notification": true
+  }
 }

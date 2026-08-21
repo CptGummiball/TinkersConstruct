@@ -13,8 +13,7 @@
     "BBB"
   ],
   "result": {
-    "id": "tconstruct:seared_bricks_stairs",
-    "count": 4
-  },
-  "show_notification": true
+    "count": 4,
+    "id": "tconstruct:seared_bricks_stairs"
+  }
 }

@@ -16,7 +16,9 @@
         "ingredient": {
           "item": "tconstruct:nether_grout"
         },
-        "result": "tconstruct:scorched_brick"
+        "result": {
+          "id": "tconstruct:scorched_brick"
+        }
       }
     },
     {

@@ -21,8 +21,8 @@
     "w"
   ],
   "result": {
+    "count": 1,
     "id": "tconstruct:crafting_station"
   },
-  "show_notification": true,
   "texture": "w"
 }

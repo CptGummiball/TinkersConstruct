@@ -5,10 +5,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:scorched_fuel_gauge"
-            ],
-            "nbt": "{tank:{Amount:4000,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4000,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:scorched_fuel_gauge"
           }
         ]
       },
@@ -18,10 +24,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:scorched_fuel_tank"
-            ],
-            "nbt": "{tank:{Amount:4000,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4000,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:scorched_fuel_tank"
           }
         ]
       },
@@ -31,10 +43,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:scorched_ingot_gauge"
-            ],
-            "nbt": "{tank:{Amount:4320,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4320,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:scorched_ingot_gauge"
           }
         ]
       },
@@ -44,10 +62,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:scorched_ingot_tank"
-            ],
-            "nbt": "{tank:{Amount:4320,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4320,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:scorched_ingot_tank"
           }
         ]
       },
@@ -57,10 +81,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:seared_fuel_gauge"
-            ],
-            "nbt": "{tank:{Amount:4000,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4000,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:seared_fuel_gauge"
           }
         ]
       },
@@ -70,10 +100,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:seared_fuel_tank"
-            ],
-            "nbt": "{tank:{Amount:4000,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4000,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:seared_fuel_tank"
           }
         ]
       },
@@ -83,10 +119,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:seared_ingot_gauge"
-            ],
-            "nbt": "{tank:{Amount:4320,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4320,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:seared_ingot_gauge"
           }
         ]
       },
@@ -96,10 +138,16 @@
       "conditions": {
         "items": [
           {
-            "items": [
-              "tconstruct:seared_ingot_tank"
-            ],
-            "nbt": "{tank:{Amount:4320,FluidName:\"tconstruct:blazing_blood\"}}"
+            "components": {
+              "minecraft:custom_data": {
+                "tank": {
+                  "Amount": 4320,
+                  "FluidName": "tconstruct:blazing_blood"
+                }
+              },
+              "minecraft:max_stack_size": 16
+            },
+            "items": "tconstruct:seared_ingot_tank"
           }
         ]
       },
@@ -107,19 +155,23 @@
     }
   },
   "display": {
-    "announce_to_chat": true,
     "description": {
       "translate": "advancements.tconstruct.foundry.blaze.description"
     },
     "frame": "goal",
-    "hidden": false,
     "icon": {
-      "id": "tconstruct:scorched_fuel_gauge",
       "components": {
-        "minecraft:custom_data": "{tank:{Amount:4000,FluidName:\"tconstruct:blazing_blood\"}}"
-      }
+        "minecraft:custom_data": {
+          "tank": {
+            "Amount": 4000,
+            "FluidName": "tconstruct:blazing_blood"
+          }
+        },
+        "minecraft:max_stack_size": 16
+      },
+      "count": 1,
+      "id": "tconstruct:scorched_fuel_gauge"
     },
-    "show_toast": true,
     "title": {
       "translate": "advancements.tconstruct.foundry.blaze.title"
     }

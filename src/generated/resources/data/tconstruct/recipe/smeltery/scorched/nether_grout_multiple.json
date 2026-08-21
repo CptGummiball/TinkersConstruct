@@ -51,7 +51,7 @@
     }
   ],
   "result": {
-    "id": "tconstruct:nether_grout",
-    "count": 8
+    "count": 8,
+    "id": "tconstruct:nether_grout"
   }
 }

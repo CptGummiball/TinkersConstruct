@@ -16,8 +16,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:enderbark_hanging_sign",
-    "count": 6
-  },
-  "show_notification": true
+    "count": 6,
+    "id": "tconstruct:enderbark_hanging_sign"
+  }
 }

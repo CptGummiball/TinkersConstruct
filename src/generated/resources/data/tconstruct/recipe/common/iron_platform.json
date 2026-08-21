@@ -15,8 +15,7 @@
     "#.#"
   ],
   "result": {
-    "id": "tconstruct:iron_platform",
-    "count": 4
-  },
-  "show_notification": true
+    "count": 4,
+    "id": "tconstruct:iron_platform"
+  }
 }

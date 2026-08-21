@@ -10,7 +10,7 @@
     }
   },
   "result": {
-    "id": "tconstruct:scorched_bricks",
-    "count": 1
+    "count": 1,
+    "id": "tconstruct:scorched_bricks"
   }
 }

@@ -4,7 +4,7 @@
     "item": "tconstruct:scorched_bricks"
   },
   "result": {
-    "id": "tconstruct:scorched_bricks_slab",
-    "count": 2
+    "count": 2,
+    "id": "tconstruct:scorched_bricks_slab"
   }
 }

@@ -12,8 +12,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:bloodshroom_trapdoor",
-    "count": 2
-  },
-  "show_notification": true
+    "count": 2,
+    "id": "tconstruct:bloodshroom_trapdoor"
+  }
 }

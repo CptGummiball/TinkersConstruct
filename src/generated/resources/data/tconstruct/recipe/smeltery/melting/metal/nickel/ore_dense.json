@@ -4,8 +4,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/nickel",
-        "forge:ore_rates/dense"
+        "c:ores/nickel",
+        "c:ore_rates/dense"
       ]
     }
   ],

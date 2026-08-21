@@ -16,8 +16,8 @@
     "sss"
   ],
   "result": {
+    "count": 1,
     "id": "tconstruct:tinkers_anvil"
   },
-  "show_notification": true,
   "texture": "m"
 }

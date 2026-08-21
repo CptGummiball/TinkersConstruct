@@ -11,8 +11,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/osmium",
-        "forge:ore_rates/sparse"
+        "c:ores/osmium",
+        "c:ore_rates/sparse"
       ]
     }
   ],

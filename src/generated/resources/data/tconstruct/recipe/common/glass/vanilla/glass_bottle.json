@@ -17,8 +17,7 @@
     " # "
   ],
   "result": {
-    "id": "minecraft:glass_bottle",
-    "count": 3
-  },
-  "show_notification": true
+    "count": 3,
+    "id": "minecraft:glass_bottle"
+  }
 }

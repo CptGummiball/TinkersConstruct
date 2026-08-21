@@ -11,8 +11,7 @@
     "###"
   ],
   "result": {
-    "id": "tconstruct:seared_soul_glass_pane",
-    "count": 16
-  },
-  "show_notification": true
+    "count": 16,
+    "id": "tconstruct:seared_soul_glass_pane"
+  }
 }

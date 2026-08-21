@@ -14,8 +14,7 @@
     "BbB"
   ],
   "result": {
-    "id": "tconstruct:scorched_bricks_fence",
-    "count": 6
-  },
-  "show_notification": true
+    "count": 6,
+    "id": "tconstruct:scorched_bricks_fence"
+  }
 }

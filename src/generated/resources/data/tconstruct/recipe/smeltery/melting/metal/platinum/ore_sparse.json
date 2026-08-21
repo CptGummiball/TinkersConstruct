@@ -11,8 +11,8 @@
     {
       "type": "mantle:tag_combination_filled",
       "match": [
-        "forge:ores/platinum",
-        "forge:ore_rates/sparse"
+        "c:ores/platinum",
+        "c:ore_rates/sparse"
       ]
     }
   ],

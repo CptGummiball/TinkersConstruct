@@ -4,6 +4,9 @@
     "fabric:type": "fabric:any",
     "ingredients": [
       {
+        "item": "tconstruct:seared_stone"
+      },
+      {
         "fabric:type": "fabric:difference",
         "base": {
           "tag": "tconstruct:seared_bricks"
@@ -11,14 +14,11 @@
         "subtracted": {
           "item": "tconstruct:seared_fancy_bricks"
         }
-      },
-      {
-        "item": "tconstruct:seared_stone"
       }
     ]
   },
   "result": {
-    "id": "tconstruct:seared_fancy_bricks",
-    "count": 1
+    "count": 1,
+    "id": "tconstruct:seared_fancy_bricks"
   }
 }

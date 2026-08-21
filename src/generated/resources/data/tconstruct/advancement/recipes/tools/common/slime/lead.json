@@ -5,7 +5,7 @@
       "conditions": {
         "items": [
           {
-            "tag": "c:slimeballs"
+            "items": "#c:slimeballs"
           }
         ]
       },
@@ -20,14 +20,13 @@
   },
   "requirements": [
     [
-      "has_slime_ball",
-      "has_the_recipe"
+      "has_the_recipe",
+      "has_slime_ball"
     ]
   ],
   "rewards": {
     "recipes": [
       "tconstruct:common/slime/lead"
     ]
-  },
-  "sends_telemetry_event": false
+  }
 }

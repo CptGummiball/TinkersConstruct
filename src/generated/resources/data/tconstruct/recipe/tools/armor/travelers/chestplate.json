@@ -26,7 +26,7 @@
               }
             ]
           },
-          "value": 1.0
+          "value": 1
         },
         {
           "fabric:type": "tconstruct:material",
@@ -49,7 +49,7 @@
     "lcl"
   ],
   "result": {
+    "count": 1,
     "item": "tconstruct:travelers_chestplate"
-  },
-  "show_notification": true
+  }
 }
