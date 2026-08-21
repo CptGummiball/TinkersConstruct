@@ -25,6 +25,9 @@
     "client": [
       "slimeknights.tconstruct.fabric.TConstructClientBootstrap"
     ],
+    "fabric-datagen": [
+      "slimeknights.tconstruct.fabric.TConstructDataGenerator"
+    ],
     "emi": [
       "slimeknights.tconstruct.plugin.emi.TConstructEmiPlugin"
     ],

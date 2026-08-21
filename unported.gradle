@@ -16,7 +16,6 @@
 
 # 1.21 deleted net.minecraft.data.recipes.FinishedRecipe; datagen now writes through
 # RecipeOutput. Belongs with the datagen phase, not here.
-slimeknights/mantle/recipe/helper/SimpleFinishedRecipe.java
 slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 
 
@@ -102,7 +101,6 @@ slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 # commands step: argument types + MaterialRegistry.getTagSource decision
 # server->client packet whose handler is the phase-5 texture-gen command
 # datagen providers (phase 7)
-slimeknights/tconstruct/shared/data/**
 # (event-layer round) CommonsEvents + AchievementEvents gated in on the shim bus
 # uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
 # the charge-bar icon overlay with phase 5
@@ -118,7 +116,9 @@ slimeknights/tconstruct/fluids/data/**
 # the plant colours, the slime particles, and the mob head models the slimeskull draws under a
 # helmet. WorldClientEvents is now called from the client entrypoint.
 # datagen providers (phase 7)
-slimeknights/tconstruct/world/data/**
+slimeknights/tconstruct/world/data/MobEquipmentProvider.java
+slimeknights/tconstruct/world/data/StructureRepalleter.java
+slimeknights/tconstruct/world/data/WorldgenProvider.java
 # (event-layer round) WorldEvents + AncientToolItemListing gated in: shim visibility/drops
 # events, wandering trades via Fabric's TradeOfferHelper (pool 2 = Forge's rare list)
 
@@ -127,59 +127,18 @@ slimeknights/tconstruct/world/data/**
 # block-entity renderer registrations inside TableClientEvents stay PORT-commented for the
 # renderer slice.
 # datagen provider (phase 7)
-slimeknights/tconstruct/tables/data/**
 
 # --- recipe-tree datagen builders (FinishedRecipe/RecipeOutput rework, phase 7) ---
-slimeknights/tconstruct/library/recipe/alloying/AlloyRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/ItemCastingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/PotionCastingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/container/ContainerFillingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/material/CompositeCastingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/material/MaterialCastingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/material/MaterialFluidRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/casting/material/PartSwapCastingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/entitymelting/EntityMeltingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/fuel/MeltingFuelBuilder.java
-slimeknights/tconstruct/library/recipe/material/MaterialRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/material/MaterialsConsumerBuilder.java
-slimeknights/tconstruct/library/recipe/material/ShapedMaterialConsumerBuilder.java
-slimeknights/tconstruct/library/recipe/melting/MaterialMeltingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/melting/MeltingRecipeBuilder.java
 # generate melting_recipes serializes through the recipe builders above, so it waits with them
-slimeknights/tconstruct/shared/command/subcommand/GenerateMeltingRecipesCommand.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/AbstractMultilevelModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/IncrementalModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/ModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/MultilevelIncrementalModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/MultilevelModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/OverslimeModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/adding/SwappableModifierRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/modifiers/severing/SeveringRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/molding/MoldingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/partbuilder/ItemPartRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/partbuilder/PartRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/partbuilder/recycle/PartBuilderRecycleBuilder.java
-slimeknights/tconstruct/library/recipe/partbuilder/recycle/PartBuilderToolRecycleBuilder.java
-slimeknights/tconstruct/library/recipe/tinkerstation/building/MaterialSwappingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/tinkerstation/building/ToolBuildingRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierMaterialRepairRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/tinkerstation/repairing/ModifierRepairRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/worktable/AbstractSizedIngredientRecipeBuilder.java
-slimeknights/tconstruct/library/recipe/worktable/ModifierSetWorktableRecipeBuilder.java
 
 # --- tables-module recipe builders, same FinishedRecipe/RecipeOutput rework as the
 # datagen builders above (phase 7) ---
-slimeknights/tconstruct/tables/recipe/TinkerStationPartSwappingBuilder.java
-slimeknights/tconstruct/tables/recipe/TinkerStationDamagingRecipeBuilder.java
 # --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---
 # (screen round) smeltery/client/screen/** and SmelteryClientEvents gated in.
 # (renderer round) smeltery/client/render/** and smeltery/client/util/** gated in, along with the
 # renderer and reload-listener registrations in SmelteryClientEvents; only the model-loader and
 # ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
-slimeknights/tconstruct/smeltery/data/Byproduct.java
 slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
-slimeknights/tconstruct/smeltery/data/SmelteryRecipeProvider.java
 # --- Phase 5 client model slice: what stayed out ---
 # (tool model round) ToolModel and the whole library/client/modifiers tree gated in, along with
 # ReversedListBuilder and the IModelBuilder shim. tconstruct:tool is live.
@@ -199,13 +158,10 @@ slimeknights/tconstruct/tools/data/ArmorModelProvider.java
 slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java
 slimeknights/tconstruct/tools/data/FluidEffectProvider.java
 slimeknights/tconstruct/tools/data/ModifierProvider.java
-slimeknights/tconstruct/tools/data/ModifierRecipeProvider.java
 slimeknights/tconstruct/tools/data/StationSlotLayoutProvider.java
 slimeknights/tconstruct/tools/data/ToolDefinitionDataProvider.java
 slimeknights/tconstruct/tools/data/ToolItemModelProvider.java
-slimeknights/tconstruct/tools/data/ToolsRecipeProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialDataProvider.java
-slimeknights/tconstruct/tools/data/material/MaterialRecipeProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
@@ -216,11 +172,6 @@ slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
 # (GLM round) the global loot modifier runtime lives in mantle/loot/modifier now.
 # phase-7 datagen builders
-slimeknights/tconstruct/tools/recipe/severing/SpecialSeveringRecipeBuilder.java
-slimeknights/tconstruct/tools/recipe/ToggleInteractionWorktableRecipeBuilder.java
-slimeknights/tconstruct/tools/recipe/ModifierSortingRecipeBuilder.java
-slimeknights/tconstruct/tools/recipe/ModifierRemovalRecipeBuilder.java
-slimeknights/tconstruct/tools/recipe/EnchantmentConvertingRecipeBuilder.java
 # (tool inventory round) ToolContainerFluidUpdatePacket gated in on the RegistryFriendlyByteBuf
 # packet shape; it still needs the tools module's packet registration, like its neighbours.
 # (event-layer round) deprecated legacy classes with zero references; their behavior is
@@ -235,10 +186,16 @@ slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityMo
 # (renderer round) GadgetClientEvents and gadgets/client/** gated in: the frame models are registered
 # through Fabric's ModelLoadingPlugin and the renderers through EntityRendererRegistry.
 # Datagen (phase 7).
-slimeknights/tconstruct/gadgets/data/**
 # Forge attach-capability glue; superseded by the static PiggybackHandler tracker.
 slimeknights/tconstruct/gadgets/capability/PiggybackCapability.java
 # Dead code upstream (never registered) AND Forge-only: onMinecartPass is a Forge Block
 # extension with no Fabric hook, and the cart-side item capability needs an entity
 # storage bridge. If it ever becomes content, wire via an AbstractMinecart mixin.
 slimeknights/tconstruct/gadgets/block/DropperRailBlock.java
+
+# --- Phase 7 leftovers in mantle.recipe.data ---
+# Name-based datagen ingredients nothing in tconstruct uses: NBT ingredients moved to
+# components in 1.21 (rework when an addon needs it), fluids never need the name dodge
+# since fluid ingredients are tag-based here.
+slimeknights/mantle/recipe/data/NBTNameIngredient.java
+slimeknights/mantle/recipe/data/FluidNameIngredient.java

@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.shared.command.subcommand;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -14,14 +15,20 @@ import net.minecraft.commands.arguments.ResourceArgument;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.recipes.FinishedRecipe;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.data.recipes.RecipeBuilder;
+import net.minecraft.resources.RegistryOps;
+import slimeknights.mantle.recipe.data.IConditionalRecipeOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.tags.TagKey;
-import net.minecraft.world.Container;
+import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -64,7 +71,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Generates melting recipes based on crafting recipes */
@@ -92,7 +98,7 @@ public class GenerateMeltingRecipesCommand {
 
   /** Runs the command */
   @SuppressWarnings("unchecked")  // not like we are using the generics at all
-  private static <C extends Container, T extends Recipe<C>> int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+  private static <C extends RecipeInput, T extends Recipe<C>> int run(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
     long startTime = System.nanoTime();
     Holder<RecipeType<?>> recipeType = ResourceArgument.getResource(context, "recipe_type", Registries.RECIPE_TYPE);
 
@@ -131,11 +137,24 @@ public class GenerateMeltingRecipesCommand {
     Comparator<MeltingResult> nameComparator = Comparator.<MeltingResult,ResourceLocation>comparing(r -> Loadables.FLUID.getKey(r.fluid.getFluid())).reversed();
     MutableInt successes = new MutableInt(0);
     Path data = pack.resolve(PackType.SERVER_DATA.getDirectory());
-    Consumer<FinishedRecipe> consumer = recipe -> {
-      ResourceLocation id = recipe.getId();
-      Path path = data.resolve(id.getNamespace() + "/recipes/" + id.getPath() + ".json");
-      if (GeneratePackHelper.saveJson(recipe.serializeRecipe(), path)) {
-        successes.increment();
+    RegistryOps<JsonElement> ops = access.createSerializationContext(JsonOps.INSTANCE);
+    IConditionalRecipeOutput consumer = new IConditionalRecipeOutput() {
+      @Override
+      public JsonObject serializeRecipe(Recipe<?> recipe) {
+        return Recipe.CODEC.encodeStart(ops, recipe).getOrThrow().getAsJsonObject();
+      }
+
+      @Override
+      public void acceptJson(ResourceLocation id, JsonObject json, @Nullable AdvancementHolder advancement) {
+        Path path = data.resolve(id.getNamespace() + "/recipe/" + id.getPath() + ".json");
+        if (GeneratePackHelper.saveJson(json, path)) {
+          successes.increment();
+        }
+      }
+
+      @Override
+      public Advancement.Builder advancement() {
+        return Advancement.Builder.recipeAdvancement().parent(RecipeBuilder.ROOT_RECIPE_ADVANCEMENT);
       }
     };
 
@@ -145,7 +164,7 @@ public class GenerateMeltingRecipesCommand {
 
     // iterate all recipes and try adding a melting recipe
     MeltingCache cache = new MeltingCache();
-    for (net.minecraft.world.item.crafting.RecipeHolder<?> holder : level.getRecipeManager().getAllRecipesFor((RecipeType<T>) recipeType.get())) {
+    for (net.minecraft.world.item.crafting.RecipeHolder<?> holder : level.getRecipeManager().getAllRecipesFor((RecipeType<T>) recipeType.value())) {
       // skip any recipes that are specifically blacklisted
       if (skipRecipes.contains(holder.id())) {
         continue;
@@ -155,7 +174,7 @@ public class GenerateMeltingRecipesCommand {
       // don't bother with results that have NBT unless its a damagable item, in which case we ignore NBT and hope for the best
       // also skip anything already meltable
       Item result = resultStack.getItem();
-      if (resultStack.isEmpty() || (resultStack.hasTag() && !result.isDamageableItem()) || !melt.matches(result) || MeltingRecipeLookup.canMelt(result)) {
+      if (resultStack.isEmpty() || (!resultStack.getComponentsPatch().isEmpty() && !result.components().has(DataComponents.MAX_DAMAGE)) || !melt.matches(result) || MeltingRecipeLookup.canMelt(result)) {
         continue;
       }
       List<MeltingResult> fluids = new ArrayList<>();
@@ -173,7 +192,7 @@ public class GenerateMeltingRecipesCommand {
           for (ItemStack stack : ingredient.getItems()) {
             // if the ingredient has NBT, nothing we can do here
             // also skip if the item is disallowed as an input
-            if (stack.isEmpty() || stack.hasTag() || !inputs.matches(stack.getItem())) {
+            if (stack.isEmpty() || !stack.getComponentsPatch().isEmpty() || !inputs.matches(stack.getItem())) {
               break ingredientSearch;
             }
             // first, try getting its fluid
@@ -265,7 +284,7 @@ public class GenerateMeltingRecipesCommand {
           builder.addByproduct(fluids.get(i).toOutput());
         }
         // mark it damagable if its true
-        if (result.isDamageableItem()) {
+        if (result.components().has(DataComponents.MAX_DAMAGE)) {
           // we don't know the proper unit size, but 10mb is pretty likely
           builder.setDamagable(10);
         }
@@ -429,7 +448,7 @@ public class GenerateMeltingRecipesCommand {
       }
       // handle buckets directly as its faster
       if (item instanceof BucketItem bucket) {
-        Fluid fluid = bucket.getFluid();
+        Fluid fluid = bucket.content;
         if (fluid != Fluids.EMPTY) {
           return MeltingResult.from(new FluidStack(fluid, FluidStack.BUCKET_VOLUME));
         }

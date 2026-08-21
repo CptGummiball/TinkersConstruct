@@ -34,7 +34,7 @@ import java.util.function.Function;
  * 1.20 JSON shape: a single {@code prop} key naming the config option.
  */
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ConfigEnabledCondition implements ICondition, LootItemCondition {
+public class ConfigEnabledCondition implements ICondition, LootItemCondition, ConditionHelper.Writable {
   public static final ResourceLocation ID = TConstruct.getResource("config");
   /* Map of config names to condition cache */
   private static final Map<String,ConfigEnabledCondition> PROPS = new HashMap<>();
@@ -68,6 +68,7 @@ public class ConfigEnabledCondition implements ICondition, LootItemCondition {
   }
 
   /** Writes this condition to JSON, for datagen */
+  @Override
   public void write(JsonObject json) {
     json.addProperty("prop", configName);
   }

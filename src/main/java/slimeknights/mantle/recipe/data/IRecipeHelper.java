@@ -3,7 +3,7 @@ package slimeknights.mantle.recipe.data;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
@@ -17,7 +17,6 @@ import slimeknights.mantle.recipe.condition.TagFilledCondition;
 import slimeknights.mantle.registration.object.IdAwareObject;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 
 /**
  * Interface for common resource location and condition methods
@@ -182,20 +181,20 @@ public interface IRecipeHelper {
    * @return  Condition for tag existing
    */
   default ICondition tagCondition(String name) {
-    return new TagFilledCondition<>(ItemTags.create(Mantle.commonResource(name)));
+    return new TagFilledCondition<>(TagKey.create(Registries.ITEM, Mantle.commonResource(name)));
   }
 
   /**
-   * Creates a consumer instance with the added conditions
-   * @param consumer    Base consumer
+   * Creates a recipe output instance with the added conditions
+   * @param output      Base recipe output
    * @param conditions  Extra conditions
-   * @return  Wrapped consumer
+   * @return  Wrapped recipe output
    */
-  default Consumer<FinishedRecipe> withCondition(Consumer<FinishedRecipe> consumer, ICondition... conditions) {
+  default RecipeOutput withCondition(RecipeOutput output, ICondition... conditions) {
     ConsumerWrapperBuilder builder = ConsumerWrapperBuilder.wrap();
     for (ICondition condition : conditions) {
       builder.addCondition(condition);
     }
-    return builder.build(consumer);
+    return builder.build(output);
   }
 }

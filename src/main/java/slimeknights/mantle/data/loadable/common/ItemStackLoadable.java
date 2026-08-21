@@ -2,7 +2,9 @@ package slimeknights.mantle.data.loadable.common;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import io.netty.handler.codec.EncoderException;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.Item;
@@ -116,7 +118,12 @@ public class ItemStackLoadable {
       if (this == READ_COUNT) {
         count = COUNT.get(json, context);
       }
-      return makeStack(ITEM.get(json, context), count, NBT.get(json, context));
+      ItemStack stack = makeStack(ITEM.get(json, context), count, NBT.get(json, context));
+      // 1.21 form: a data component patch; "nbt" above stays as the legacy custom-data blob
+      if (!stack.isEmpty() && json.has("components")) {
+        stack.applyComponents(DataComponentPatch.CODEC.parse(JsonOps.INSTANCE, json.get("components")).getOrThrow(ErrorFactory.JSON_SYNTAX_ERROR::create));
+      }
+      return stack;
     }
 
     @Override
@@ -125,7 +132,11 @@ public class ItemStackLoadable {
       if (this == READ_COUNT) {
         COUNT.serialize(stack, json);
       }
-      NBT.serialize(stack, json);
+      // always write the 1.21 component form; "nbt" is parsed for legacy data but never written
+      DataComponentPatch patch = stack.getComponentsPatch();
+      if (!patch.isEmpty()) {
+        json.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, patch).getOrThrow(ErrorFactory.RUNTIME::create));
+      }
     }
 
 
@@ -141,7 +152,7 @@ public class ItemStackLoadable {
 
     @Override
     public JsonElement serialize(ItemStack stack) {
-      if ((this == FIXED_COUNT || stack.getCount() == 1) && !stack.has(DataComponents.CUSTOM_DATA)) {
+      if ((this == FIXED_COUNT || stack.getCount() == 1) && stack.getComponentsPatch().isEmpty()) {
         return OPTIONAL_ITEM.serialize(stack);
       }
       return RecordLoadable.super.serialize(stack);

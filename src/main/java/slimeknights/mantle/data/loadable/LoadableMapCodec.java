@@ -67,6 +67,8 @@ public class LoadableMapCodec<T> extends MapCodec<T> {
     try {
       serialized = loadable.serialize(input);
     } catch (RuntimeException e) {
+      // the codec contract flattens this to a message; keep the stack visible for datagen debugging
+      slimeknights.mantle.Mantle.logger.error("Failed to serialize {}", loadable, e);
       return prefix.withErrorsFrom(DataResult.error(() -> describe(e)));
     }
     if (!(serialized instanceof JsonObject json)) {

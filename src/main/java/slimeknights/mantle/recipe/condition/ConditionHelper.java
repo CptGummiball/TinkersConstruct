@@ -30,6 +30,8 @@ public final class ConditionHelper {
   private ConditionHelper() {}
 
   private static final Map<ResourceLocation, Function<JsonObject, ICondition>> TYPES = new HashMap<>();
+  /** Writers for conditions carrying data, keyed by condition ID; consulted by {@link #serialize(ICondition)} */
+  private static final Map<ResourceLocation, IConditionSerializer<?>> WRITERS = new HashMap<>();
 
   private static ResourceLocation forge(String path) {
     return ResourceLocation.fromNamespaceAndPath("forge", path);
@@ -49,6 +51,55 @@ public final class ConditionHelper {
   /** Adds a condition type; used by plugins that ship their own conditions. */
   public static void register(ResourceLocation id, Function<JsonObject, ICondition> factory) {
     TYPES.put(id, factory);
+  }
+
+  /** Adds a condition type with both directions, so datagen can write it back out. */
+  public static void register(IConditionSerializer<?> serializer) {
+    TYPES.put(serializer.getID(), serializer::read);
+    WRITERS.put(serializer.getID(), serializer);
+  }
+
+
+  /* Datagen factories; the condition records themselves stay private */
+
+  /** Condition that always passes */
+  public static ICondition trueCondition() {
+    return new Constant(forge("true"), true);
+  }
+
+  /** Condition that never passes */
+  public static ICondition falseCondition() {
+    return new Constant(forge("false"), false);
+  }
+
+  /** Inverts the given condition */
+  public static ICondition not(ICondition value) {
+    return new Not(value);
+  }
+
+  /** Passes when all children pass */
+  public static ICondition and(ICondition... values) {
+    return new Junction(forge("and"), List.of(values), true);
+  }
+
+  /** Passes when any child passes */
+  public static ICondition or(ICondition... values) {
+    return new Junction(forge("or"), List.of(values), false);
+  }
+
+  /** Passes when the given mod is loaded */
+  public static ICondition modLoaded(String modid) {
+    return new ModLoaded(modid);
+  }
+
+  /** Passes when the given item is registered */
+  public static ICondition itemExists(ResourceLocation item) {
+    return new ItemExists(item);
+  }
+
+  /** Passes when the given item is registered */
+  public static ICondition itemExists(String namespace, String path) {
+    return new ItemExists(ResourceLocation.fromNamespaceAndPath(namespace, path));
   }
 
   private static List<ICondition> children(JsonObject json) {
@@ -105,10 +156,18 @@ public final class ConditionHelper {
   public static JsonObject serialize(ICondition condition) {
     JsonObject json = new JsonObject();
     json.addProperty("type", condition.getID().toString());
-    if (condition instanceof Writable writable) {
+    IConditionSerializer<?> writer = WRITERS.get(condition.getID());
+    if (writer != null) {
+      writeUnchecked(writer, json, condition);
+    } else if (condition instanceof Writable writable) {
       writable.write(json);
     }
     return json;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <C extends ICondition> void writeUnchecked(IConditionSerializer<C> writer, JsonObject json, ICondition condition) {
+    writer.write(json, (C)condition);
   }
 
   /** Conditions that carry data need to write it back out for datagen. */

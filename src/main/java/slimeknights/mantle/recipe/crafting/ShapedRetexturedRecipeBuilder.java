@@ -2,51 +2,39 @@ package slimeknights.mantle.recipe.crafting;
 
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.data.recipes.ShapedRecipeBuilder;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.tags.TagKey;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeSerializer;
-import slimeknights.mantle.Mantle;
+import net.minecraft.world.item.crafting.Recipe;
 import slimeknights.mantle.recipe.MantleRecipes;
+import slimeknights.mantle.recipe.data.IConditionalRecipeOutput;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
+/**
+ * Builds a shaped recipe that copies its texture from an input, by wrapping a vanilla shaped
+ * recipe builder.
+ *
+ * <p>1.21 rework: instead of decorating a {@code FinishedRecipe}, the wrap happens at the
+ * mantle provider's JSON seam — the vanilla builder serializes as usual, then the type is
+ * swapped to the retextured serializer and the texture key appended, which is exactly the
+ * shape the runtime serializer parses. Only the key form of the texture source survives;
+ * the deprecated ingredient form no longer exists in 1.21's holder-backed ingredients and
+ * nothing generated it anymore.
+ */
 @SuppressWarnings("unused")
 @RequiredArgsConstructor(staticName = "fromShaped")
 public class ShapedRetexturedRecipeBuilder {
   private final ShapedRecipeBuilder parent;
-  private Ingredient texture = null;
   private char textureKey = '\0';
   private boolean matchAll = false;
-
-  /**
-   * Sets the texture source to the given ingredient
-   * @param texture Ingredient to use for texture
-   * @return Builder instance
-   */
-  public ShapedRetexturedRecipeBuilder setSource(Ingredient texture) {
-    this.texture = texture;
-    this.textureKey = '\0';
-    return this;
-  }
-
-  /**
-   * Sets the texture source to the given tag
-   * @param tag Tag to use for texture
-   * @return Builder instance
-   */
-  public ShapedRetexturedRecipeBuilder setSource(TagKey<Item> tag) {
-    return setSource(Ingredient.of(tag));
-  }
 
   /** Sets the texture source to a key from the texture map. Is not validated as that is too much work. */
   public ShapedRetexturedRecipeBuilder setSource(char textureKey) {
     this.textureKey = textureKey;
-    this.texture = null;
     return this;
   }
 
@@ -61,22 +49,22 @@ public class ShapedRetexturedRecipeBuilder {
   }
 
   /**
-   * Builds the recipe with the default name using the given consumer
-   * @param consumer Recipe consumer
+   * Builds the recipe with the default name using the given output
+   * @param output Recipe output
    */
-  public void build(Consumer<FinishedRecipe> consumer) {
+  public void build(RecipeOutput output) {
     this.validate();
-    parent.save(base -> consumer.accept(new Result(base)));
+    parent.save(new Wrapped(IConditionalRecipeOutput.of(output), textureKey, matchAll));
   }
 
   /**
-   * Builds the recipe using the given consumer
-   * @param consumer Recipe consumer
+   * Builds the recipe using the given output
+   * @param output   Recipe output
    * @param location Recipe location
    */
-  public void build(Consumer<FinishedRecipe> consumer, ResourceLocation location) {
+  public void build(RecipeOutput output, ResourceLocation location) {
     this.validate();
-    parent.save(base -> consumer.accept(new Result(base)), location);
+    parent.save(new Wrapped(IConditionalRecipeOutput.of(output), textureKey, matchAll), location);
   }
 
   /**
@@ -84,50 +72,29 @@ public class ShapedRetexturedRecipeBuilder {
    * @throws IllegalStateException If the recipe cannot be built
    */
   private void validate() {
-    if (texture == null && textureKey == '\0') {
+    if (textureKey == '\0') {
       throw new IllegalStateException("No texture defined for texture recipe");
     }
   }
 
-  private class Result implements FinishedRecipe {
-    private final FinishedRecipe base;
-
-    private Result(FinishedRecipe base) {
-      this.base = base;
+  /** Swaps the serialized shaped recipe onto the retextured type and appends the texture keys */
+  private record Wrapped(IConditionalRecipeOutput parent, char textureKey, boolean matchAll) implements IConditionalRecipeOutput {
+    @Override
+    public JsonObject serializeRecipe(Recipe<?> recipe) {
+      return parent.serializeRecipe(recipe);
     }
 
     @Override
-    public RecipeSerializer<?> getType() {
-      return MantleRecipes.CRAFTING_SHAPED_RETEXTURED.get();
+    public void acceptJson(ResourceLocation id, JsonObject recipe, @Nullable AdvancementHolder advancement) {
+      recipe.addProperty("type", BuiltInRegistries.RECIPE_SERIALIZER.getKey(MantleRecipes.CRAFTING_SHAPED_RETEXTURED.get()).toString());
+      recipe.addProperty("texture", String.valueOf(textureKey));
+      recipe.addProperty("match_all", matchAll);
+      parent.acceptJson(id, recipe, advancement);
     }
 
     @Override
-    public ResourceLocation getId() {
-      return base.getId();
-    }
-
-    @Override
-    public void serializeRecipeData(JsonObject json) {
-      base.serializeRecipeData(json);
-      if (textureKey != '\0') {
-        json.addProperty("texture", textureKey);
-      } else if (texture != null) {
-        json.add("texture", texture.toJson());
-        Mantle.logger.warn("Using deprecated ingredient format on texture for shaped retextured recipe {}. Use key instead.", getId());
-      }
-      json.addProperty("match_all", matchAll);
-    }
-
-    @Nullable
-    @Override
-    public JsonObject serializeAdvancement() {
-      return base.serializeAdvancement();
-    }
-
-    @Nullable
-    @Override
-    public ResourceLocation getAdvancementId() {
-      return base.getAdvancementId();
+    public Advancement.Builder advancement() {
+      return parent.advancement();
     }
   }
 }

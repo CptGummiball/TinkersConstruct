@@ -41,7 +41,14 @@ public enum IngredientLoadable implements Loadable<Ingredient> {
 
   @Override
   public JsonElement serialize(Ingredient object) {
-    if (object.isEmpty()) {
+    // datagen marker for absent-mod items: write its raw name JSON, the vanilla codec would
+    // fail the holder lookup (and the fabric custom path would write the wrong dialect)
+    if (object.getCustomIngredient() instanceof slimeknights.mantle.recipe.data.ItemNameIngredient names) {
+      return names.serialize();
+    }
+    // custom ingredients look empty whenever their matching stacks are (material ingredients
+    // at datagen have no materials loaded) — they always serialize through the codec
+    if (object.getCustomIngredient() == null && object.isEmpty()) {
       if (this == DISALLOW_EMPTY) {
         throw new IllegalArgumentException("Ingredient cannot be empty");
       }
@@ -49,6 +56,16 @@ public enum IngredientLoadable implements Loadable<Ingredient> {
     }
     return Ingredient.CODEC.encodeStart(JsonOps.INSTANCE, object)
       .getOrThrow(ErrorFactory.RUNTIME::create);
+  }
+
+  @Override
+  public <P> slimeknights.mantle.data.loadable.field.LoadableField<Ingredient,P> defaultField(String key, Ingredient defaultValue, boolean serializeDefault, java.util.function.Function<P,Ingredient> getter) {
+    // fabric injects an equality onto Ingredient that compares matching stacks. At datagen no
+    // stacks match yet (no tags, no materials), which makes every tag or custom ingredient
+    // "equal" to EMPTY and silently drops it from written recipes. Forge had no equals at all,
+    // so identity is the faithful skip condition for the default.
+    return new slimeknights.mantle.data.loadable.field.DefaultingField<>(this, key, defaultValue, serializeDefault ? null
+      : (def, object) -> def == object, getter);
   }
 
   @Override

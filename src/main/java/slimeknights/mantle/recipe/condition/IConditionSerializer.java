@@ -18,8 +18,8 @@ public interface IConditionSerializer<C extends ICondition> {
   /** Reads the condition from JSON */
   C read(JsonObject json);
 
-  /** Registers this serializer with the condition deserializer */
+  /** Registers this serializer with the condition helper, both the read and the datagen write direction */
   default void register() {
-    ConditionHelper.register(getID(), this::read);
+    ConditionHelper.register(this);
   }
 }

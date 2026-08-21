@@ -45,12 +45,28 @@ public class FluidType implements FluidVariantAttributeHandler {
   /** Water-like fallback so lookups of unregistered (e.g. other mods') fluids stay safe. */
   private static final FluidType DEFAULT = new FluidType(Properties.create());
 
+  /** Cache of types derived from fabric attribute handlers for fluids we never registered. */
+  private static final java.util.Map<Fluid, FluidType> DERIVED = new java.util.concurrent.ConcurrentHashMap<>();
+
   /**
-   * Replacement for Forge's {@code Fluid.getFluidType()}. Falls back to water-like defaults
-   * for fluids that never registered a type, matching Forge's behaviour for plain fluids.
+   * Replacement for Forge's {@code Fluid.getFluidType()}. Fluids that never registered a
+   * mantle type — vanilla's own and other mods' — derive one from their Fabric fluid
+   * attributes, so e.g. lava reports Forge's 1300K instead of the water-like default; that
+   * temperature is what melting-fuel datagen and heat displays run on. Fluids without an
+   * attribute handler land on Fabric's defaults, which match the water-like fallback.
    */
   public static FluidType of(Fluid fluid) {
-    return TYPES.getOrDefault(fluid, DEFAULT);
+    FluidType type = TYPES.get(fluid);
+    if (type != null) {
+      return type;
+    }
+    return DERIVED.computeIfAbsent(fluid, f -> {
+      net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant variant = net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant.of(f);
+      return new FluidType(Properties.create()
+        .temperature(FluidVariantAttributes.getTemperature(variant))
+        .viscosity(FluidVariantAttributes.getViscosity(variant, null))
+        .lightLevel(FluidVariantAttributes.getLuminance(variant)));
+    });
   }
 
   private final Properties properties;

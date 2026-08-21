@@ -1736,13 +1736,87 @@ upstream Tinkers ships no trinket/curio integration and its armor uses vanilla s
 nothing to port there.
 
 
-- [ ] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
+
+### Phase 7, slice 15: datagen — the recipe layer regenerates, byte-for-byte where it matters
+
+Also in this slice, a pack-breaking runtime fix: **`TinkerWorld` no longer swaps
+`BlockEntityType.SKULL`'s block set for an `ImmutableSet` copy.** Fabric API keeps every
+type's `validBlocks` mutable precisely for its injected `addSupportedBlock`, and other mods
+append after us through that API — Moonlight/Supplementaries crashed with
+`UnsupportedOperationException` the moment they added skull candles. Tinkers' heads now go
+through the same `addSupportedBlock` call, and the `validBlocks` access-widener entries are
+gone so the Forge idiom cannot sneak back in.
+
+The datagen rework itself, replacing 1.20's deleted `FinishedRecipe` world:
+
+- **Mantle core** (`mantle.recipe.data`): `IConditionalRecipeOutput` extends vanilla's
+  `RecipeOutput` with a JSON-level seam (`serializeRecipe`/`acceptJson`), which is where load
+  conditions, type overrides (`ceramics:kiln`), `forge:conditional` wrappers, and the
+  name-based compat ingredients live. `MantleRecipeProvider` overrides the vanilla provider's
+  write half: recipes serialize through `Recipe.CODEC` with registry ops — **the exact codec
+  path the game parses with**, so datagen and runtime cannot drift. `AbstractRecipeBuilder`
+  keeps criteria in its own ordered map (vanilla's builder errors on duplicate names) and
+  returns built `AdvancementHolder`s. `ConsumerWrapperBuilder` patches the serialized JSON;
+  `ConditionalRecipe` captures alternatives through the seam. `ItemNameIngredient` became a
+  fabric `CustomIngredient` marker whose raw `{"item": "mod:name"}` JSON `IngredientLoadable`
+  writes before any codec can choke on the absent item; mixed tag+name arrays included.
+- **43 recipe builders** moved onto `save(RecipeOutput, id)` constructing real recipe
+  objects (the ported recipe classes kept their id constructor arguments, so the transform
+  was mechanical); the four hand-written-JSON builders (container filling, special severing,
+  the two materials wrappers) write through the seam. `GenerateMeltingRecipesCommand` came
+  back with them, writing through the same output into a `recipe/` datapack.
+- **All 8 module recipe providers** (~6.8k lines) compile against Fabric: the Forge `Tags`
+  class became a mantle shim on the `c:` namespace (paths audited against the shipped data —
+  six became plural: cobblestones, gunpowders, leathers, obsidians, stones, strings),
+  Forge's compound/intersection/difference ingredients map to fabric's, and `CompoundIngredient.of`
+  merges all-vanilla children into one plain value array (AW on `Ingredient.values`/`fromValues`)
+  because that is the shape every shipped file keeps — `fabric:any` only wraps when a child
+  really is custom.
+- **`runDatagen`** is a Fabric datagen entry (`TConstructDataGenerator`); output goes to
+  `build/datagen-out`, deliberately out-of-tree: the committed Forge-era
+  `src/generated/resources/.cache` manifests let vanilla's `HashCache` delete every file a
+  partial provider set does not regenerate (found the hard way: 14k deletions, restored from git).
+
+Bugs the codec path surfaced, all fixed:
+- Fabric injects a matching-stacks `equals` onto `Ingredient`; at datagen nothing matches, so
+  every tag or custom ingredient compared "equal" to EMPTY and default fields silently dropped
+  them (molding patterns, casting casts, worktable tools). `IngredientLoadable.defaultField`
+  now skips only on identity, Forge's effective behaviour.
+- `FluidType.of` fell back to water-like defaults for unregistered fluids; it now derives
+  from fabric's fluid attributes, so lava reports Forge's 1300K and melting-fuel datagen gets
+  its temperature 1000 back. Milk moved 320K → 300K for exact Forge recipe parity.
+- `PotionCastingRecipeBuilder` built `TippingCastingRecipe` for the tip-clearing serializer —
+  harmless when JSON was written by hand, a class-cast crash under codec dispatch.
+- Multilevel salvage ids lost their `_level_N` suffix in the transform (caught by the
+  provider's duplicate-id check); `ConfigEnabledCondition` write support existed but was
+  never wired into `ConditionHelper`'s new writer registry.
+
+**Verification** — 3,410 generated files against the committed tree: **2,672 parse-identical,
+736 differ only within eight reviewed-and-accepted classes, 0 unexplained.** The accepted
+classes are 1.21 modernizations, several of them genuine fixes of latent bugs in the migrated
+data: recipe-unlock advancements regenerate in real 1.21 criterion format (the committed ones
+were still 1.20-shaped), `tag_combination` conditions had kept dead `forge:` tag names (the
+dense/sparse ore-rate melting recipes never loaded — now `c:`), water-bottle casting results
+move from ignored `nbt` to real `potion_contents` components (they cast uncraftable potions
+today), the tool forge's joke name becomes a `custom_name` component, and the kiln-conditional
+smelting results take the object form the vanilla codec actually parses. Load proof: the world
+harness with the regenerated tree overlaid reports **0 recipe parse failures** (baseline: 2 —
+exactly the anvil materials pair, which now loads; EMI's remainder scan then trips a caught
+`getIngredients` sizing quirk on those two, noted below). The committed tree stays untouched
+this slice; the in-place swap happens once the remaining providers exist.
+
+Still parked for later slices: tag/loot/advancement/worldgen/data-map providers, the client
+asset providers (model/blockstate/sprite generation needs the Forge model-builder framework),
+`FluidContainerTransferProvider`, `CostTagAppender`, and the EMI shaped-materials remainder
+quirk above.
+
+- [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
   because casting/melting are custom recipe types Unify may not see. Agreed check: Unify
   replaces the Oritech steel ingot with the Energized Power one — cast a steel ingot in the
   smeltery and confirm which mod's ingot comes out. That single test suffices.
-- [ ] **7 — Datagen & documentation.**
+- [ ] **7 — Datagen & documentation.** Recipe layer regenerating and load-proven (slice 15); tags/loot/assets and the final documentation remain.
 
 ## Access widener
 
@@ -1776,7 +1850,7 @@ Things 1.21 deleted outright, where the replacement was a judgement call:
 | Forge `FluidType` | `mantle.transfer.fluid.FluidType` | keeps Forge's shape for 47 files and doubles as a Fabric `FluidVariantAttributeHandler`, so temperature and light are visible to other pack mods too |
 | `ForgeSpawnEggItem`, `SpawnEggItem.fromEntityType` | `SpawnEggItem`, `SpawnEggItem.byId` | Forge additions with vanilla equivalents |
 | `FriendlyByteBuf.write/readItem`, `write/readFluidStack` | the respective stream codecs | Forge buffer extensions |
-| Forge tag preference (config + `TagsUpdatedEvent`) | fixed priority: `minecraft` → `tconstruct` → alphabetical | Fabric has neither the event nor the config. Determinism is the point — an unstable pick would silently change recipe outputs between launches. |
+| Forge tag preference (config + `TagsUpdatedEvent`) | config-driven namespace list (`tagPreferences`, slice 14), unlisted namespaces alphabetical after | packs align it with their output unifier; default `[minecraft, tconstruct]` |
 | `Fluid.getFluidType()` (23 files) | `FluidType.of(fluid)` static lookup | filled by `FluidType.register` at fluid registration |
 | `BucketItem.getFluid()` | access-widened `content` field | Forge getter over a private vanilla field |
 | `ItemStack.getCraftingRemainingItem()` | Fabric's `getRecipeRemainder()` | stack-aware remainder |

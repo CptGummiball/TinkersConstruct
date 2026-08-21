@@ -1,6 +1,5 @@
 package slimeknights.tconstruct.world;
 
-import com.google.common.collect.ImmutableSet;
 import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectionContext;
 import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
@@ -340,12 +339,13 @@ public final class TinkerWorld extends TinkerModule {
     TinkerWorld.heads.forEach(head -> DispenserBlock.registerBehavior(head, dispenseArmor));
     // heads in firework stars (map opened by the AW)
     TinkerWorld.heads.forEach(head -> FireworkStarRecipe.SHAPE_BY_ITEM.put(head.asItem(), FireworkExplosion.Shape.CREEPER));
-    // inject heads into the skull block entity type (set opened by the AW)
-    ImmutableSet.Builder<Block> builder = ImmutableSet.builder();
-    builder.addAll(BlockEntityType.SKULL.validBlocks);
-    TinkerWorld.heads.forEach(head -> builder.add(head));
-    TinkerWorld.wallHeads.forEach(head -> builder.add(head));
-    BlockEntityType.SKULL.validBlocks = builder.build();
+    // inject heads into the skull block entity type. Fabric API keeps every type's block set
+    // mutable precisely for its injected addSupportedBlock — other mods (Moonlight, and
+    // Supplementaries' skull candles) append to SKULL after us through that same API, so the
+    // Forge idiom of swapping in an ImmutableSet copy would crash them with
+    // UnsupportedOperationException on the very next addSupportedBlock call.
+    TinkerWorld.heads.forEach(head -> BlockEntityType.SKULL.addSupportedBlock(head));
+    TinkerWorld.wallHeads.forEach(head -> BlockEntityType.SKULL.addSupportedBlock(head));
 
     // flammability; replaces the FireBlock.setFlammable Forge patch
     FlammableBlockRegistry fire = FlammableBlockRegistry.getDefaultInstance();

@@ -132,7 +132,7 @@ public class MaterialDataProvider extends AbstractMaterialDataProvider {
     addCompatMaterial(MaterialIds.ironwood, 2, ORDER_COMPAT + ORDER_GENERAL, true, "ingots/ironwood");
     // treated wood comes from treated wood or creosote oil
     addMaterial(MaterialIds.treatedWood, 2, ORDER_COMPAT + ORDER_GENERAL, true, false,
-      new OrCondition(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS, tagExistsCondition("treated_wood"), new TagFilledCondition<>(FluidTags.create(commonResource("creosote")))));
+      new OrCondition(ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS, tagExistsCondition("treated_wood"), new TagFilledCondition<>(TagKey.create(Registries.FLUID, commonResource("creosote")))));
     // tier 3 (mod integration)
     addCompatAlloy(MaterialIds.electrum,        3, ORDER_COMPAT + ORDER_GENERAL, "silver");
     addCompatAlloy(MaterialIds.bronze,          3, ORDER_COMPAT + ORDER_HARVEST, "tin");

@@ -319,3 +319,33 @@ slimeknights/tconstruct/library/TinkerBookIDs.java
 # --- Phase 5 slice 7: model data delivery and the last client events ---
 # The side-guarded tank model refresh; the guard is gone, the seam stays.
 slimeknights/tconstruct/library/client/SafeClient.java
+
+# --- Phase 7 slice 1: datagen, the recipe layer ---
+# Mantle datagen core: RecipeOutput-based builders, condition writing, the Forge Tags shim.
+slimeknights/mantle/recipe/data/**
+slimeknights/mantle/datagen/Tags.java
+# The eight module recipe providers and their library helper tree; the base provider and
+# the tags/loot/model/worldgen providers follow in later datagen slices.
+slimeknights/tconstruct/common/data/BaseRecipeProvider.java
+slimeknights/tconstruct/common/data/package-info.java
+slimeknights/tconstruct/shared/data/**
+slimeknights/tconstruct/tables/data/**
+slimeknights/tconstruct/gadgets/data/**
+slimeknights/tconstruct/world/data/WorldRecipeProvider.java
+slimeknights/tconstruct/world/data/package-info.java
+slimeknights/tconstruct/smeltery/data/Byproduct.java
+slimeknights/tconstruct/smeltery/data/SmelteryRecipeProvider.java
+slimeknights/tconstruct/tools/data/ToolsRecipeProvider.java
+slimeknights/tconstruct/tools/data/ModifierRecipeProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialRecipeProvider.java
+slimeknights/tconstruct/tools/data/package-info.java
+slimeknights/tconstruct/tools/data/material/package-info.java
+slimeknights/tconstruct/library/data/recipe/CraftingNBTWrapper.java
+slimeknights/tconstruct/library/data/recipe/IByproduct.java
+slimeknights/tconstruct/library/data/recipe/ICastCreationHelper.java
+slimeknights/tconstruct/library/data/recipe/IMaterialRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/ISmelteryRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/IToolRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/SmelteryRecipeBuilder.java
+slimeknights/tconstruct/library/data/recipe/package-info.java
+slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipeBuilder.java
