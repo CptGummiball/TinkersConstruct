@@ -47,6 +47,41 @@ public class AddEntryLootModifier extends LootModifier {
     this.combinedFunctions = LootItemFunctions.compose(functions);
   }
 
+  /** Creates a datagen builder, matching the forge-era API */
+  public static Builder builder(LootPoolEntryContainer.Builder<?> entry) {
+    return new Builder(entry.build());
+  }
+
+  public static class Builder {
+    private final List<LootItemCondition> conditions = new java.util.ArrayList<>();
+    private final List<ILootModifierCondition> modifierConditions = new java.util.ArrayList<>();
+    private final List<LootItemFunction> functions = new java.util.ArrayList<>();
+    private final LootPoolEntryContainer entry;
+
+    private Builder(LootPoolEntryContainer entry) {
+      this.entry = entry;
+    }
+
+    public Builder addCondition(LootItemCondition condition) {
+      conditions.add(condition);
+      return this;
+    }
+
+    public Builder addCondition(ILootModifierCondition condition) {
+      modifierConditions.add(condition);
+      return this;
+    }
+
+    public Builder addFunction(LootItemFunction function) {
+      functions.add(function);
+      return this;
+    }
+
+    public AddEntryLootModifier build() {
+      return new AddEntryLootModifier(List.copyOf(conditions), List.copyOf(modifierConditions), entry, List.copyOf(functions));
+    }
+  }
+
   @Override
   public ResourceLocation getTypeId() {
     return ID;

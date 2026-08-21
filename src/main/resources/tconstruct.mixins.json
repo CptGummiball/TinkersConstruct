@@ -16,10 +16,14 @@
     "ProjectileEventsMixin",
     "RecipeManagerConditionsMixin",
     "RecipeManagerIdMixin",
+    "ReloadableServerRegistriesInjectorMixin",
     "ReloadableServerResourcesMixin",
     "ServerAdvancementManagerConditionsMixin",
     "ServerPlayerEventsMixin",
-    "ServerPlayerGameModeEventsMixin"
+    "ServerPlayerGameModeEventsMixin",
+    "TagLoaderRemoveMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }

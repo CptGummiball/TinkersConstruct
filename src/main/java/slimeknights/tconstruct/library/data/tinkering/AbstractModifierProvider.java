@@ -5,8 +5,8 @@ import com.google.gson.JsonObject;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.PackOutput.Target;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.conditions.ICondition;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
+import slimeknights.mantle.recipe.condition.ICondition;
 import slimeknights.mantle.data.GenericDataProvider;
 import slimeknights.tconstruct.library.json.JsonRedirect;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
@@ -24,13 +24,23 @@ import java.util.concurrent.CompletableFuture;
 public abstract class AbstractModifierProvider extends GenericDataProvider {
   private final Map<ModifierId,Composable> composableModifiers = new HashMap<>();
 
-  public AbstractModifierProvider(PackOutput packOutput) {
-    super(packOutput, Target.DATA_PACK, ModifierManager.FOLDER, ModifierManager.GSON);
-  }
+  private final java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registriesFuture;
+    /** Registry access, available while modifiers build; enchantments live in a datapack registry since 1.21 */
+    protected net.minecraft.core.HolderLookup.Provider registries;
+    
+    public AbstractModifierProvider(PackOutput packOutput, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
+      super(packOutput, Target.DATA_PACK, ModifierManager.FOLDER, ModifierManager.GSON);
+      this.registriesFuture = registries;
+    }
 
   /**
    * Function to add all relevant modifiers
    */
+  /** Looks up an enchantment holder for module builders */
+  protected net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> enchantment(net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> key) {
+    return registries.lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(key);
+  }
+
   protected abstract void addModifiers();
 
   /** Adds the given builder, handling duplicate modifiers */
@@ -90,6 +100,7 @@ public abstract class AbstractModifierProvider extends GenericDataProvider {
 
   @Override
   public CompletableFuture<?> run(CachedOutput cache) {
+    this.registries = registriesFuture.join();
     addModifiers();
     return allOf(composableModifiers.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().serialize())));
   }
@@ -112,7 +123,7 @@ public abstract class AbstractModifierProvider extends GenericDataProvider {
         json.add("redirects", array);
       }
       if (condition != null) {
-        json.add("condition", CraftingHelper.serialize(condition));
+        json.add("condition", ConditionHelper.serialize(condition));
       }
       return json;
     }

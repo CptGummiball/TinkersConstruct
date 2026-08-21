@@ -43,6 +43,37 @@ public class ReplaceItemLootModifier extends LootModifier {
     this.combinedFunctions = LootItemFunctions.compose(functions);
   }
 
+  /** Creates a datagen builder, matching the forge-era API */
+  public static Builder builder(Ingredient original, slimeknights.mantle.recipe.helper.ItemOutput replacement) {
+    return new Builder(original, replacement.get().getItem());
+  }
+
+  public static class Builder {
+    private final List<LootItemCondition> conditions = new java.util.ArrayList<>();
+    private final List<LootItemFunction> functions = new java.util.ArrayList<>();
+    private final Ingredient original;
+    private final Item replacement;
+
+    private Builder(Ingredient original, Item replacement) {
+      this.original = original;
+      this.replacement = replacement;
+    }
+
+    public Builder addCondition(LootItemCondition condition) {
+      conditions.add(condition);
+      return this;
+    }
+
+    public Builder addFunction(LootItemFunction function) {
+      functions.add(function);
+      return this;
+    }
+
+    public ReplaceItemLootModifier build() {
+      return new ReplaceItemLootModifier(List.copyOf(conditions), original, replacement, List.copyOf(functions));
+    }
+  }
+
   @Override
   public ResourceLocation getTypeId() {
     return ID;

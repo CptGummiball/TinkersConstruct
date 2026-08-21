@@ -62,18 +62,25 @@ public class ExistingFileHelper {
   public void trackGenerated(ResourceLocation loc, PackType packType, String pathSuffix, String pathPrefix) {}
 
   /** Checks whether the given resource exists, expanding the path through the type */
-  public boolean exists(ResourceLocation loc, ResourceType type) {
+  public boolean exists(ResourceLocation loc, IResourceType type) {
     return exists(loc, type.packType(), type.suffix(), type.prefix());
   }
 
   /** Gets the given resource, expanding the path through the type */
-  public Resource getResource(ResourceLocation loc, ResourceType type) throws IOException {
+  public Resource getResource(ResourceLocation loc, IResourceType type) throws IOException {
     return getResource(loc, type.packType(), type.suffix(), type.prefix());
   }
 
   /** Marks a resource as generated, expanding the path through the type. No-op until phase 7 needs tracking. */
-  public void trackGenerated(ResourceLocation loc, ResourceType type) {}
+  public void trackGenerated(ResourceLocation loc, IResourceType type) {}
 
   /** Pack type plus the path pieces around an id, mirroring Forge's nested type of the same name */
-  public record ResourceType(PackType packType, String suffix, String prefix) {}
+  /** Forge's interface name for the record below, kept for source parity */
+  public interface IResourceType {
+    PackType packType();
+    String suffix();
+    String prefix();
+  }
+
+  public record ResourceType(PackType packType, String suffix, String prefix) implements IResourceType {}
 }

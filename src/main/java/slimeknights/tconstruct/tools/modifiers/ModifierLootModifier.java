@@ -32,6 +32,24 @@ public class ModifierLootModifier extends LootModifier {
   public static final ResourceLocation ID = TConstruct.getResource("modifier_hook");
   public static final MapCodec<ModifierLootModifier> CODEC = RecordCodecBuilder.mapCodec(inst -> codecStart(inst).apply(inst, ModifierLootModifier::new));
 
+  /** Creates a datagen builder, matching the forge-era API */
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private final java.util.List<LootItemCondition> conditions = new java.util.ArrayList<>();
+
+    public Builder addCondition(LootItemCondition condition) {
+      conditions.add(condition);
+      return this;
+    }
+
+    public ModifierLootModifier build() {
+      return new ModifierLootModifier(java.util.List.copyOf(conditions));
+    }
+  }
+
   protected ModifierLootModifier(java.util.List<LootItemCondition> conditionsIn) {
     super(conditionsIn);
   }

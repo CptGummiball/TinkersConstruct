@@ -210,6 +210,11 @@ public record AttributeModule(String unique, Attribute attribute, Operation oper
     return new Builder(attribute, operation);
   }
 
+  /** Creates a new builder instance from an attribute holder, the 1.21 vanilla shape */
+  public static Builder builder(net.minecraft.core.Holder<Attribute> attribute, Operation operation) {
+    return builder(attribute.value(), operation);
+  }
+
   public static Builder builder(Supplier<Attribute> attribute, Operation operation) {
     return new Builder(attribute.get(), operation);
   }
@@ -220,7 +225,9 @@ public record AttributeModule(String unique, Attribute attribute, Operation oper
     protected final Operation operation;
     @Setter
     protected String unique = "";
-    private EquipmentSlot[] slots = EquipmentSlot.values();
+    // PORT: 1.21 added the BODY animal armor slot; tinkers tools never occupy it and the
+    // shipped modifier data predates it
+    private EquipmentSlot[] slots = {EquipmentSlot.MAINHAND, EquipmentSlot.OFFHAND, EquipmentSlot.FEET, EquipmentSlot.LEGS, EquipmentSlot.CHEST, EquipmentSlot.HEAD};
     /** Tooltip style override. If set, switches from item stack attributes to equipment change attributes and shows modifier style tooltips. */
     @Setter
     private TooltipStyle tooltipStyle = TooltipStyle.ATTRIBUTE;

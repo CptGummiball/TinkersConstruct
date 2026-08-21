@@ -3,11 +3,11 @@ package slimeknights.tconstruct.common.data.tags;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.tags.DamageTypeTagsProvider;
+import slimeknights.mantle.data.MantleTagsProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageType;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import org.jetbrains.annotations.Nullable;
 import slimeknights.tconstruct.TConstruct;
 
@@ -65,9 +65,9 @@ import static slimeknights.tconstruct.common.TinkerTags.DamageTypes.MODIFIER_WHI
 import static slimeknights.tconstruct.common.TinkerTags.DamageTypes.PROJECTILE_PROTECTION;
 
 @SuppressWarnings("removal")
-public class DamageTypeTagProvider extends DamageTypeTagsProvider {
+public class DamageTypeTagProvider extends MantleTagsProvider<net.minecraft.world.damagesource.DamageType> {
   public DamageTypeTagProvider(PackOutput packOutput, CompletableFuture<Provider> lookup, @Nullable ExistingFileHelper existingFileHelper) {
-    super(packOutput, lookup, TConstruct.MOD_ID, existingFileHelper);
+    super(packOutput, net.minecraft.core.registries.Registries.DAMAGE_TYPE, lookup, null, TConstruct.MOD_ID, existingFileHelper);
   }
 
   @SuppressWarnings("unchecked")
@@ -91,7 +91,7 @@ public class DamageTypeTagProvider extends DamageTypeTagsProvider {
     // protection modifier tags
     tag(MELEE_PROTECTION).add(PLAYER_ATTACK, MOB_ATTACK, MOB_ATTACK_NO_AGGRO, CRAMMING, STING, FLUID_IMPACT.melee(), FLUID_SPIKE.melee());
     tag(PROJECTILE_PROTECTION).addTag(IS_PROJECTILE).add(FALLING_ANVIL, FALLING_BLOCK, FALLING_STALACTITE);
-    tag(FIRE_PROTECTION).addTags(IS_FIRE, IS_LIGHTNING).add(SHOCK);
+    tag(FIRE_PROTECTION).addTag(IS_FIRE).addTag(IS_LIGHTNING).add(SHOCK);
     tag(BLAST_PROTECTION).addTag(IS_EXPLOSION);
     tag(MAGIC_PROTECTION).addTag(WITCH_RESISTANT_TO).add(WITHER, WITHER_SKULL, DRAGON_BREATH);
     tag(FALL_PROTECTION).addTag(IS_FALL).add(FLY_INTO_WALL);

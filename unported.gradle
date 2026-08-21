@@ -29,8 +29,6 @@ slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
 slimeknights/mantle/fluid/texture/AbstractFluidTextureProvider.java
 slimeknights/mantle/fluid/texture/FluidTextureCameraProvider.java
 # Datagen providers, phase 7.
-slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
-slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
 # Missed in the first fluid pass:
 # (screen round) FluidTooltipHandler + FluidUnit/FluidUnitList gated in: the reload listener
 # moved to ResourceManagerHelper and the tag-flush to CommonLifecycleEvents.TAGS_LOADED.
@@ -74,16 +72,12 @@ slimeknights/mantle/item/ContainerFoodItem.java
 # registered Holder<ArmorMaterial>): extends ItemPredicate, a RECORD in 1.21. Lombok's
 # handlers throw on it and abort generation for every later file in the batch. Redesign
 # as an ItemSubPredicate; zero in-slice references, so it waits for the advancement pass.
-slimeknights/tconstruct/library/json/predicate/tool/ToolStackItemPredicate.java
 
 # --- Content-bound loot extensions waiting on the tools module (phase 4): their getType()
 # reads TinkerTools loot-type statics. MapCodec rewrite pattern established with the
 # shared-module loot conditions.
 # (tools round) AddToolDataFunction/ToolPartLootEntry gated in with the tools module
 
-# --- Waiting on the tool fluid capability step (ToolTankHelper) ---
-slimeknights/tconstruct/library/json/loot/equipment/MobEquipment.java
-slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 
 # (gadgets round) ExplosionFluidEffect + ProjectileExplosionModule gated in alongside
 # CustomExplosion/EFLNExplosion; their loaders are registered again in TinkerModifiers.
@@ -109,16 +103,15 @@ slimeknights/tconstruct/library/json/loot/equipment/MobEquipmentManager.java
 # (model data round) FluidClientEvents gated in: render layers through BlockRenderLayerMap and
 # the potion bucket colour through ColorProviderRegistry.
 # datagen providers (phase 7)
-slimeknights/tconstruct/fluids/data/**
+slimeknights/tconstruct/fluids/data/FluidBlockstateModelProvider.java
+slimeknights/tconstruct/fluids/data/FluidBucketModelProvider.java
+slimeknights/tconstruct/fluids/data/FluidTextureProvider.java
 
 # --- world module: pieces deferred from the phase-4 gate-in ---
 # (armor round) the world module's client half gated in whole: the slime and terracube renderers,
 # the plant colours, the slime particles, and the mob head models the slimeskull draws under a
 # helmet. WorldClientEvents is now called from the client entrypoint.
 # datagen providers (phase 7)
-slimeknights/tconstruct/world/data/MobEquipmentProvider.java
-slimeknights/tconstruct/world/data/StructureRepalleter.java
-slimeknights/tconstruct/world/data/WorldgenProvider.java
 # (event-layer round) WorldEvents + AncientToolItemListing gated in: shim visibility/drops
 # events, wandering trades via Fabric's TradeOfferHelper (pool 2 = Forge's rare list)
 
@@ -138,7 +131,6 @@ slimeknights/tconstruct/world/data/WorldgenProvider.java
 # (renderer round) smeltery/client/render/** and smeltery/client/util/** gated in, along with the
 # renderer and reload-listener registrations in SmelteryClientEvents; only the model-loader and
 # ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
-slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
 # --- Phase 5 client model slice: what stayed out ---
 # (tool model round) ToolModel and the whole library/client/modifiers tree gated in, along with
 # ReversedListBuilder and the IModelBuilder shim. tconstruct:tool is live.
@@ -155,16 +147,8 @@ slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
 slimeknights/tconstruct/tools/data/client/**
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
 slimeknights/tconstruct/tools/data/ArmorModelProvider.java
-slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java
-slimeknights/tconstruct/tools/data/FluidEffectProvider.java
-slimeknights/tconstruct/tools/data/ModifierProvider.java
-slimeknights/tconstruct/tools/data/StationSlotLayoutProvider.java
-slimeknights/tconstruct/tools/data/ToolDefinitionDataProvider.java
 slimeknights/tconstruct/tools/data/ToolItemModelProvider.java
-slimeknights/tconstruct/tools/data/material/MaterialDataProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
-slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
-slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
 slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---
 # (tool inventory round) ToolContainerMenu gated in: the opening buffer became an
@@ -194,8 +178,10 @@ slimeknights/tconstruct/gadgets/capability/PiggybackCapability.java
 slimeknights/tconstruct/gadgets/block/DropperRailBlock.java
 
 # --- Phase 7 leftovers in mantle.recipe.data ---
-# Name-based datagen ingredients nothing in tconstruct uses: NBT ingredients moved to
-# components in 1.21 (rework when an addon needs it), fluids never need the name dodge
-# since fluid ingredients are tag-based here.
+# NBT-name datagen ingredient: NBT moved to components in 1.21, rework when an addon needs it.
 slimeknights/mantle/recipe/data/NBTNameIngredient.java
-slimeknights/mantle/recipe/data/FluidNameIngredient.java
+# Structure repaletting datagen (phase 7, structures slice): the abstract base trips the
+# lombok-on-records killer and the shipped structures are current; returns with the
+# structure regeneration pass.
+slimeknights/tconstruct/world/data/StructureRepalleter.java
+slimeknights/tconstruct/library/data/AbstractStructureRepalleter.java

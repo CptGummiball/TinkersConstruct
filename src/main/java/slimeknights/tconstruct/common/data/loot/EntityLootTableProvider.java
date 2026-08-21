@@ -16,14 +16,14 @@ import net.minecraft.world.level.storage.loot.LootPool;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.entries.LootItem;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryContainer;
-import net.minecraft.world.level.storage.loot.functions.LootingEnchantFunction;
+import net.minecraft.world.level.storage.loot.functions.EnchantedCountIncreaseFunction;
 import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.functions.SmeltItemFunction;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
 import net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition;
 import net.minecraft.world.level.storage.loot.providers.number.ConstantValue;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.shared.TinkerCommons;
 import slimeknights.tconstruct.shared.block.SlimeType;
@@ -36,13 +36,29 @@ import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 public class EntityLootTableProvider extends EntityLootSubProvider {
-  protected EntityLootTableProvider() {
-    super(FeatureFlags.REGISTRY.allFlags());
+  protected EntityLootTableProvider(net.minecraft.core.HolderLookup.Provider registries) {
+    super(FeatureFlags.REGISTRY.allFlags(), registries);
   }
 
+  /** PORT: 1.21 dropped the known-types hook; the BiConsumer overload scopes to our namespace */
+  @SuppressWarnings("unchecked")
   @Override
-  protected Stream<EntityType<?>> getKnownEntityTypes() {
-    return ForgeRegistries.ENTITY_TYPES.getEntries().stream()
+  public void generate(java.util.function.BiConsumer<net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable>, LootTable.Builder> consumer) {
+    this.generate();
+    java.util.Map<EntityType<?>, java.util.Map<net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable>, LootTable.Builder>> map = this.map;
+    getKnownEntityTypes().forEach(type -> {
+      java.util.Map<net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable>, LootTable.Builder> tables = map.remove(type);
+      if (tables != null) {
+        tables.forEach(consumer);
+      }
+    });
+    if (!map.isEmpty()) {
+      throw new IllegalStateException("Created loot tables for entities not in our namespace: " + map.keySet());
+    }
+  }
+
+  private Stream<EntityType<?>> getKnownEntityTypes() {
+    return BuiltInRegistries.ENTITY_TYPE.entrySet().stream()
                                    // remove earth slime entity, we redirect to the vanilla loot table
                                    .filter(entry -> TConstruct.MOD_ID.equals(entry.getKey().location().getNamespace()))
                                    .map(Entry::getValue);
@@ -57,8 +73,8 @@ public class EntityLootTableProvider extends EntityLootSubProvider {
                                                                    .setRolls(ConstantValue.exactly(1))
                                                                    .add(LootItem.lootTableItem(Items.CLAY_BALL)
                                                                                           .apply(SetItemCountFunction.setCount(UniformGenerator.between(-2.0F, 1.0F)))
-                                                                                          .apply(LootingEnchantFunction.lootingMultiplier(UniformGenerator.between(0.0F, 1.0F)))
-                                                                                          .apply(SmeltItemFunction.smelted().when(LootItemEntityPropertyCondition.hasProperties(LootContext.EntityTarget.THIS, ENTITY_ON_FIRE))))));
+                                                                                          .apply(EnchantedCountIncreaseFunction.lootingMultiplier(this.registries, UniformGenerator.between(0.0F, 1.0F)))
+                                                                                          .apply(SmeltItemFunction.smelted().when(this.shouldSmeltLoot())))));
 
     LootItemCondition.Builder killedByFrog = killedByFrog();
     this.add(TinkerWorld.terracubeEntity.get(),
@@ -67,20 +83,20 @@ public class EntityLootTableProvider extends EntityLootSubProvider {
                                         .setRolls(ConstantValue.exactly(1))
                                         .add(LootItem.lootTableItem(Items.CLAY_BALL)
                                                      .apply(SetItemCountFunction.setCount(UniformGenerator.between(-2.0F, 1.0F)))
-                                                     .apply(LootingEnchantFunction.lootingMultiplier(UniformGenerator.between(0.0F, 1.0F)))
+                                                     .apply(EnchantedCountIncreaseFunction.lootingMultiplier(this.registries, UniformGenerator.between(0.0F, 1.0F)))
                                                      .when(killedByFrog.invert())
                                                      .when(LootItemEntityPropertyCondition.hasProperties(LootContext.EntityTarget.THIS, EntityPredicate.Builder.entity().subPredicate(SlimePredicate.sized(MinMaxBounds.Ints.atLeast(2))))))
                                         .add(LootItem.lootTableItem(TinkerSmeltery.searedLamp)
                                                      .apply(SetItemCountFunction.setCount(ConstantValue.exactly(1.0F)))
                                                      .when(killedByFrog))
-                                        .apply(SmeltItemFunction.smelted().when(LootItemEntityPropertyCondition.hasProperties(LootContext.EntityTarget.THIS, ENTITY_ON_FIRE)))));
+                                        .apply(SmeltItemFunction.smelted().when(this.shouldSmeltLoot()))));
   }
 
   /** Drops an item using the same chances as slimeballs */
-  private static LootPoolEntryContainer.Builder<?> slimeball(Item item) {
+  private LootPoolEntryContainer.Builder<?> slimeball(Item item) {
     return LootItem.lootTableItem(item)
       .apply(SetItemCountFunction.setCount(UniformGenerator.between(0.0F, 2.0F)))
-      .apply(LootingEnchantFunction.lootingMultiplier(UniformGenerator.between(0.0F, 1.0F)));
+      .apply(EnchantedCountIncreaseFunction.lootingMultiplier(this.registries, UniformGenerator.between(0.0F, 1.0F)));
   }
 
   /** Drops a frog slimeball */

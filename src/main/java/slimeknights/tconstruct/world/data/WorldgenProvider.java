@@ -8,7 +8,7 @@ import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.data.worldgen.BootstapContext;
+import net.minecraft.data.worldgen.BootstrapContext;
 import net.minecraft.data.worldgen.features.TreeFeatures;
 import net.minecraft.data.worldgen.placement.PlacementUtils;
 import net.minecraft.resources.ResourceKey;
@@ -66,13 +66,6 @@ import net.minecraft.world.level.levelgen.structure.placement.RandomSpreadType;
 import net.minecraft.world.level.levelgen.structure.placement.StructurePlacement.FrequencyReductionMethod;
 import net.minecraft.world.level.levelgen.structure.templatesystem.BlockMatchTest;
 import net.minecraft.world.level.levelgen.structure.templatesystem.RuleTest;
-import net.minecraftforge.common.world.BiomeModifier;
-import net.minecraftforge.common.world.ForgeBiomeModifiers.AddFeaturesBiomeModifier;
-import net.minecraftforge.common.world.ForgeBiomeModifiers.AddSpawnsBiomeModifier;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.holdersets.AndHolderSet;
-import net.minecraftforge.registries.holdersets.NotHolderSet;
-import net.minecraftforge.registries.holdersets.OrHolderSet;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.registration.GeodeItemObject;
 import slimeknights.tconstruct.common.registration.GeodeItemObject.BudSize;
@@ -134,14 +127,6 @@ import static slimeknights.tconstruct.world.TinkerWorld.placedLargeCobaltOre;
 import static slimeknights.tconstruct.world.TinkerWorld.placedSkyGeode;
 import static slimeknights.tconstruct.world.TinkerWorld.placedSmallCobaltOre;
 import static slimeknights.tconstruct.world.TinkerWorld.skyGeode;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnCobaltOre;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnEarthGeode;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnEndSlime;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnEnderGeode;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnIchorGeode;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnOverworldSlime;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnSkyGeode;
-import static slimeknights.tconstruct.world.TinkerWorld.spawnTerracube;
 
 /** Provider for all our worldgen datapack registry stuff */
 public class WorldgenProvider {
@@ -153,12 +138,13 @@ public class WorldgenProvider {
     builder.add(Registries.PLACED_FEATURE, WorldgenProvider::registerPlacedFeatures);
     builder.add(Registries.STRUCTURE, WorldgenProvider::registerStructures);
     builder.add(Registries.STRUCTURE_SET, WorldgenProvider::registerStructureSets);
-    builder.add(ForgeRegistries.Keys.BIOME_MODIFIERS, WorldgenProvider::registerBiomeModifiers);
+    // PORT: forge biome modifiers are dead data on fabric; the runtime adds features and
+    // spawns in code through fabric's BiomeModifications (TinkerWorld/TinkerStructures)
   }
 
   /** Registers all configured features */
   @SuppressWarnings("deprecation")
-  private static void registerConfiguredFeatures(BootstapContext<ConfiguredFeature<?,?>> context) {
+  private static void registerConfiguredFeatures(BootstrapContext<ConfiguredFeature<?,?>> context) {
     // sapling trees
     register(context, earthSlimeTree, slimeTree,
              new SlimeTreeConfig.Builder()
@@ -263,9 +249,11 @@ public class WorldgenProvider {
     configureGeode(context, configuredEnderGeode, enderGeode, BlockStateProvider.simple(Blocks.CALCITE), BlockStateProvider.simple(Blocks.END_STONE), TinkerWorld.knightmetalCluster,
                    new GeodeLayerSettings(1.7D, 2.2D, 3.2D, 5.2D), new GeodeCrackSettings(0.45, 1.0D, 2), UniformInt.of(4, 10), UniformInt.of(3, 4), UniformInt.of(1, 2), 16, 10000);
   }
+  /* Configured features */
 
+  /** Registers a configured feature */
   /** Registers all structures */
-  private static void registerPlacedFeatures(BootstapContext<PlacedFeature> context) {
+  private static void registerPlacedFeatures(BootstrapContext<PlacedFeature> context) {
     // ores
     register(context, placedSmallCobaltOre, configuredSmallCobaltOre, CountPlacement.of(5), InSquarePlacement.spread(), PlacementUtils.RANGE_8_8, BiomeFilter.biome());
     register(context, placedLargeCobaltOre, configuredLargeCobaltOre, CountPlacement.of(3), InSquarePlacement.spread(), HeightRangePlacement.triangle(VerticalAnchor.absolute(8), VerticalAnchor.absolute(32)), BiomeFilter.biome());
@@ -278,7 +266,7 @@ public class WorldgenProvider {
   }
 
   /** Registers all structures */
-  private static void registerStructures(BootstapContext<Structure> context) {
+  private static void registerStructures(BootstrapContext<Structure> context) {
     HolderGetter<Biome> biomes = context.lookup(Registries.BIOME);
     HolderGetter<ConfiguredFeature<?,?>> configured = context.lookup(Registries.CONFIGURED_FEATURE);
     // earthslime island
@@ -310,7 +298,7 @@ public class WorldgenProvider {
       .addTree(configured.getOrThrow(TreeFeatures.SPRUCE), 2)
       .addTree(configured.getOrThrow(TreeFeatures.ACACIA), 1)
       .addTree(configured.getOrThrow(TreeFeatures.JUNGLE_TREE_NO_VINE), 1)
-      .addGrass(Blocks.GRASS, 7)
+      .addGrass(Blocks.SHORT_GRASS, 7)
       .addGrass(Blocks.FERN, 1)
       .build(new StructureSettings(biomes.getOrThrow(TinkerTags.Biomes.CLAY_ISLANDS), monsterOverride(TinkerWorld.terracubeEntity.get(), 2, 4), Decoration.SURFACE_STRUCTURES, TerrainAdjustment.NONE)));
     // blood island
@@ -328,7 +316,7 @@ public class WorldgenProvider {
   }
 
   /** Registers all structures */
-  private static void registerStructureSets(BootstapContext<StructureSet> context) {
+  private static void registerStructureSets(BootstrapContext<StructureSet> context) {
     HolderGetter<Structure> structures = context.lookup(Registries.STRUCTURE);
     context.register(overworldOceanIsland, structureSet(30, 9, RandomSpreadType.LINEAR, 25988585,  0.5f, entry(structures, earthSlimeIsland, 1), entry(structures, oceanSkyslimeIsland, 1)));
     context.register(overworldSkyIsland,   structureSet(35, 4, RandomSpreadType.LINEAR, 14357800,  0.5f,  entry(structures, skySlimeIsland, 4), entry(structures, clayIsland, 1)));
@@ -336,73 +324,17 @@ public class WorldgenProvider {
     context.register(endSkyIsland,         structureSet(25, 6, RandomSpreadType.LINEAR, 368963602, 0.5f, entry(structures, endSlimeIsland, 1)));
   }
 
-  /** Registers all biome modifiers */
-  private static void registerBiomeModifiers(BootstapContext<BiomeModifier> context) {
-    HolderGetter<Biome> biomes = context.lookup(Registries.BIOME);
-    HolderGetter<PlacedFeature> placed = context.lookup(Registries.PLACED_FEATURE);
-    HolderSet<Biome> overworld = biomes.getOrThrow(BiomeTags.IS_OVERWORLD);
-    HolderSet<Biome> nether = biomes.getOrThrow(BiomeTags.IS_NETHER);
-    HolderSet<Biome> end = biomes.getOrThrow(BiomeTags.IS_END);
-
-    context.register(spawnCobaltOre, new AddFeaturesBiomeModifier(nether, direct(placed.getOrThrow(TinkerWorld.placedSmallCobaltOre), placed.getOrThrow(placedLargeCobaltOre)), Decoration.UNDERGROUND_DECORATION));
-    // geodes
-    context.register(spawnEarthGeode, new AddFeaturesBiomeModifier(overworld, direct(placed.getOrThrow(placedEarthGeode)), Decoration.LOCAL_MODIFICATIONS));
-    context.register(spawnSkyGeode,   new AddFeaturesBiomeModifier(and(overworld, not(or(biomes.getOrThrow(BiomeTags.IS_OCEAN), biomes.getOrThrow(BiomeTags.IS_DEEP_OCEAN), biomes.getOrThrow(BiomeTags.IS_BEACH), biomes.getOrThrow(BiomeTags.IS_RIVER)))), direct(placed.getOrThrow(TinkerWorld.placedSkyGeode)), Decoration.LOCAL_MODIFICATIONS));
-    context.register(spawnIchorGeode, new AddFeaturesBiomeModifier(nether, direct(placed.getOrThrow(TinkerWorld.placedIchorGeode)), Decoration.LOCAL_MODIFICATIONS));
-    context.register(spawnEnderGeode, new AddFeaturesBiomeModifier(and(end, not(direct(biomes.getOrThrow(Biomes.THE_END)))), direct(placed.getOrThrow(TinkerWorld.placedEnderGeode)), Decoration.LOCAL_MODIFICATIONS));
-    // spawns
-    context.register(spawnOverworldSlime, new AddSpawnsBiomeModifier(overworld, List.of(new SpawnerData(TinkerWorld.skySlimeEntity.get(), 100, 2, 4))));
-    context.register(spawnTerracube,      new AddSpawnsBiomeModifier(and(overworld, not(biomes.getOrThrow(TinkerTags.Biomes.NO_DEFAULT_MONSTERS))), List.of(new SpawnerData(TinkerWorld.terracubeEntity.get(), 10, 2, 4))));
-    context.register(spawnEndSlime,       new AddSpawnsBiomeModifier(end,       List.of(new SpawnerData(TinkerWorld.enderSlimeEntity.get(), 10, 2, 4))));
-  }
-
-
-  /* Helpers */
-
-  /** Ands the holder sets together */
-  @SafeVarargs
-  private static <T> AndHolderSet<T> and(HolderSet<T>... sets) {
-    return new AndHolderSet<>(List.of(sets));
-  }
-
-  /** Ors the holder sets together */
-  @SafeVarargs
-  private static <T> OrHolderSet<T> or(HolderSet<T>... sets) {
-    return new OrHolderSet<>(List.of(sets));
-  }
-
-  /** Nots the set */
-  private static <T> NotHolderSet<T> not(HolderSet<T> set) {
-    // passing in null as its impossible to create the object Forge demands of us during datagen, and seems it work without it
-    return new SerializableNotHolderSet<>(set);
-  }
-
-  private static class SerializableNotHolderSet<T> extends NotHolderSet<T> {
-    public SerializableNotHolderSet(HolderSet<T> value) {
-      super(null, value);
-    }
-
-    @Override
-    public boolean canSerializeIn(HolderOwner<T> holderOwner) {
-      return true;
-    }
-  }
-
-
-  /* Configured features */
-
-  /** Registers a configured feature */
-  private static <FC extends FeatureConfiguration, F extends Feature<FC>> void register(BootstapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, F feature, FC config) {
+  private static <FC extends FeatureConfiguration, F extends Feature<FC>> void register(BootstrapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, F feature, FC config) {
     context.register(key, new ConfiguredFeature<>(feature, config));
   }
 
   /** Registers a configured feature */
-  private static <FC extends FeatureConfiguration, F extends Feature<FC>> void register(BootstapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, Supplier<F> feature, FC config) {
+  private static <FC extends FeatureConfiguration, F extends Feature<FC>> void register(BootstrapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, Supplier<F> feature, FC config) {
     register(context, key, feature.get(), config);
   }
 
   /** Configures a geode feature */
-  private static void configureGeode(BootstapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, GeodeItemObject geode,
+  private static void configureGeode(BootstrapContext<ConfiguredFeature<?,?>> context, ResourceKey<ConfiguredFeature<?,?>> key, GeodeItemObject geode,
                                      BlockStateProvider middleLayer, BlockStateProvider outerLayer, @Nullable Supplier<? extends Block> extraCluster, GeodeLayerSettings layerSettings, GeodeCrackSettings crackSettings,
                                      IntProvider outerWall, IntProvider distributionPoints, IntProvider pointOffset, int genOffset, int invalidBlocks) {
     // allow adding in an extra cluster type to the geode
@@ -425,12 +357,12 @@ public class WorldgenProvider {
   /* Placed features */
 
   /** Registers a placed feature */
-  private static void register(BootstapContext<PlacedFeature> context, ResourceKey<PlacedFeature> key, ResourceKey<ConfiguredFeature<?,?>> configured, PlacementModifier... placement) {
+  private static void register(BootstrapContext<PlacedFeature> context, ResourceKey<PlacedFeature> key, ResourceKey<ConfiguredFeature<?,?>> configured, PlacementModifier... placement) {
     context.register(key, new PlacedFeature(context.lookup(Registries.CONFIGURED_FEATURE).getOrThrow(configured), List.of(placement)));
   }
 
   /** Registers a placed feature */
-  private static void placeGeode(BootstapContext<PlacedFeature> context, ResourceKey<PlacedFeature> key, ResourceKey<ConfiguredFeature<?,?>> configured, RarityFilter rarity, HeightRangePlacement height) {
+  private static void placeGeode(BootstrapContext<PlacedFeature> context, ResourceKey<PlacedFeature> key, ResourceKey<ConfiguredFeature<?,?>> configured, RarityFilter rarity, HeightRangePlacement height) {
     register(context, key, configured, rarity, InSquarePlacement.spread(), height, BiomeFilter.biome());
   }
 

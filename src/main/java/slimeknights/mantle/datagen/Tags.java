@@ -54,7 +54,7 @@ public class Tags {
     public static final TagKey<Item> GLASS_PANES_SILICA = tag(Registries.ITEM, "glass_panes/silica");
     public static final TagKey<Item> GLASS_SILICA = tag(Registries.ITEM, "glass/silica");
     public static final TagKey<Item> GLASS_TINTED = tag(Registries.ITEM, "glass/tinted");
-    public static final TagKey<Item> GRAVEL = tag(Registries.ITEM, "gravel");
+    public static final TagKey<Item> GRAVEL = tag(Registries.ITEM, "gravels");
     public static final TagKey<Item> GUNPOWDER = tag(Registries.ITEM, "gunpowders");
     public static final TagKey<Item> HEADS = tag(Registries.ITEM, "heads");
     public static final TagKey<Item> INGOTS = tag(Registries.ITEM, "ingots");
@@ -80,7 +80,7 @@ public class Tags {
     public static final TagKey<Item> RODS = tag(Registries.ITEM, "rods");
     public static final TagKey<Item> RODS_BLAZE = tag(Registries.ITEM, "rods/blaze");
     public static final TagKey<Item> RODS_WOODEN = tag(Registries.ITEM, "rods/wooden");
-    public static final TagKey<Item> SANDSTONE = tag(Registries.ITEM, "sandstone");
+    public static final TagKey<Item> SANDSTONE = tag(Registries.ITEM, "sandstone/blocks");
     public static final TagKey<Item> SAND_COLORLESS = tag(Registries.ITEM, "sand/colorless");
     public static final TagKey<Item> SAND_RED = tag(Registries.ITEM, "sand/red");
     public static final TagKey<Item> SEEDS = tag(Registries.ITEM, "seeds");
@@ -115,6 +115,7 @@ public class Tags {
     public static final TagKey<Block> GLASS_SILICA = tag(Registries.BLOCK, "glass/silica");
     public static final TagKey<Block> GLASS_TINTED = tag(Registries.BLOCK, "glass/tinted");
     public static final TagKey<Block> NEEDS_GOLD_TOOL = tag(Registries.BLOCK, "needs_gold_tool");
+    public static final TagKey<Block> NEEDS_WOOD_TOOL = tag(Registries.BLOCK, "needs_wood_tool");
     public static final TagKey<Block> NEEDS_NETHERITE_TOOL = tag(Registries.BLOCK, "needs_netherite_tool");
     public static final TagKey<Block> ORES = tag(Registries.BLOCK, "ores");
     public static final TagKey<Block> ORES_GOLD = tag(Registries.BLOCK, "ores/gold");

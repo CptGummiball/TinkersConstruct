@@ -1810,13 +1810,67 @@ asset providers (model/blockstate/sprite generation needs the Forge model-builde
 `FluidContainerTransferProvider`, `CostTagAppender`, and the EMI shaped-materials remainder
 quirk above.
 
+
+### Phase 7, slice 16: datagen wave 2 — the whole server-data layer, regenerated and committed
+
+All remaining server-data providers now run on Fabric and the regenerated tree replaces the
+migrated one: **5,556 generated files, every difference against the old tree in a
+reviewed-accepted class, and the world harness loads the result with 0 recipe parse
+failures, 0 tag failures and 0 advancement errors.**
+
+What came in:
+- **Tags**: all twelve providers on a new `MantleTagsProvider`/`BuiltinRegistryTagProvider`
+  base that writes with Forge's semantics — cross-mod references (fabric's conventional
+  tags exist only at runtime) are trusted rather than failing vanilla's validation, item
+  tags copy from block tags through a mantle contents future, and Forge's tag-remove
+  extension is written again. A new `TagLoader` mixin honours {@code "remove"} at runtime,
+  which the shipped data always contained and Fabric silently ignored: pumpkins and melons
+  now actually leave {@code minecraft:mineable/axe} and the scythe tag.
+- **Loot**: table/block/entity/advancement providers on the 1.21 sub-provider APIs
+  (holder-based enchantments, {@code EnchantedCountIncreaseFunction}, component predicates),
+  global loot modifiers through the runtime's own codecs plus the {@code forge:} index, and
+  — the slice's big find — **the loot injection runtime had never been ported**: the shipped
+  {@code mantle/loot_injectors} (ancient tools in mineshaft/bastion/fishing/bartering loot)
+  loaded into nothing. `LootTableInjector` now applies them after the loot registry bakes
+  (MixinExtras hook on {@code ReloadableServerRegistries}), patching parsed tables through
+  widened pool internals; the world harness logs `Applied 21 loot table injections`.
+  `SetFluidLootFunction` came along for the pre-filled lantern/swasher drops.
+- **Advancements**: the provider on `AdvancementHolder`/1.21 criteria, conditional
+  advancements through a mantle `ConditionalAdvancement` shim, and `ToolStackItemPredicate`
+  reborn as a registered `ItemSubPredicate` — un-parking the last lombok-on-records
+  casualty; its factories still return wrapped vanilla predicates so no call site moved.
+- **Worldgen**: configured/placed features, structures and structure sets regenerate
+  through Fabric's dynamic registry provider ({@code buildRegistry}); the Forge biome
+  modifier JSONs are deleted — the runtime has added features and spawns in code through
+  fabric's BiomeModifications since phase 4.
+- **Tinkering data**: modifiers, fluid effects, enchantment mappings, tool definitions,
+  slot layouts, materials/stats/traits, mob equipment, fluid transfers and tooltips, and
+  config presets. Enchantment-holding providers thread the registry future (datapack
+  registry since 1.21); `FakeRegistryEntry` slips absent-mod entries into frozen registries
+  by reopening {@code MappedRegistry.frozen} and the intrusive-holder map for the moment of
+  creation.
+
+Latent bugs the regeneration fixed in the shipped data: 1.20-shaped enchantment predicates
+in loot silk-touch conditions parsed as match-anything (leaves never dropped saplings on
+Fabric); the tilling module's {@code "till"} action did not match the runtime's
+{@code hoe_till}; 1.20-shaped advancement criteria; the two anvil recipe parse failures.
+1.21's new BODY animal-armor slot was excluded everywhere tinkers iterates armor types —
+gear arrays stay humanoid-sized and modifier slot lists no longer grow a {@code body} entry.
+
+Found and deliberately deferred: the {@code mantle/remove_recipes} runtime (predicate-driven
+recipe removal, config-gated off by default) — its datagen face writes the presets, the
+remover itself is tracked below. Structure repaletting datagen (lombok-on-records again) and
+`TrimMaterialProvider` stay parked; their shipped data is untouched. The forge-era
+`src/generated/resources/.cache` is gone — it is what let vanilla's HashCache delete 14k
+files when datagen briefly pointed in-tree.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
   because casting/melting are custom recipe types Unify may not see. Agreed check: Unify
   replaces the Oritech steel ingot with the Energized Power one — cast a steel ingot in the
   smeltery and confirm which mod's ingot comes out. That single test suffices.
-- [ ] **7 — Datagen & documentation.** Recipe layer regenerating and load-proven (slice 15); tags/loot/assets and the final documentation remain.
+- [ ] **7 — Datagen & documentation.** Server data fully regenerating, committed and load-proven (slices 15-16). Remaining: client asset providers (models/sprites), structure repaletting, trim materials, the mantle recipe remover runtime, and the final recipe documentation.
 
 ## Access widener
 

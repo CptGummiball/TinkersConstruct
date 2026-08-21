@@ -9,7 +9,7 @@ import net.minecraft.tags.TagBuilder;
 import net.minecraft.tags.TagEntry;
 import net.minecraft.tags.TagFile;
 import net.minecraft.tags.TagKey;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import slimeknights.mantle.data.GenericDataProvider;
 
 import java.util.List;
@@ -65,16 +65,17 @@ public abstract class AbstractTagProvider<T> extends GenericDataProvider {
       if (!invalidEntries.isEmpty()) {
         return CompletableFuture.failedFuture(new IllegalArgumentException(String.format("Couldn't define tag %s as it is missing following references: %s", id, invalidEntries.stream().map(Objects::toString).collect(Collectors.joining(",")))));
       } else {
-        return saveJson(cache, id, TagFile.CODEC, new TagFile(tagEntries, entry.getValue().isReplace()));
+        return saveJson(cache, id, TagFile.CODEC, new TagFile(tagEntries, false));
       }
     }));
   }
 
   /** Checks if a given reference exists in another data pack */
   private boolean missing(TagEntry reference) {
-    if (reference.isRequired()) {
+    // field access via the AW: 1.21 dropped forge's getters on tag entries
+    if (reference.required) {
       // forge has a separate element resource type here to allow generating tags to non-static values. We don't currently handle non-static tag value validation but its worth considering
-      return existingFileHelper == null || !existingFileHelper.exists(reference.getId(), resourceType);
+      return existingFileHelper == null || !existingFileHelper.exists(reference.id, resourceType);
     }
     return false;
   }
@@ -144,88 +145,6 @@ public abstract class AbstractTagProvider<T> extends GenericDataProvider {
       return this;
     }
 
-
-    /* Forge methods */
-
-    /** Sets the tag to replace */
-    public TagAppender<T> replace() {
-      return replace(true);
-    }
-
-    /** Sets the tag to replace */
-    public TagAppender<T> replace(boolean value) {
-      internalBuilder.replace(value);
-      return this;
-    }
-
-    /**
-     * Adds a registry entry to the tag json's remove list. Callable during datageneration.
-     * @param entry The entry to remove
-     * @return The builder for chaining
-     */
-    public TagAppender<T> remove(final T entry) {
-      return remove(keyGetter.apply(entry));
-    }
-
-    /**
-     * Adds multiple registry entries to the tag json's remove list. Callable during datageneration.
-     * @param entries The entries to remove
-     * @return The builder for chaining
-     */
-    @SafeVarargs
-    public final TagAppender<T> remove(T first, T... entries) {
-      this.remove(first);
-      for (T entry : entries) {
-        this.remove(entry);
-      }
-      return this;
-    }
-
-    /**
-     * Adds a single element's ID to the tag json's remove list. Callable during datageneration.
-     * @param location The ID of the element to remove
-     * @return The builder for chaining
-     */
-    public TagAppender<T> remove(ResourceLocation location) {
-      internalBuilder.removeElement(location, modID);
-      return this;
-    }
-
-    /**
-     * Adds multiple elements' IDs to the tag json's remove list. Callable during datageneration.
-     * @param locations The IDs of the elements to remove
-     * @return The builder for chaining
-     */
-    public TagAppender<T> remove(ResourceLocation first, ResourceLocation... locations) {
-      this.remove(first);
-      for (ResourceLocation location : locations) {
-        this.remove(location);
-      }
-      return this;
-    }
-
-    /**
-     * Adds a tag to the tag json's remove list. Callable during datageneration.
-     * @param tag The ID of the tag to remove
-     * @return The builder for chaining
-     */
-    public TagAppender<T> remove(TagKey<T> tag) {
-      internalBuilder.removeTag(tag.location(), modID);
-      return this;
-    }
-
-    /**
-     * Adds multiple tags to the tag json's remove list. Callable during datageneration.
-     * @param tags The IDs of the tags to remove
-     * @return The builder for chaining
-     */
-    @SafeVarargs
-    public final TagAppender<T> remove(TagKey<T> first, TagKey<T>... tags) {
-      this.remove(first);
-      for (TagKey<T> tag : tags) {
-        this.remove(tag);
-      }
-      return this;
-    }
+    // PORT: forge's replace/remove appender extensions were dropped; nothing generating these tags used them
   }
 }

@@ -302,3 +302,33 @@ accessible method net/minecraft/data/recipes/RecipeProvider inventoryTrigger ([L
 accessible class net/minecraft/world/item/crafting/Ingredient$Value
 accessible field net/minecraft/world/item/crafting/Ingredient values [Lnet/minecraft/world/item/crafting/Ingredient$Value;
 accessible method net/minecraft/world/item/crafting/Ingredient fromValues (Ljava/util/stream/Stream;)Lnet/minecraft/world/item/crafting/Ingredient;
+# Datagen: FakeRegistryEntry needs to slip fake entries for absent mods into frozen
+# registries; Forge exposed unfreeze(), vanilla needs the flag opened.
+accessible field net/minecraft/core/MappedRegistry frozen Z
+mutable field net/minecraft/core/MappedRegistry frozen Z
+# Tag removals (forge 'remove' tag extension): match entries by their element id.
+accessible field net/minecraft/tags/TagEntry id Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/tags/TagEntry tag Z
+# Datagen: the intrinsic tag appender type is protected in 1.21; the tag providers and
+# the cost-tag helper pass it around (Forge shipped an AT for the same reason).
+accessible class net/minecraft/data/tags/IntrinsicHolderTagsProvider$IntrinsicTagAppender
+accessible field net/minecraft/tags/TagEntry required Z
+# Loot injections (forge LootTableLoadEvent parity): the injector rebuilds parsed pools
+# with extra entries, so the pool internals and the table's pool list open up.
+accessible field net/minecraft/world/level/storage/loot/LootTable pools Ljava/util/List;
+mutable field net/minecraft/world/level/storage/loot/LootTable pools Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool entries Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool conditions Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool functions Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool rolls Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;
+accessible field net/minecraft/world/level/storage/loot/LootPool bonusRolls Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;
+accessible method net/minecraft/world/level/storage/loot/LootPool <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;)V
+# Loot datagen: vanilla constants and maps the providers reuse.
+accessible field net/minecraft/data/loot/BlockLootSubProvider NORMAL_LEAVES_STICK_CHANCES [F
+accessible field net/minecraft/data/loot/EntityLootSubProvider map Ljava/util/Map;
+# Datagen: the mantle tag provider writes through the raw builders map.
+accessible field net/minecraft/data/tags/TagsProvider builders Ljava/util/Map;
+accessible field net/minecraft/data/tags/TagsProvider registryKey Lnet/minecraft/resources/ResourceKey;
+accessible method net/minecraft/data/tags/IntrinsicHolderTagsProvider$IntrinsicTagAppender <init> (Lnet/minecraft/tags/TagBuilder;Ljava/util/function/Function;)V
+accessible field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
+mutable field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;

@@ -349,3 +349,54 @@ slimeknights/tconstruct/library/data/recipe/IToolRecipeHelper.java
 slimeknights/tconstruct/library/data/recipe/SmelteryRecipeBuilder.java
 slimeknights/tconstruct/library/data/recipe/package-info.java
 slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipeBuilder.java
+# --- Phase 7 slice 2: datagen wave 2 (server data) ---
+# The JSON data providers: modifiers, fluid effects, materials/stats/traits, tool
+# definitions, slot layouts, mob equipment, fluid container transfers and tooltips.
+slimeknights/tconstruct/library/data/tinkering/AbstractFluidEffectProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractEnchantmentToModifierProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractModifierProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractMobEquipmentProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractStationSlotLayoutProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractToolDefinitionDataProvider.java
+slimeknights/tconstruct/library/data/tinkering/package-info.java
+slimeknights/tconstruct/library/data/material/**
+slimeknights/tconstruct/library/data/GenericNBTProvider.java
+slimeknights/tconstruct/tools/data/ModifierProvider.java
+slimeknights/tconstruct/tools/data/FluidEffectProvider.java
+slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java
+slimeknights/tconstruct/tools/data/StationSlotLayoutProvider.java
+slimeknights/tconstruct/tools/data/ToolDefinitionDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
+slimeknights/tconstruct/world/data/MobEquipmentProvider.java
+slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
+slimeknights/tconstruct/fluids/data/FluidTooltipProvider.java
+slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
+slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
+slimeknights/tconstruct/library/json/loot/equipment/**
+slimeknights/tconstruct/common/data/FakeRegistryEntry.java
+# Tag providers: the twelve registries tinkers tags, the mantle provider shims with the
+# forge remove extension, and the dynamic-registry tag base.
+slimeknights/mantle/data/BuiltinRegistryTagProvider.java
+slimeknights/mantle/data/BlockTagsProvider.java
+slimeknights/tconstruct/library/data/AbstractTagProvider.java
+slimeknights/tconstruct/common/data/tags/**
+slimeknights/tconstruct/library/data/recipe/CostTagAppender.java
+slimeknights/tconstruct/library/data/tinkering/AbstractMaterialTagProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractModifierTagProvider.java
+# Loot: the table provider with its three sub providers, global loot modifiers, injections.
+slimeknights/tconstruct/common/data/loot/**
+# Loot injection stack (forge LootTableLoadEvent parity) and the GLM datagen shim.
+slimeknights/mantle/loot/LootTableInjection.java
+slimeknights/mantle/loot/LootTableInjector.java
+slimeknights/mantle/loot/AbstractLootTableInjectionProvider.java
+slimeknights/mantle/data/GlobalLootModifierProvider.java
+# Advancements, config data, damage types, worldgen registries, structure repaletting.
+slimeknights/tconstruct/common/data/AdvancementsProvider.java
+slimeknights/tconstruct/common/data/ConfigurationDataProvider.java
+slimeknights/tconstruct/common/data/DamageTypeProvider.java
+slimeknights/tconstruct/common/data/CountRequirementsStrategy.java
+slimeknights/mantle/data/ConditionalAdvancement.java
+slimeknights/tconstruct/world/data/WorldgenProvider.java
+slimeknights/mantle/data/MantleTagsProvider.java

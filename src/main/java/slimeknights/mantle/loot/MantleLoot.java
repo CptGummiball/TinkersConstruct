@@ -37,6 +37,8 @@ public class MantleLoot {
   public static LootPoolEntryType TAG_PREFERENCE;
   /** Function type for {@link slimeknights.mantle.loot.function.RetexturedLootFunction} */
   public static net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<slimeknights.mantle.loot.function.RetexturedLootFunction> RETEXTURED_FUNCTION;
+  /** Function type for {@link slimeknights.mantle.loot.function.SetFluidLootFunction} */
+  public static net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<slimeknights.mantle.loot.function.SetFluidLootFunction> SET_FLUID_FUNCTION;
   /** Condition type for {@link slimeknights.mantle.loot.condition.LootTableIdCondition}; registered under the forge namespace as the shipped data names it */
   public static LootItemConditionType LOOT_TABLE_ID;
   /** Condition type for {@link slimeknights.mantle.loot.condition.BlockTagLootCondition} */
@@ -51,6 +53,7 @@ public class MantleLoot {
     TAG_EMPTY = condition("tag_empty", tagConditionCodec(TagEmptyCondition::new));
     TAG_PREFERENCE = Registry.register(BuiltInRegistries.LOOT_POOL_ENTRY_TYPE, Mantle.getResource("tag_preference"), new LootPoolEntryType(TagPreferenceLootEntry.CODEC));
     RETEXTURED_FUNCTION = Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Mantle.getResource("fill_retextured_block"), new net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<>(slimeknights.mantle.loot.function.RetexturedLootFunction.CODEC));
+    SET_FLUID_FUNCTION = Registry.register(BuiltInRegistries.LOOT_FUNCTION_TYPE, Mantle.getResource("set_fluid"), new net.minecraft.world.level.storage.loot.functions.LootItemFunctionType<>(slimeknights.mantle.loot.function.SetFluidLootFunction.CODEC));
     LOOT_TABLE_ID = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, slimeknights.mantle.loot.condition.LootTableIdCondition.ID, new LootItemConditionType(slimeknights.mantle.loot.condition.LootTableIdCondition.CODEC));
     BLOCK_TAG = Registry.register(BuiltInRegistries.LOOT_CONDITION_TYPE, slimeknights.mantle.loot.condition.BlockTagLootCondition.ID, new LootItemConditionType(slimeknights.mantle.loot.condition.BlockTagLootCondition.CODEC));
   }

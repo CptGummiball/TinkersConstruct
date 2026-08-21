@@ -88,6 +88,7 @@ public class TConstructBootstrap implements ModInitializer {
     TagDifferencePresentCondition.register();
     TagIntersectionPresentCondition.register();
     // Mantle's tag conditions, same deal (mantle:tag_filled guards most generated recipes).
+    slimeknights.tconstruct.library.json.predicate.tool.ToolStackItemPredicate.register();
     TagFilledCondition.SERIALIZER.register();
     TagEmptyCondition.SERIALIZER.register();
     TagCombinationCondition.SERIALIZER.register();

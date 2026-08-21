@@ -2,11 +2,11 @@ package slimeknights.tconstruct.common.data.tags;
 
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.tags.EntityTypeTagsProvider;
+import slimeknights.mantle.data.BuiltinRegistryTagProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.EntityType;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.tools.TinkerTools;
@@ -23,10 +23,10 @@ import static slimeknights.tconstruct.common.TinkerTags.EntityTypes.REFLECTING_P
 import static slimeknights.tconstruct.common.TinkerTags.EntityTypes.TRIDENTS;
 
 @SuppressWarnings("unchecked")
-public class EntityTypeTagProvider extends EntityTypeTagsProvider {
+public class EntityTypeTagProvider extends BuiltinRegistryTagProvider<net.minecraft.world.entity.EntityType<?>> {
 
   public EntityTypeTagProvider(PackOutput packOutput, CompletableFuture<Provider> lookupProvider, ExistingFileHelper existingFileHelper) {
-    super(packOutput, lookupProvider, TConstruct.MOD_ID, existingFileHelper);
+    super(packOutput, net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE, lookupProvider, TConstruct.MOD_ID, existingFileHelper);
   }
 
   @SuppressWarnings("removal")
@@ -61,7 +61,7 @@ public class EntityTypeTagProvider extends EntityTypeTagsProvider {
 
 
     // modifiers
-    this.tag(TinkerTags.EntityTypes.KILLAGERS).addTags(TinkerTags.EntityTypes.VILLAGERS, TinkerTags.EntityTypes.ILLAGERS).add(EntityType.IRON_GOLEM, EntityType.RAVAGER);
+    this.tag(TinkerTags.EntityTypes.KILLAGERS).addTag(TinkerTags.EntityTypes.VILLAGERS).addTag(TinkerTags.EntityTypes.ILLAGERS).add(EntityType.IRON_GOLEM, EntityType.RAVAGER);
     this.tag(TinkerTags.EntityTypes.BACON_PRODUCER).add(EntityType.PIG, EntityType.PIGLIN, EntityType.HOGLIN);
     // in theory this could just be reusable ammo, but it seems better to keep separate
     this.tag(TinkerTags.EntityTypes.ENDERFERENCE_ARROW_BLACKLIST).addTag(TRIDENTS);
@@ -78,7 +78,7 @@ public class EntityTypeTagProvider extends EntityTypeTagsProvider {
     this.tag(COLLECTABLES).add(
         EntityType.ITEM, TinkerTools.indestructibleItem.get(),
         EntityType.EXPERIENCE_ORB
-      ).addTags(TRIDENTS, DISCARDABLE_COLLECTABLES)
+      ).addTag(TRIDENTS).addTag(DISCARDABLE_COLLECTABLES)
       .addOptionalTag(commonResource(COLLECTABLES.location().getPath()));
     this.tag(DISCARDABLE_COLLECTABLES).add(EntityType.ARROW, EntityType.SPECTRAL_ARROW, TinkerTools.materialArrow.get())
       .addOptionalTag(commonResource(DISCARDABLE_COLLECTABLES.location().getPath()));

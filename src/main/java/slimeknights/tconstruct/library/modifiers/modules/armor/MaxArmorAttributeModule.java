@@ -105,6 +105,11 @@ public record MaxArmorAttributeModule(String unique, Attribute attribute, Operat
     return new Builder(attribute, operation);
   }
 
+  /** Creates a new builder instance from an attribute holder, the 1.21 vanilla shape */
+  public static Builder builder(net.minecraft.core.Holder<Attribute> attribute, Operation operation) {
+    return builder(attribute.value(), operation);
+  }
+
   public static Builder builder(Supplier<Attribute> attribute, Operation operation) {
     return new Builder(attribute.get(), operation);
   }

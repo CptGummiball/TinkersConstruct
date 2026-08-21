@@ -47,6 +47,11 @@ public interface ILootModifierCondition {
     register(Inverted.ID, Inverted.CODEC);
   }
 
+  /** Wraps this condition to require the opposite result */
+  default ILootModifierCondition inverted() {
+    return new Inverted(this);
+  }
+
   /** Id of this condition's type, for serialization */
   ResourceLocation getTypeId();
 

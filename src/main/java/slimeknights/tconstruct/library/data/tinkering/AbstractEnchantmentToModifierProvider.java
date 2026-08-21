@@ -6,6 +6,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.PackOutput.Target;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -43,13 +44,13 @@ public abstract class AbstractEnchantmentToModifierProvider extends GenericDataP
   }
 
   /** Adds the given enchantment */
-  protected void add(Enchantment enchantment, ModifierId modifierId) {
+  protected void add(ResourceKey<Enchantment> enchantment, ModifierId modifierId) {
     add(enchantment, modifierId, false);
   }
 
-  /** Adds the given enchantment, allowing making the modifier optional */
-  protected void add(Enchantment enchantment, ModifierId modifierId, boolean optionalModifier) {
-    String key = Objects.requireNonNull(BuiltInRegistries.ENCHANTMENT.getKey(enchantment)).toString();
+  /** Adds the given enchantment, allowing making the modifier optional. 1.21 made enchantments a datapack registry, so they key by resource key. */
+  protected void add(ResourceKey<Enchantment> enchantment, ModifierId modifierId, boolean optionalModifier) {
+    String key = enchantment.location().toString();
     if (enchantmentMap.has(key) || enchantmentMap.has(key + '?')) {
       throw new IllegalArgumentException("Duplicate enchantment " + key);
     }
