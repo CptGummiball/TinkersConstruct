@@ -103,8 +103,6 @@ slimeknights/mantle/item/ContainerFoodItem.java
 # (model data round) FluidClientEvents gated in: render layers through BlockRenderLayerMap and
 # the potion bucket colour through ColorProviderRegistry.
 # datagen providers (phase 7)
-slimeknights/tconstruct/fluids/data/FluidBlockstateModelProvider.java
-slimeknights/tconstruct/fluids/data/FluidBucketModelProvider.java
 slimeknights/tconstruct/fluids/data/FluidTextureProvider.java
 
 # --- world module: pieces deferred from the phase-4 gate-in ---
@@ -144,10 +142,8 @@ slimeknights/tconstruct/fluids/data/FluidTextureProvider.java
 # (renderer round) CrystalshotRenderer, FluidEffectProjectileRenderer, ThrownToolRenderer and
 # ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
 # gated in with the armor texture suppliers they read.
-slimeknights/tconstruct/tools/data/client/**
 # datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
 slimeknights/tconstruct/tools/data/ArmorModelProvider.java
-slimeknights/tconstruct/tools/data/ToolItemModelProvider.java
 slimeknights/tconstruct/tools/data/material/MaterialRenderInfoProvider.java
 slimeknights/tconstruct/tools/data/material/TrimMaterialProvider.java
 # --- tools round: modules bound to the tool fluid/inventory capability step ---

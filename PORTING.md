@@ -1864,13 +1864,59 @@ remover itself is tracked below. Structure repaletting datagen (lombok-on-record
 `src/generated/resources/.cache` is gone — it is what let vanilla's HashCache delete 14k
 files when datagen briefly pointed in-tree.
 
+### Phase 7, slice 17: client asset datagen — the model layer regenerates byte-for-byte
+
+Forge's model-generator framework now lives in mantle
+(`slimeknights.mantle.client.model.generators`: ModelFile, ModelBuilder, the block/item model
+providers, ConfiguredModel, the variant and multipart blockstate builders, BlockStateProvider
+with vanilla's stairs/slab/door/trapdoor/button/pane state math) plus `SpriteSourceProvider`
+and the mantle custom-loader builders (`mantle:connected`, `mantle:item_layer`,
+`mantle:colored_block`). On top of it, all ten JSON-side client providers run:
+blockstates+block/item models, item models, atlas sources, the render datamaps
+(fluid cuboids and displayed items), fluid blockstates and buckets, the tool item model
+transformer and the modifier model maps, plus the small `ModelSpriteProvider` PNG generator
+(enderbark roots, dummy plating).
+
+**Verification: the first full run reproduced the committed tree exactly — 1,220 files
+(249 blockstates, 332 block models, 498 item models, 2 atlases, 50 render datamaps,
+77 modifier model maps, 12 PNGs), 0 semantic diffs, 0 binary diffs, 0 extras — so the data
+commit for this slice is empty by proof.** The server-data tree re-verified unchanged, and the
+world harness still resolves all 402 custom-geometry models and saves a world cleanly.
+
+What it took:
+- **A real ExistingFileHelper**: `forDatagen(roots)` builds client/server resource managers
+  over the vanilla jar (`VanillaPackResourcesBuilder.pushJarResources`, whose assets ship in
+  loom's merged jar) plus the project's `src/main/resources` and `src/generated/resources`,
+  passed by the run config as `-Dtconstruct.datagen.existing` — Forge's `--existing`
+  equivalent. `trackGenerated` is now a real set consulted by `exists()`, and the sprite
+  provider is registered first so models can reference the textures it generates.
+  `runDatagen` inherits **client** now; the asset providers need RenderType, sprite sources
+  and NativeImage.
+- **Ordering is free**: vanilla's `DataProvider.saveStable` canonicalises key order
+  (type/parent first, then alphabetical), so the builders only had to reproduce content;
+  array order (multipart parts) is insertion order, matching Forge's EnumMap iteration.
+- **Transform identity**: item-list data names display contexts by id
+  ({@code tconstruct:casting_table}), but Fabric's closed ItemDisplayContext enum had collapsed
+  the six custom contexts onto their vanilla fallbacks. `RenderItem` now carries the id
+  (`transformName`) and resolves it at render time; `TinkerItemDisplays` exposes `_ID`
+  constants for datagen. The `BlockStateDataMapProvider` (templates + per-block variant files
+  with string references, exactly the shape `BlockStateDataMap` reads) was never copied from
+  upstream and is new, as are `FluidCuboid`/`RenderItem` serializers.
+- 1.21 drift: `PalettedPermutations`'s constructor went private (AW), `mcLoc` must parse
+  embedded namespaces, `RenderStateShard.name` is public in vanilla now (no AW needed), and
+  `FluidCuboid.Builder.face` overloads were ambiguous for single-direction calls.
+
+Still parked for the texture slice (18): MaterialPartTextureGenerator (the ~10.6k tool part
+PNGs), MaterialRenderInfoProvider, GeneratorPartTextureJsonGenerator, ArmorModelProvider,
+FluidTextureProvider, TrimMaterialProvider and the palette debug generator.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
   because casting/melting are custom recipe types Unify may not see. Agreed check: Unify
   replaces the Oritech steel ingot with the Energized Power one — cast a steel ingot in the
   smeltery and confirm which mod's ingot comes out. That single test suffices.
-- [ ] **7 — Datagen & documentation.** Server data fully regenerating, committed and load-proven (slices 15-16). Remaining: client asset providers (models/sprites), structure repaletting, trim materials, the mantle recipe remover runtime, and the final recipe documentation.
+- [ ] **7 — Datagen & documentation.** Server data and the client model layer fully regenerating and proven byte-identical (slices 15-17). Remaining: the texture generators (material part sprites, render info, armor, trims, fluids), structure repaletting, the mantle recipe remover runtime, and the final recipe documentation.
 
 ## Access widener
 

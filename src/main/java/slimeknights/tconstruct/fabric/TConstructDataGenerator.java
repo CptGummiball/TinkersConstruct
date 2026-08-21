@@ -7,7 +7,18 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.RegistrySetBuilder;
 import net.minecraft.core.registries.Registries;
 import slimeknights.mantle.data.ExistingFileHelper;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.data.AdvancementsProvider;
+import slimeknights.tconstruct.common.data.model.ModelSpriteProvider;
+import slimeknights.tconstruct.common.data.model.TinkerBlockStateProvider;
+import slimeknights.tconstruct.common.data.model.TinkerItemModelProvider;
+import slimeknights.tconstruct.common.data.model.TinkerSpriteSourceProvider;
+import slimeknights.tconstruct.common.data.render.RenderFluidProvider;
+import slimeknights.tconstruct.common.data.render.RenderItemProvider;
+import slimeknights.tconstruct.fluids.data.FluidBlockstateModelProvider;
+import slimeknights.tconstruct.fluids.data.FluidBucketModelProvider;
+import slimeknights.tconstruct.tools.data.ToolItemModelProvider;
+import slimeknights.tconstruct.tools.data.client.ModifierModelMapProvider;
 import slimeknights.tconstruct.common.data.ConfigurationDataProvider;
 import slimeknights.tconstruct.common.data.DamageTypeProvider;
 import slimeknights.tconstruct.common.data.loot.GlobalLootModifiersProvider;
@@ -61,8 +72,16 @@ public class TConstructDataGenerator implements DataGeneratorEntrypoint {
   @Override
   public void onInitializeDataGenerator(FabricDataGenerator generator) {
     FabricDataGenerator.Pack pack = generator.createPack();
-    // no resource lookup in fabric datagen; validation runs against the registries instead
-    ExistingFileHelper existingFileHelper = new ExistingFileHelper(null, null);
+    // resource lookup over the vanilla jar plus the roots passed by the run config,
+    // forge's --existing equivalent; used to validate model parents/textures and to read
+    // the base tool models and sprites the client asset providers transform
+    ExistingFileHelper existingFileHelper;
+    String existing = System.getProperty("tconstruct.datagen.existing");
+    if (existing != null) {
+      existingFileHelper = ExistingFileHelper.forDatagen(java.util.Arrays.stream(existing.split(java.io.File.pathSeparator)).map(java.nio.file.Path::of).toList());
+    } else {
+      existingFileHelper = new ExistingFileHelper(null, null);
+    }
 
     // recipe providers, one per module, matching the Forge event order
     pack.addProvider((output, registries) -> new CommonRecipeProvider(output, registries));
@@ -126,6 +145,19 @@ public class TConstructDataGenerator implements DataGeneratorEntrypoint {
     pack.addProvider((output, registries) -> new MobEquipmentProvider(output));
     pack.addProvider((output, registries) -> new FluidContainerTransferProvider(output));
     pack.addProvider((output, registries) -> new FluidTooltipProvider(output));
+
+    // client assets; the sprite provider runs first so the textures it generates are
+    // tracked before the model providers validate references to them
+    pack.addProvider((output, registries) -> new ModelSpriteProvider(output, existingFileHelper));
+    pack.addProvider((output, registries) -> new TinkerBlockStateProvider(output, existingFileHelper));
+    pack.addProvider((output, registries) -> new TinkerItemModelProvider(output, existingFileHelper));
+    pack.addProvider((output, registries) -> new TinkerSpriteSourceProvider(output, existingFileHelper));
+    pack.addProvider((output, registries) -> new RenderFluidProvider(output));
+    pack.addProvider((output, registries) -> new RenderItemProvider(output));
+    pack.addProvider((output, registries) -> new FluidBlockstateModelProvider(output, TConstruct.MOD_ID));
+    pack.addProvider((output, registries) -> new FluidBucketModelProvider(output, TConstruct.MOD_ID));
+    pack.addProvider((output, registries) -> new ToolItemModelProvider(output, existingFileHelper));
+    pack.addProvider((output, registries) -> new ModifierModelMapProvider(output));
   }
 
   @Override

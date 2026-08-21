@@ -61,6 +61,9 @@ public class BlockStateDataMap<T> implements ResourceManagerReloadListener, Iden
   private final String folder;
   /** Parses a resolved JSON value into the data type */
   private final Function<JsonElement,T> parser;
+  /** Writes the data type back to JSON; null for maps without a datagen provider */
+  @Nullable
+  private final Function<T,JsonElement> serializer;
 
   /** Loaded data; empty until the first resource reload */
   private Map<Block,List<Variant<T>>> entries = Map.of();
@@ -68,9 +71,27 @@ public class BlockStateDataMap<T> implements ResourceManagerReloadListener, Iden
   private boolean registered = false;
 
   public BlockStateDataMap(ResourceLocation id, String folder, Function<JsonElement,T> parser) {
+    this(id, folder, parser, null);
+  }
+
+  public BlockStateDataMap(ResourceLocation id, String folder, Function<JsonElement,T> parser, @Nullable Function<T,JsonElement> serializer) {
     this.id = id;
     this.folder = folder;
     this.parser = parser;
+    this.serializer = serializer;
+  }
+
+  /** Serializes a value for the datagen provider */
+  public JsonElement serialize(T value) {
+    if (serializer == null) {
+      throw new UnsupportedOperationException("No serializer for " + id);
+    }
+    return serializer.apply(value);
+  }
+
+  /** Gets the resource folder this map reads, used by the datagen provider */
+  public String getFolder() {
+    return folder;
   }
 
   /** Registers this map with the client resource manager; safe to call repeatedly */

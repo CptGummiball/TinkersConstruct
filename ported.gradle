@@ -398,5 +398,15 @@ slimeknights/tconstruct/common/data/ConfigurationDataProvider.java
 slimeknights/tconstruct/common/data/DamageTypeProvider.java
 slimeknights/tconstruct/common/data/CountRequirementsStrategy.java
 slimeknights/mantle/data/ConditionalAdvancement.java
+# --- Phase 7 slice 17: client asset datagen ---
+# Forge model-generator framework rehomed to mantle, plus the custom-loader builders
+slimeknights/mantle/client/model/generators/**
+slimeknights/mantle/client/model/builder/**
+slimeknights/mantle/data/SpriteSourceProvider.java
+# blockstates, item models, atlas sources, render datamaps, tool/modifier model providers
+slimeknights/tconstruct/common/data/model/**
+slimeknights/tconstruct/common/data/render/**
+slimeknights/tconstruct/library/data/AbstractToolItemModelProvider.java
+slimeknights/tconstruct/library/data/AbstractModifierModelMapProvider.java
 slimeknights/tconstruct/world/data/WorldgenProvider.java
 slimeknights/mantle/data/MantleTagsProvider.java

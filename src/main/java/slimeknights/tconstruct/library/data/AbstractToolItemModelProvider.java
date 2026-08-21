@@ -13,7 +13,7 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.phys.Vec2;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import org.jetbrains.annotations.ApiStatus.NonExtendable;
 import slimeknights.mantle.data.GenericDataProvider;
 import slimeknights.mantle.data.loadable.Loadables;

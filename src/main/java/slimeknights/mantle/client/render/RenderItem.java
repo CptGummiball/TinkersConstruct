@@ -7,6 +7,8 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.joml.Vector3f;
 
+import javax.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,10 +29,10 @@ import java.util.Map;
  * resolved through {@link #registerContext} to the vanilla context they fall back to (see
  * {@code TinkerItemDisplays}), and unknown ids fall back to {@link ItemDisplayContext#NONE}.
  */
-public record RenderItem(Vector3f center, float size, float x, float y, ItemDisplayContext transform, boolean hidden) {
+public record RenderItem(Vector3f center, float size, float x, float y, @Nullable ResourceLocation transformName, boolean hidden) {
   /** Registry of item placements per block state */
   public static final BlockStateDataMap<List<RenderItem>> STATE_REGISTRY = new BlockStateDataMap<>(
-    ResourceLocation.fromNamespaceAndPath("mantle", "item_lists"), "mantle/model/item_lists", RenderItem::listFromJson);
+    ResourceLocation.fromNamespaceAndPath("mantle", "item_lists"), "mantle/model/item_lists", RenderItem::listFromJson, RenderItem::listToJson);
 
   /** Display contexts registered by mods to stand in for Forge's custom transform types */
   private static final Map<ResourceLocation,ItemDisplayContext> CUSTOM_CONTEXTS = new HashMap<>();
@@ -47,6 +49,25 @@ public record RenderItem(Vector3f center, float size, float x, float y, ItemDisp
   /** If true, this item is not drawn */
   public boolean isHidden() {
     return hidden || size <= 0;
+  }
+
+  /** Resolves the display context named by {@link #transformName}, for the renderer */
+  public ItemDisplayContext transform() {
+    if (transformName == null) {
+      return ItemDisplayContext.NONE;
+    }
+    ItemDisplayContext custom = CUSTOM_CONTEXTS.get(transformName);
+    if (custom != null) {
+      return custom;
+    }
+    if ("minecraft".equals(transformName.getNamespace())) {
+      for (ItemDisplayContext context : ItemDisplayContext.values()) {
+        if (context.getSerializedName().equals(transformName.getPath())) {
+          return context;
+        }
+      }
+    }
+    return ItemDisplayContext.NONE;
   }
 
 
@@ -81,28 +102,44 @@ public record RenderItem(Vector3f center, float size, float x, float y, ItemDisp
       GsonHelper.getAsFloat(json, "size", 16),
       GsonHelper.getAsFloat(json, "x", 0),
       GsonHelper.getAsFloat(json, "y", 0),
-      transformFromJson(json),
+      json.has("transform") ? ResourceLocation.parse(GsonHelper.getAsString(json, "transform")) : null,
       GsonHelper.getAsBoolean(json, "hidden", false));
   }
 
-  /** Resolves the display context named by the JSON */
-  private static ItemDisplayContext transformFromJson(JsonObject json) {
-    if (!json.has("transform")) {
-      return ItemDisplayContext.NONE;
+  /** Serializes a list of items compactly: one item stays a single object */
+  public static JsonElement listToJson(List<RenderItem> items) {
+    if (items.size() == 1) {
+      return items.get(0).toJson();
     }
-    ResourceLocation id = ResourceLocation.parse(GsonHelper.getAsString(json, "transform"));
-    ItemDisplayContext custom = CUSTOM_CONTEXTS.get(id);
-    if (custom != null) {
-      return custom;
+    com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+    for (RenderItem item : items) {
+      array.add(item.toJson());
     }
-    if ("minecraft".equals(id.getNamespace())) {
-      for (ItemDisplayContext context : ItemDisplayContext.values()) {
-        if (context.getSerializedName().equals(id.getPath())) {
-          return context;
-        }
-      }
+    return array;
+  }
+
+  /** Serializes this item to the shape {@link #fromJson} reads */
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    com.google.gson.JsonArray centerArray = new com.google.gson.JsonArray();
+    centerArray.add(center.x());
+    centerArray.add(center.y());
+    centerArray.add(center.z());
+    json.add("center", centerArray);
+    json.addProperty("size", size);
+    if (x != 0) {
+      json.addProperty("x", (int)x == x ? (Number)(int)x : (Number)x);
     }
-    return ItemDisplayContext.NONE;
+    if (y != 0) {
+      json.addProperty("y", (int)y == y ? (Number)(int)y : (Number)y);
+    }
+    if (transformName != null) {
+      json.addProperty("transform", transformName.toString());
+    }
+    if (hidden) {
+      json.addProperty("hidden", true);
+    }
+    return json;
   }
 
 
@@ -119,7 +156,8 @@ public record RenderItem(Vector3f center, float size, float x, float y, ItemDisp
     private float size = 16;
     private float x = 0;
     private float y = 0;
-    private ItemDisplayContext transform = ItemDisplayContext.NONE;
+    @Nullable
+    private ResourceLocation transform = null;
     private boolean hidden = false;
 
     private Builder() {}
@@ -144,7 +182,7 @@ public record RenderItem(Vector3f center, float size, float x, float y, ItemDisp
       return this;
     }
 
-    public Builder transform(ItemDisplayContext transform) {
+    public Builder transform(ResourceLocation transform) {
       this.transform = transform;
       return this;
     }
@@ -161,6 +199,6 @@ public record RenderItem(Vector3f center, float size, float x, float y, ItemDisp
 
   @Override
   public String toString() {
-    return String.format(Locale.ROOT, "RenderItem[center=%s,size=%s,transform=%s]", center, size, transform);
+    return String.format(Locale.ROOT, "RenderItem[center=%s,size=%s,transform=%s]", center, size, transformName);
   }
 }

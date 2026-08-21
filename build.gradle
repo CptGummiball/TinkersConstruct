@@ -153,9 +153,12 @@ loom {
         }
         server { server(); ideConfigGenerated true; runDir 'run/server' }
         datagen {
-            inherit server
+            // client run: the asset providers need RenderType, sprite sources and NativeImage
+            inherit client
             name 'Data Generation'
             vmArg '-Dfabric-api.datagen'
+            // existing resources for validation and reading, forge's --existing equivalent
+            vmArg "-Dtconstruct.datagen.existing=${file('src/main/resources')}${File.pathSeparator}${file('src/generated/resources')}"
             vmArg "-Dfabric-api.datagen.output-dir=${file('build/datagen-out')}"
             vmArg '-Dfabric-api.datagen.modid=tconstruct'
             runDir 'build/datagen'

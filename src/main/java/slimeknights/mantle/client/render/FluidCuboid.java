@@ -27,7 +27,7 @@ import java.util.Map.Entry;
 public class FluidCuboid {
   /** Registry of fluid cuboids per block state, filled from {@code mantle/model/block_fluids} */
   public static final BlockStateDataMap<List<FluidCuboid>> REGISTRY = new BlockStateDataMap<>(
-    ResourceLocation.fromNamespaceAndPath("mantle", "block_fluids"), "mantle/model/block_fluids", FluidCuboid::listFromJson);
+    ResourceLocation.fromNamespaceAndPath("mantle", "block_fluids"), "mantle/model/block_fluids", FluidCuboid::listFromJson, FluidCuboid::listToJson);
 
   /** Face shown with no rotation using the still texture */
   public static final FluidFace NORMAL = new FluidFace(false, 0);
@@ -127,6 +127,50 @@ public class FluidCuboid {
     return faces;
   }
 
+  /** Serializes a list of cuboids compactly: one cuboid stays a single object */
+  public static JsonElement listToJson(List<FluidCuboid> cuboids) {
+    if (cuboids.size() == 1) {
+      return cuboids.get(0).toJson();
+    }
+    com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+    for (FluidCuboid cuboid : cuboids) {
+      array.add(cuboid.toJson());
+    }
+    return array;
+  }
+
+  /** Serializes this cuboid to the shape {@link #fromJson} reads; all six plain faces stay implicit */
+  public JsonObject toJson() {
+    JsonObject json = new JsonObject();
+    json.add("from", vectorToJson(from));
+    json.add("to", vectorToJson(to));
+    boolean allDefault = faces.size() == 6 && faces.values().stream().allMatch(NORMAL::equals);
+    if (!allDefault) {
+      JsonObject facesJson = new JsonObject();
+      for (Map.Entry<Direction,FluidFace> entry : faces.entrySet()) {
+        JsonObject face = new JsonObject();
+        if (entry.getValue().flowing()) {
+          face.addProperty("flowing", true);
+        }
+        if (entry.getValue().rotation() != 0) {
+          face.addProperty("rotation", entry.getValue().rotation());
+        }
+        facesJson.add(entry.getKey().getSerializedName(), face);
+      }
+      json.add("faces", facesJson);
+    }
+    return json;
+  }
+
+  /** Writes a three float array */
+  private static JsonElement vectorToJson(Vector3f vector) {
+    com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+    array.add(vector.x());
+    array.add(vector.y());
+    array.add(vector.z());
+    return array;
+  }
+
   /** Reads a three float array */
   private static Vector3f vectorFromJson(JsonObject json, String key) {
     var array = GsonHelper.getAsJsonArray(json, key);
@@ -166,19 +210,14 @@ public class FluidCuboid {
     }
 
     /** Adds still faces on the given sides */
-    public Builder face(Direction... directions) {
-      return face(false, 0, directions);
-    }
-
-    /** Adds still faces on the given sides */
     public Builder face(Direction first, Direction... directions) {
-      face(false, 0, first);
-      return face(false, 0, directions);
+      return face(false, 0, first, directions);
     }
 
     /** Adds faces on the given sides with the given flowing state and rotation */
-    public Builder face(boolean flowing, int rotation, Direction... directions) {
+    public Builder face(boolean flowing, int rotation, Direction first, Direction... directions) {
       FluidFace face = new FluidFace(flowing, rotation);
+      faces.put(first, face);
       for (Direction direction : directions) {
         faces.put(direction, face);
       }

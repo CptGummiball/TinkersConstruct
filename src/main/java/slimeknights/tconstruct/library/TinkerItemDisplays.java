@@ -21,6 +21,14 @@ import slimeknights.tconstruct.TConstruct;
 public class TinkerItemDisplays {
   private TinkerItemDisplays() {}
 
+  /* Ids, used by the item list datagen to name the transform in JSON */
+  public static final ResourceLocation MELTER_ID = TConstruct.getResource("melter");
+  public static final ResourceLocation TABLE_ID = TConstruct.getResource("table");
+  public static final ResourceLocation CASTING_TABLE_ID = TConstruct.getResource("casting_table");
+  public static final ResourceLocation CASTING_BASIN_ID = TConstruct.getResource("casting_basin");
+  public static final ResourceLocation FLUID_CANNON_ID = TConstruct.getResource("fluid_cannon");
+  public static final ResourceLocation THROWN_ID = TConstruct.getResource("thrown");
+
   /** Used by the melter and smeltery for display of items its melting */
   public static final ItemDisplayContext MELTER = create("melter", ItemDisplayContext.NONE);
   /** Used by the part builder, crafting station, tinkers station, and tinker anvil */
@@ -42,8 +50,7 @@ public class TinkerItemDisplays {
 
   /** Registers the id under which the display appears in item list data, returning its behaviour */
   private static ItemDisplayContext create(String name, ItemDisplayContext fallback) {
-    ResourceLocation id = TConstruct.getResource(name);
-    RenderItem.registerContext(id, fallback);
+    RenderItem.registerContext(TConstruct.getResource(name), fallback);
     return fallback;
   }
 }

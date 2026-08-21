@@ -332,3 +332,5 @@ accessible field net/minecraft/data/tags/TagsProvider registryKey Lnet/minecraft
 accessible method net/minecraft/data/tags/IntrinsicHolderTagsProvider$IntrinsicTagAppender <init> (Lnet/minecraft/tags/TagBuilder;Ljava/util/function/Function;)V
 accessible field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
 mutable field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
+# Client asset datagen: the trim permutation sprite source hides its constructor in 1.21.
+accessible method net/minecraft/client/renderer/texture/atlas/sources/PalettedPermutations <init> (Ljava/util/List;Lnet/minecraft/resources/ResourceLocation;Ljava/util/Map;)V
