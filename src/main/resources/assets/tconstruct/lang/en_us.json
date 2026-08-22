@@ -537,6 +537,10 @@
   "fluid.tconstruct.beetroot_soup": "Beetroot Soup",
   "fluid.tconstruct.flowing_beetroot_soup": "Flowing Beetroot Soup",
   "item.tconstruct.beetroot_soup_bucket": "Beetroot Soup Bucket",
+  "block.tconstruct.molten_cheese_fluid": "Molten Cheese",
+  "fluid.tconstruct.molten_cheese": "Molten Cheese",
+  "fluid.tconstruct.flowing_molten_cheese": "Flowing Molten Cheese",
+  "item.tconstruct.molten_cheese_bucket": "Molten Cheese Bucket",
   "fluid.tconstruct.beetroot_soup.fluid_effect": "Beetroot soup is an easily farmable slurpable food option.",
 
   "block.tconstruct.mushroom_stew_fluid": "Mushroom Stew",

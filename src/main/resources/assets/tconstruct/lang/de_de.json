@@ -2579,6 +2579,9 @@
 "advancements.tconstruct.world.slime_sling.title": "Sling-Experte",
 "advancements.tconstruct.world.slime_sling.description": "Benutze jeden der 4 Schleimschleudertypen ausreichend",
 "advancements.tconstruct.world.piggybackpack.title": "Schwein Huckepack",
-"advancements.tconstruct.world.piggybackpack.description": "Nimm ein Schwein mit einem Huckepack hoch"
-
+"advancements.tconstruct.world.piggybackpack.description": "Nimm ein Schwein mit einem Huckepack hoch",
+  "block.tconstruct.molten_cheese_fluid": "Geschmolzener Käse",
+  "fluid.tconstruct.molten_cheese": "Geschmolzener Käse",
+  "fluid.tconstruct.flowing_molten_cheese": "Fließender geschmolzener Käse",
+  "item.tconstruct.molten_cheese_bucket": "Eimer mit geschmolzenem Käse"
 }

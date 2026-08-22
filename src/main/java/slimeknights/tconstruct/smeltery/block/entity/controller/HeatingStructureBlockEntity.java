@@ -241,6 +241,10 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
       }
       return;
     }
+    if (masterLoadPending) {
+      masterLoadPending = false;
+      notifyServantsOfLoad();
+    }
     // invalid state, just a safety check in case its air somehow
     if (!state.hasProperty(ControllerBlock.IN_STRUCTURE)) {
       return;
@@ -319,8 +323,22 @@ public abstract class HeatingStructureBlockEntity extends NameableBlockEntity im
   public void clearRemoved() {
     // Forge's onLoad hook; clearRemoved is the vanilla call sites fire when the BE joins the chunk
     super.clearRemoved();
-    // just to clear out invalid references to the old master/no master, nothing should actually change behavior
+    // just to clear out invalid references to the old master/no master, nothing should actually change behavior.
+    // PORT: deferred to a server task — this runs during chunk post-load, and touching block
+    // entities across the structure can force a synchronous load of a neighbouring chunk from
+    // inside the chunk system, which deadlocks the server thread (seen as a world stuck on the
+    // loading screen whenever a formed smeltery sits in the spawn chunks).
     if (level != null && !level.isClientSide && structure != null) {
+      masterLoadPending = true;
+    }
+  }
+
+  /** Set on load; the servant notification runs on the first tick, see {@link #clearRemoved()} */
+  private boolean masterLoadPending = false;
+
+  /** Notifies all servants of the loaded master, deferred out of chunk post-load */
+  private void notifyServantsOfLoad() {
+    if (structure != null && level != null) {
       structure.forEachContained(pos -> {
         if (level.getBlockEntity(pos) instanceof IServantLogic servant) {
           servant.onMasterLoad(this);

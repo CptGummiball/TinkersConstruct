@@ -2003,6 +2003,48 @@ in `unported.gradle` is a dozen deliberately dropped classes, each with its reas
 (deprecated legacy modifiers whose behavior became datapack modules, Forge-only patterns
 with no callers, dead upstream code).
 
+### Maintenance round 21: the first pack bug reports
+
+Five fixes out of live GummiCraft testing, each root-caused and covered by a new harness check:
+
+- **Book screens blurred to unreadable** — 1.21's `Screen.render` applies the gaussian menu
+  blur inside `renderBackground`, and the book screen called `super.render` *after* drawing
+  the book, blurring it. It renders its widgets directly now; the book harness screenshots
+  are sharp again.
+- **Smeltery GUI ate items and shift-click duplicated them** — the menu slots resolved their
+  inventory through `ItemStorage.SIDED`, round-tripping our own Forge-shaped handler through
+  the transaction bridge and back (`IItemHandler` -> `Storage` -> `FabricItemHandler`). The
+  round trip loses slot identity and `setStackInSlot`, so `Slot.set` silently dropped items
+  and the shift-click loop copied stacks forever. `TransferUtil` now unwraps our own
+  `ItemStorageBridge` back to the real handler; the block harness opens the smeltery menu and
+  asserts place/shift-click conservation.
+- **Structure blocks turned missing-texture when formed** (controllers, drains, ducts, all but
+  the tank) — two roots. The dynamic fluid-window rebake resolved textures through a template
+  parse whose parents were never resolved: vanilla only resolves top-level models, templates
+  are only ever parents, so `block/block` (and with it the display transforms) never attached;
+  the geometry mixin now resolves geometry ancestors after each model resolves (idempotent —
+  tool overrides cycle back through their parents). And `FluidTextureModel` treated the
+  render data's AIR placeholder as a real texture block, rebaking every formed structure
+  block against air's particle sprite; it now matches `RetexturedModel`'s air guard.
+- **The controller item rendered huge in hand** — same unresolved-parents root: no
+  `block/block` in the chain means no item display transforms. The harness asserts the
+  first-person scale.
+- **Worlds with a formed smeltery near spawn could hang on the loading screen** (found while
+  reproducing the above; jstack-proven deadlock): the controller's and tank's load hooks run
+  during chunk post-load and walked the structure with `getBlockEntity`, forcing a synchronous
+  neighbour-chunk load inside the chunk system. The controller defers the servant notification
+  to its first tick, the tank queues it through `tell` — `execute` runs inline on the server
+  thread, right back where the deadlock lives.
+
+**Cheese** (pack request): anything in `c:cheeses` melts to 250 mb of `tconstruct:molten_cheese`
+at 100 degrees and casts back through the tag preference; both recipes condition on the tag.
+New fluid with bucket, tinted stew texture, en/de lang; the five generated files joined the
+committed tree and the recipe reference regenerated (3,038 recipes).
+
+The block harness grew into a regression suite on the way: a real formed smeltery with tank
+fluid, menu slot conservation, item transform and structure sprite assertions, plus the
+floating suspect line-up. The command harness already covered books and the recipe remover.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

@@ -64,6 +64,13 @@ generated datapack out of the world and distribute it as a global pack — the f
 `forge:conditional` stubs this port always understands. Presets are data
 (`data/<ns>/mantle/remove_recipes/*.json`), so a pack can add its own.
 
+## Cheese
+
+Cheese from any mod melts in the smeltery: everything in the conventional `c:cheeses` tag
+(Meadow slices, Candlelight mozzarella, ...) melts to 250 mb of molten cheese at 100 degrees,
+and 250 mb poured onto a casting table sets back into whichever cheese the tag preference
+picks. Both recipes only load when the tag is filled, so packs without cheese see nothing.
+
 ## Reference
 
 The full generated reference of everything this build ships is in

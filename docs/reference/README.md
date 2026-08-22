@@ -34,7 +34,7 @@ so this reference is exactly what the Fabric port ships.
 - tconstruct:basin_filling: 10
 - tconstruct:basin_tool_casting: 23
 - tconstruct:casting_basin: 144
-- tconstruct:casting_table: 440
+- tconstruct:casting_table: 441
 - tconstruct:casting_table_potion: 4
 - tconstruct:casting_table_tipped_clearing: 2
 - tconstruct:casting_table_tipping: 2
@@ -52,7 +52,7 @@ so this reference is exactly what the Fabric port ships.
 - tconstruct:material: 201
 - tconstruct:material_fluid: 70
 - tconstruct:material_melting: 46
-- tconstruct:melting: 502
+- tconstruct:melting: 503
 - tconstruct:melting_fuel: 3
 - tconstruct:modifier: 116
 - tconstruct:modifier_repair: 1
@@ -88,4 +88,4 @@ so this reference is exactly what the Fabric port ships.
 - tconstruct:toggle_interaction: 1
 - tconstruct:tool_building: 25
 - tconstruct:tool_material_swapping: 1
-- total recipes: 3036
+- total recipes: 3038

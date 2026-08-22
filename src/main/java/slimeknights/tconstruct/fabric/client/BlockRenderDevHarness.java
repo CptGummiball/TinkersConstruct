@@ -80,6 +80,17 @@ public final class BlockRenderDevHarness {
       return;
     }
     // give the chunk time to rebuild and the block entity data time to sync back to the client
+    if (ticks == 50) {
+      // regression: geometry-inherited models must keep vanilla item transforms (a scale of 1
+      // means the block/block display chain got lost and the held controller renders huge)
+      var itemModel = minecraft.getItemRenderer().getModel(new net.minecraft.world.item.ItemStack(slimeknights.tconstruct.smeltery.TinkerSmeltery.smelteryController.get()), null, null, 0);
+      float scale = itemModel.getTransforms().firstPersonRightHand.scale.x();
+      if (scale >= 0.99f) {
+        TConstruct.LOG.error("[block harness] TRANSFORM FAIL: controller item first-person scale is {}", scale);
+      } else {
+        TConstruct.LOG.info("[block harness] TRANSFORM PASS: controller item first-person scale {}", scale);
+      }
+    }
     if (ticks == 55) {
       // what the client believes about the tank, which is what its model and renderer see
       if (minecraft.level.getBlockEntity(ORIGIN.offset(2, 0, 1)) instanceof TankBlockEntity tank) {
@@ -91,6 +102,12 @@ public final class BlockRenderDevHarness {
     }
     if (ticks == 58) {
       minecraft.setScreen(null);
+      // stand back far enough to see all three rows and the held item
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
+        var serverPlayer = server.getPlayerList().getPlayers().get(0);
+        serverPlayer.teleportTo(serverPlayer.serverLevel(), ORIGIN.getX() - 1.5, ORIGIN.getY() + 1, ORIGIN.getZ() + 7.5, 180, 15);
+      }
     }
     if (ticks == 60) {
       Screenshot.grab(minecraft.gameDirectory, "blocks_model_data.png", minecraft.getMainRenderTarget(),
@@ -123,10 +140,173 @@ public final class BlockRenderDevHarness {
       Screenshot.grab(minecraft.gameDirectory, "blocks_jade.png", minecraft.getMainRenderTarget(),
                       message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
     }
-    if (ticks > 150) {
+    if (ticks == 150) {
+      // a real smeltery: floor, one-block bore, controller and drain in the wall. This is the
+      // reported in-the-wild case — structure blocks flip to in_structure and the controller
+      // window shows the tank fluid through the dynamic fluid-texture rebake.
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> buildSmeltery(server));
+      }
+    }
+    if (ticks == 195) {
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> checkSmeltery(server, minecraft));
+      }
+    }
+    if (ticks == 215) {
+      // stand south of the smeltery at ground level looking at the controller wall
+      minecraft.options.hideGui = true;
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null && !server.getPlayerList().getPlayers().isEmpty()) {
+        var serverPlayer = server.getPlayerList().getPlayers().get(0);
+        serverPlayer.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, net.minecraft.world.item.ItemStack.EMPTY);
+        serverPlayer.teleportTo(serverPlayer.serverLevel(), ORIGIN.getX() - 8 + 0.5, ORIGIN.getY() - 1, ORIGIN.getZ() + 11.5, 180, -5);
+      }
+    }
+    if (ticks == 240) {
+      // regression: the formed controller must bake real sprites for its window and fluid;
+      // missingno here is the in-structure missing-texture bug
+      var cPos = ORIGIN.offset(-8, 0, 6);
+      var cState = minecraft.level.getBlockState(cPos);
+      Object rd = ((net.fabricmc.fabric.api.blockview.v2.FabricBlockView) minecraft.level).getBlockEntityRenderData(cPos);
+      if (rd instanceof slimeknights.mantle.client.model.data.ModelData md
+          && minecraft.getBlockRenderer().getBlockModel(cState) instanceof slimeknights.mantle.client.model.BakedModelWrapper<?> wrapper) {
+        var rand = net.minecraft.util.RandomSource.create(42);
+        java.util.Set<String> sprites = new java.util.TreeSet<>();
+        for (var dir : net.minecraft.core.Direction.values()) {
+          for (var quad : wrapper.getQuads(cState, dir, rand, md, null)) {
+            sprites.add(quad.getSprite().contents().name().toString());
+          }
+        }
+        if (sprites.contains("minecraft:missingno") || sprites.isEmpty()) {
+          TConstruct.LOG.error("[block harness] STRUCTURE FAIL: formed controller bakes {}", sprites);
+        } else {
+          TConstruct.LOG.info("[block harness] STRUCTURE PASS: formed controller bakes {}", sprites);
+        }
+      } else {
+        TConstruct.LOG.error("[block harness] STRUCTURE FAIL: no render data or wrapper model for the controller");
+      }
+    }
+    if (ticks == 245) {
+      Screenshot.grab(minecraft.gameDirectory, "blocks_smeltery.png", minecraft.getMainRenderTarget(),
+                      message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
+    }
+    if (ticks > 265) {
       TConstruct.LOG.info("[block harness] done");
       minecraft.stop();
     }
+  }
+
+  /** Builds a minimal smeltery west of the scene: 3x3 floor, 1x1 bore two high, controller south */
+  private static void buildSmeltery(MinecraftServer server) {
+    ServerLevel level = server.overworld();
+    BlockPos center = ORIGIN.offset(-8, 0, 5);
+    BlockState bricks = TinkerSmeltery.searedBricks.get().defaultBlockState();
+    // floor at y-1
+    for (int x = -1; x <= 1; x++) {
+      for (int z = -1; z <= 1; z++) {
+        level.setBlock(center.offset(x, -1, z), bricks, 3);
+      }
+    }
+    // walls two high around the single-column bore
+    for (int y = 0; y <= 1; y++) {
+      for (int x = -1; x <= 1; x++) {
+        for (int z = -1; z <= 1; z++) {
+          if (x != 0 || z != 0) {
+            level.setBlock(center.offset(x, y, z), bricks, 3);
+          }
+        }
+      }
+    }
+    // controller facing the camera (south wall, looking south), drain beside it
+    level.setBlock(center.offset(0, 0, 1), TinkerSmeltery.smelteryController.get().defaultBlockState()
+      .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, net.minecraft.core.Direction.SOUTH), 3);
+    level.setBlock(center.offset(-1, 0, 1), TinkerSmeltery.searedDrain.get().defaultBlockState()
+      .setValue(net.minecraft.world.level.block.state.properties.BlockStateProperties.HORIZONTAL_FACING, net.minecraft.core.Direction.SOUTH), 3);
+    TConstruct.LOG.info("[block harness] smeltery built at {}", center);
+  }
+
+  /** Verifies the smeltery formed, fills its tank for the window rebake, and exercises the menu slots */
+  private static void checkSmeltery(MinecraftServer server, Minecraft minecraft) {
+    ServerLevel level = server.overworld();
+    BlockPos controllerPos = ORIGIN.offset(-8, 0, 6);
+    BlockState controllerState = level.getBlockState(controllerPos);
+    boolean formed = controllerState.hasProperty(slimeknights.tconstruct.smeltery.block.controller.ControllerBlock.IN_STRUCTURE)
+                     && controllerState.getValue(slimeknights.tconstruct.smeltery.block.controller.ControllerBlock.IN_STRUCTURE);
+    TConstruct.LOG.info("[block harness] smeltery controller {} formed={}", controllerState, formed);
+    if (!(level.getBlockEntity(controllerPos) instanceof slimeknights.tconstruct.smeltery.block.entity.controller.HeatingStructureBlockEntity structure)) {
+      TConstruct.LOG.error("[block harness] SMELTERY FAIL: no structure block entity");
+      return;
+    }
+    if (!formed) {
+      TConstruct.LOG.error("[block harness] SMELTERY FAIL: structure did not form");
+      return;
+    }
+    // fluid behind the window: the dynamic rebake the missing-texture report was about
+    structure.getTank().setFluids(java.util.List.of(new FluidStack(slimeknights.tconstruct.fluids.TinkerFluids.moltenIron.get(), 1000)));
+
+    // menu slot regression: items placed into the GUI must stay, shift-click must not duplicate
+    var player = server.getPlayerList().getPlayers().get(0);
+    // open through the block's own interaction path, which carries the position payload
+    controllerState.useWithoutItem(level, player, new net.minecraft.world.phys.BlockHitResult(
+      net.minecraft.world.phys.Vec3.atCenterOf(controllerPos), net.minecraft.core.Direction.SOUTH, controllerPos, false));
+    if (!(player.containerMenu instanceof slimeknights.tconstruct.smeltery.menu.HeatingStructureContainerMenu menu)) {
+      TConstruct.LOG.error("[block harness] SLOT FAIL: menu did not open, got {}", player.containerMenu);
+      return;
+    }
+    var ingot = net.minecraft.world.item.Items.IRON_INGOT;
+    // place a stack of 5 into the first melting slot by clicking with it
+    int meltingSlot = -1;
+    for (int i = 0; i < menu.slots.size(); i++) {
+      var slot = menu.slots.get(i);
+      if (slot.container != player.getInventory() && !(slot instanceof slimeknights.tconstruct.smeltery.menu.HeatingStructureContainerMenu.BucketSlot)
+          && !(slot instanceof slimeknights.tconstruct.smeltery.menu.HeatingStructureContainerMenu.ResultSlot)
+          && slot.getItem().isEmpty() && slot.mayPlace(new net.minecraft.world.item.ItemStack(ingot))) {
+        meltingSlot = i;
+        break;
+      }
+    }
+    if (meltingSlot == -1) {
+      TConstruct.LOG.error("[block harness] SLOT FAIL: no melting slot found in menu; side inventory has {} slots, melting inventory {}",
+        menu.getSideInventory() == null ? -1 : menu.getSideInventory().getSlotCount(), structure.getMeltingInventory().getSlots());
+      for (int i = 0; i < Math.min(menu.slots.size(), 8); i++) {
+        var slot = menu.slots.get(i);
+        TConstruct.LOG.error("[block harness]   slot {} = {} empty={} mayPlaceIngot={}", i, slot.getClass().getSimpleName(), slot.getItem().isEmpty(), slot.mayPlace(new net.minecraft.world.item.ItemStack(ingot)));
+      }
+      return;
+    }
+    int baseline = 0;
+    for (var slot : menu.slots) {
+      if (slot.getItem().is(ingot)) {
+        baseline += slot.getItem().getCount();
+      }
+    }
+    menu.setCarried(new net.minecraft.world.item.ItemStack(ingot, 5));
+    menu.clicked(meltingSlot, 0, net.minecraft.world.inventory.ClickType.PICKUP, player);
+    int inSlot = menu.slots.get(meltingSlot).getItem().getCount();
+    int carried = menu.getCarried().getCount();
+    if (inSlot + carried != 5 || inSlot == 0) {
+      TConstruct.LOG.error("[block harness] SLOT FAIL: placed 5, slot has {} carried {}", inSlot, carried);
+    } else {
+      TConstruct.LOG.info("[block harness] slot place ok: slot {} carried {}", inSlot, carried);
+    }
+    // shift click it back out: total across menu and player inventory must stay put
+    menu.clicked(meltingSlot, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, player);
+    int total = menu.getCarried().getCount();
+    for (var slot : menu.slots) {
+      var stack = slot.getItem();
+      if (stack.is(ingot)) {
+        total += stack.getCount();
+      }
+    }
+    if (total - baseline != 5) {
+      TConstruct.LOG.error("[block harness] SLOT FAIL: added 5, delta is {} (dupe or loss); baseline {}", total - baseline, baseline);
+    } else {
+      TConstruct.LOG.info("[block harness] SLOT PASS: added 5, delta still 5 after place and shift-click (baseline {})", baseline);
+    }
+    player.closeContainer();
   }
 
   /** Clears a patch of sky and fills it with the blocks worth looking at */
@@ -167,6 +347,27 @@ public final class BlockRenderDevHarness {
       // look identical to one that worked.
       retexture(level, ORIGIN.offset(-2, 0, 1), TinkerTables.craftingStation.get().defaultBlockState(), "minecraft:gold_block");
       retexture(level, ORIGIN.offset(0, 0, 1), TinkerSmeltery.searedDrain.get().defaultBlockState(), "minecraft:diamond_block");
+      // suspects line-up, floating with gaps so the photograph is unambiguous
+      level.setBlock(ORIGIN.offset(-4, 3, 0), TinkerSmeltery.searedDrain.get().defaultBlockState(), 3);
+      retexture(level, ORIGIN.offset(-2, 3, 0), TinkerSmeltery.searedDrain.get().defaultBlockState(), "minecraft:diamond_block");
+      level.setBlock(ORIGIN.offset(0, 3, 0), TinkerSmeltery.searedDuct.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(2, 3, 0), TinkerSmeltery.searedChute.get().defaultBlockState(), 3);
+      level.setBlock(ORIGIN.offset(4, 3, 0), TinkerSmeltery.searedMelter.get().defaultBlockState(), 3);
+
+      // In-structure variants: the same functional blocks with in_structure=true, the state a
+      // formed smeltery puts them into. They must keep their textures; the report was a missing
+      // texture the moment the structure formed. The player also holds a controller for the
+      // first-person item transform check.
+      var controller = slimeknights.tconstruct.smeltery.TinkerSmeltery.smelteryController.get().defaultBlockState();
+      var inStructure = slimeknights.tconstruct.smeltery.block.controller.ControllerBlock.IN_STRUCTURE;
+      var active = slimeknights.tconstruct.smeltery.block.controller.ControllerBlock.ACTIVE;
+      level.setBlock(ORIGIN.offset(-4, 0, -2), controller.setValue(inStructure, true), 3);
+      level.setBlock(ORIGIN.offset(-4, 0, 1), controller.setValue(inStructure, true).setValue(active, true), 3);
+      level.setBlock(ORIGIN.offset(-3, 0, 1), TinkerSmeltery.searedDrain.get().defaultBlockState().setValue(slimeknights.tconstruct.smeltery.block.component.SearedBlock.IN_STRUCTURE, true), 3);
+      if (!server.getPlayerList().getPlayers().isEmpty()) {
+        server.getPlayerList().getPlayers().get(0).setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,
+          new net.minecraft.world.item.ItemStack(slimeknights.tconstruct.smeltery.TinkerSmeltery.smelteryController.get()));
+      }
 
       // and a tank with fluid in it: the model reads the fluid and its capacity from the block entity
       BlockPos tankPos = ORIGIN.offset(2, 0, 1);

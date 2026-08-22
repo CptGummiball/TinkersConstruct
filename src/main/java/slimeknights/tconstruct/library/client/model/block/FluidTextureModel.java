@@ -211,6 +211,12 @@ public class FluidTextureModel implements IUnbakedGeometry<FluidTextureModel> {
         fluid = FluidStack.EMPTY;
       }
       Block block = retextured.isEmpty() ? null : data.get(RetexturedHelper.BLOCK_PROPERTY);
+      // the render data always carries the property, with AIR standing in for "no texture";
+      // treating air as a texture rebaked every formed structure block against air's particle
+      // sprite, which is the missing texture
+      if (block != null && block.defaultBlockState().isAir()) {
+        block = null;
+      }
       if (!fluid.isEmpty() || block != null) {
         BakedCacheKey key = new BakedCacheKey(fluid, block != null ? ModelHelper.getParticleTexture(block) : null);
         return ModelHelper.getQuads(getCachedModel(key), state, direction, random, data, renderType);

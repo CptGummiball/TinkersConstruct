@@ -113,6 +113,8 @@ public final class TinkerFluids extends TinkerModule {
   public static FlowingFluidObject<ForgeFlowingFluid> mushroomStew = FLUIDS.register("mushroom_stew").type(cool("mushroom_stew").temperature(400)).bucket().block(MapColor.DIRT, 0).commonTag().flowing();
   public static FlowingFluidObject<ForgeFlowingFluid> rabbitStew   = FLUIDS.register("rabbit_stew").type(cool("rabbit_stew").temperature(400)).bucket().block(MapColor.PODZOL, 0).commonTag().flowing();
   public static FlowingFluidObject<ForgeFlowingFluid> meatSoup     = FLUIDS.register("meat_soup").type(cool("meat_soup").temperature(400)).bucket().block(MapColor.CRIMSON_NYLIUM, 0).flowing();
+  /** GummiCraft request: cheese from any mod melts in the smeltery and casts back out through the tag preference */
+  public static FlowingFluidObject<ForgeFlowingFluid> moltenCheese = FLUIDS.register("molten_cheese").type(cool("molten_cheese").temperature(400)).bucket().block(MapColor.COLOR_YELLOW, 0).flowing();
   public static final ItemObject<Item> meatSoupBowl = ITEMS.register("meat_soup", () -> new ContainerFoodItem(new Item.Properties().food(TinkerFood.MEAT_SOUP).stacksTo(1).craftRemainder(Items.BOWL)));
 
   // potion

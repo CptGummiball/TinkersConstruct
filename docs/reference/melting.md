@@ -770,6 +770,7 @@ switch on when another mod provides them.
 | Recipe | Input | Result | Temp (C) | Time | Notes |
 |---|---|---|---|---|---|
 | slime/beetroot_soup | `minecraft:beetroot` | 50 mb `#c:beetroot_soup` | 100 | 33 |  |
+| slime/cheese | `#c:cheeses` | 250 mb `tconstruct:molten_cheese` | 100 | 33 | requires tag `c:cheeses` filled |
 | slime/earth/ball | `#c:slimeball/earth` | 250 mb `#c:slime` | 50 | 31 |  |
 | slime/earth/block | `minecraft:slime_block` | 2250 mb `#c:slime` | 50 | 92 |  |
 | slime/earth/bud_cluster | `tconstruct:earth_slime_crystal_cluster` | 1000 mb `#c:slime` | 50 | 77 | ore rate: gem |

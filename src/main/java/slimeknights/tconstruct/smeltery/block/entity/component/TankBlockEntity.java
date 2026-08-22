@@ -143,11 +143,21 @@ public class TankBlockEntity extends SmelteryComponentBlockEntity implements ITa
   @Override
   public void clearRemoved() {
     super.clearRemoved();
-    if (level != null && !level.isClientSide) {
-      BlockPos masterPos = getMasterPos();
-      if (masterPos != null && level.getBlockEntity(masterPos) instanceof IMasterLogic master) {
-        master.onServantLoad(this);
-      }
+    // PORT: deferred to a server task; the master may sit in a chunk that is still loading, and
+    // fetching it synchronously from chunk post-load deadlocks the chunk system (see the same
+    // note in HeatingStructureBlockEntity)
+    if (level != null && !level.isClientSide && level.getServer() != null) {
+      Level captured = level;
+      // tell() always queues; execute() would run inline on the server thread, right back
+      // inside chunk post-load where the deadlock lives
+      level.getServer().tell(new net.minecraft.server.TickTask(0, () -> {
+        if (!isRemoved() && this.level == captured) {
+          BlockPos masterPos = getMasterPos();
+          if (masterPos != null && captured.getBlockEntity(masterPos) instanceof IMasterLogic master) {
+            master.onServantLoad(this);
+          }
+        }
+      }));
     }
   }
 

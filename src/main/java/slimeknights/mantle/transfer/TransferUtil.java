@@ -62,6 +62,16 @@ public final class TransferUtil {
   /** Item handler of a block, or empty if that side exposes none. */
   public static Optional<IItemHandler> getItemHandler(Level level, BlockPos pos, @Nullable Direction side) {
     var storage = ItemStorage.SIDED.find(level, pos, side);
-    return storage == null ? Optional.empty() : Optional.of(new FabricItemHandler(storage));
+    if (storage == null) {
+      return Optional.empty();
+    }
+    // our own block entities register their Forge-shaped handler through ItemStorageBridge;
+    // unwrap it rather than round-tripping through the transaction API. The round trip loses
+    // slot identity and setStackInSlot, which menus rely on: a slot backed by the double
+    // bridge silently dropped inserted items and let shift-click loops duplicate stacks.
+    if (storage instanceof slimeknights.mantle.transfer.item.ItemStorageBridge bridge) {
+      return Optional.of(bridge.getHandler());
+    }
+    return Optional.of(new FabricItemHandler(storage));
   }
 }

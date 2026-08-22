@@ -1309,6 +1309,11 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
                             .setCast(Items.BOWL, true)
                             .setCoolingTime(1)
                             .save(consumer, location(folder + "soup/meat"));
+    // molten cheese sets back into whichever cheese the tag preference picks
+    ItemCastingRecipeBuilder.tableRecipe(ItemOutput.fromTag(getItemTag(COMMON, "cheeses")))
+                            .setFluid(TinkerFluids.moltenCheese.getTag(), FluidValues.SLIMEBALL)
+                            .setCoolingTime(57, FluidValues.SLIMEBALL)
+                            .save(withCondition(consumer, tagCondition("cheeses")), location(folder + "cheese"));
     // venom
     ItemCastingRecipeBuilder.tableRecipe(TinkerFluids.venomBottle)
                             .setFluid(TinkerFluids.venom.getTag(), FluidValues.BOTTLE)
@@ -1853,6 +1858,10 @@ public class SmelteryRecipeProvider extends BaseRecipeProvider implements ISmelt
     // soup
     MeltingRecipeBuilder.melting(Ingredient.of(Items.BEETROOT), TinkerFluids.beetrootSoup, FluidValues.BOTTLE / 5, 1)
                         .save(consumer, location(slimeFolder + "beetroot_soup"));
+    // cheese from any mod melts down and casts back out; both sides hang on the conventional
+    // tag so whichever cheese mods the pack carries light this up (GummiCraft request)
+    MeltingRecipeBuilder.melting(Ingredient.of(getItemTag(COMMON, "cheeses")), TinkerFluids.moltenCheese, FluidValues.SLIMEBALL, 1)
+                        .save(withCondition(consumer, tagCondition("cheeses")), location(slimeFolder + "cheese"));
     MeltingRecipeBuilder.melting(Ingredient.of(Tags.Items.MUSHROOMS), TinkerFluids.mushroomStew, FluidValues.BOTTLE / 2, 1)
                         .save(consumer, location(slimeFolder + "mushroom_stew"));
 

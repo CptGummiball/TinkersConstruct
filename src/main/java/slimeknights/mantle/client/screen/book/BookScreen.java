@@ -255,9 +255,14 @@ public class BookScreen extends Screen {
       renderSpread(graphics, mouseX, mouseY, partialTicks);
     }
 
-    // the arrows are vanilla widgets, so they draw in screen space after the book
+    // the arrows are vanilla widgets, so they draw in screen space after the book.
+    // PORT: 1.21's Screen.render calls renderBackground itself, and that call now applies the
+    // gaussian menu blur to everything already drawn — going through super here blurred the
+    // whole book. Render the widgets directly instead; the background was drawn up top.
     updateButtons();
-    super.render(graphics, mouseX, mouseY, partialTicks);
+    for (net.minecraft.client.gui.components.Renderable renderable : this.renderables) {
+      renderable.render(graphics, mouseX, mouseY, partialTicks);
+    }
 
     if (this.page != COVER_PAGE) {
       renderOverlays(graphics, mouseX, mouseY, partialTicks);

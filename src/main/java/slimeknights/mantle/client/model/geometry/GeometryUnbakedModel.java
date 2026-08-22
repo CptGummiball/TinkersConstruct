@@ -50,6 +50,8 @@ public class GeometryUnbakedModel extends BlockModel {
   private final IUnbakedGeometry<?> geometry;
   private final IGeometryBakingContext context;
   private final ResourceLocation location;
+  /** Guards against re-resolution: overrides may cycle back here through their parent chains */
+  private boolean parentsResolved = false;
 
   public GeometryUnbakedModel(BlockModel base, IUnbakedGeometry<?> geometry, ResourceLocation location) {
     // no parent location, no textures, no elements: everything is inherited from the vanilla parse
@@ -83,6 +85,12 @@ public class GeometryUnbakedModel extends BlockModel {
 
   @Override
   public void resolveParents(Function<ResourceLocation,UnbakedModel> modelGetter) {
+    // once is enough, and a tool model's overrides point back at models whose parent chain
+    // includes this one — without the guard that walk recurses forever
+    if (parentsResolved) {
+      return;
+    }
+    parentsResolved = true;
     base.resolveParents(modelGetter);
     geometry.resolveParents(modelGetter, context);
   }

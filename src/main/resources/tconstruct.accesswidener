@@ -334,3 +334,5 @@ accessible field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders 
 mutable field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
 # Client asset datagen: the trim permutation sprite source hides its constructor in 1.21.
 accessible method net/minecraft/client/renderer/texture/atlas/sources/PalettedPermutations <init> (Ljava/util/List;Lnet/minecraft/resources/ResourceLocation;Ljava/util/Map;)V
+# Book screen renders its widgets directly; 1.21 Screen.render would re-blur the drawn book.
+accessible field net/minecraft/client/gui/screens/Screen renderables Ljava/util/List;

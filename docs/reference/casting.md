@@ -662,6 +662,7 @@ covered in [materials.md](materials.md); the entries here are the fixed recipes.
 | blazewood_slab | basin | 100 mb `#tconstruct:blazing_blood` | `tconstruct:bloodshroom_planks_slab` (consumed) | `tconstruct:blazewood_slab` | 85 |  |
 | blazewood_stairs | basin | 200 mb `#tconstruct:blazing_blood` | `tconstruct:bloodshroom_planks_stairs` (consumed) | `tconstruct:blazewood_stairs` | 120 |  |
 | bone_purifying | table | 200 mb `#c:milk` | `#c:wither_bones` (consumed) | `minecraft:bone` | 50 |  |
+| cheese | table | 250 mb `#tconstruct:molten_cheese` |  | `#c:cheeses` | 52 | requires tag `c:cheeses` filled |
 | cheese_block | basin | 1000 mb `#c:milk` |  | `tconstruct:cheese_block` | 6000 |  |
 | cheese_ingot_gold_cast | table | 250 mb `#c:milk` | `#tconstruct:casts/multi_use/ingot` | `tconstruct:cheese_ingot` | 2400 |  |
 | cheese_ingot_sand_cast | table | 250 mb `#c:milk` | `#tconstruct:casts/single_use/ingot` (consumed) | `tconstruct:cheese_ingot` | 2400 |  |
