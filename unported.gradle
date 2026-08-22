@@ -14,8 +14,8 @@
 
 # --- mantle.recipe stragglers ---
 
-# 1.21 deleted net.minecraft.data.recipes.FinishedRecipe; datagen now writes through
-# RecipeOutput. Belongs with the datagen phase, not here.
+# FinishedRecipe-era condition helper; the datagen rework writes conditions through
+# ConditionHelper and nothing references this class anymore.
 slimeknights/mantle/recipe/helper/TagEmptyCondition.java
 
 
