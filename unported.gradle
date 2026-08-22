@@ -173,5 +173,3 @@ slimeknights/mantle/recipe/data/NBTNameIngredient.java
 # Structure repaletting datagen (phase 7, structures slice): the abstract base trips the
 # lombok-on-records killer and the shipped structures are current; returns with the
 # structure regeneration pass.
-slimeknights/tconstruct/world/data/StructureRepalleter.java
-slimeknights/tconstruct/library/data/AbstractStructureRepalleter.java

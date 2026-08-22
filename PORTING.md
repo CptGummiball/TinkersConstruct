@@ -1950,13 +1950,45 @@ Porting notes:
 The whole datagen surface is now regenerating: with slices 15-18, every file under
 {@code src/generated/resources} except the structure NBTs is proven reproducible on Fabric.
 
+### Phase 7, slice 19: structure repaletting and the recipe remover — datagen is complete
+
+The last two functional gaps before the documentation pass.
+
+**Structure repaletting** (the lombok park from wave 2) compiles with an import swap and two
+1.21 fixes: the {@code structures} data folder went singular, and {@code NbtIo.readCompressed}
+grew an {@code NbtAccounter}. The repalleter reads the five dirt island templates and stamps
+out the four slime island sets (palette-name swaps; ender additionally reprocessed through
+{@code StructureTemplate}). **All 20 NBTs regenerate: blood/earth/sky are tree-identical to
+the committed files (compound key order is map order, semantically meaningless), and the five
+ender ones differ only in {@code DataVersion} 3465 -> 3955 — the reprocess path stamps the
+running version, which is the correct one for 1.21 worlds. The regenerated set replaces the
+committed one, so the whole {@code src/generated/resources} tree is now proven reproducible.**
+{@code StructureUpdater} stays ungated: upstream marks it "used once each update then
+disabled", and this port regenerates data rather than migrating it.
+
+**The mantle recipe remover** is ported as {@code /mantle remove_recipes preset <id>}: it reads
+a {@code mantle/remove_recipes} preset (item predicates for result and input plus recipe
+types), scans the recipe manager, and shadows every match with an empty
+{@code forge:conditional} in the generated datapack — which the condition filter drops on
+load. The four shipped presets (ingot/nugget smelting, vanilla tools, netherite smithing) stop
+being dead data; packs replacing vanilla tools with tinkers ones are the whole point. The
+command harness drives it end to end: the vanilla_tools preset disables 49 recipes.
+
+**Two real 1.21 command bugs surfaced by the harness run, both fixed across the mantle
+command family**: translatable components sent with {@code ResourceLocation}/{@code ResourceKey}
+arguments now stringify them — 1.21's network codec rejects non-primitive translation args, so
+{@code /mantle tags view} and friends crashed the chat packet encoder — and
+{@code GeneratePackHelper}'s clickable output paths switch from {@code OPEN_FILE} (which 1.21
+servers may no longer send) to {@code COPY_TO_CLIPBOARD}. The harness also pins the hotbar
+selection before its give, which is what its false FAIL was.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,
   because casting/melting are custom recipe types Unify may not see. Agreed check: Unify
   replaces the Oritech steel ingot with the Energized Power one — cast a steel ingot in the
   smeltery and confirm which mod's ingot comes out. That single test suffices.
-- [ ] **7 — Datagen & documentation.** The full datagen surface regenerates and is proven byte-identical (slices 15-18): server data, models, and all texture generators. Remaining: structure repaletting (the parked NBT slice), the mantle recipe remover runtime, and the final recipe documentation.
+- [ ] **7 — Datagen & documentation.** Datagen is complete (slices 15-19): every file under src/generated/resources regenerates on Fabric, byte-identical or better (structure NBTs carry the 1.21 DataVersion). The recipe remover runs as /mantle remove_recipes. Remaining: the final recipe documentation.
 
 ## Access widener
 

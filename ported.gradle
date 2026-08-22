@@ -413,5 +413,8 @@ slimeknights/mantle/data/client/**
 slimeknights/tconstruct/library/client/data/AbstractArmorModelProvider.java
 slimeknights/tconstruct/library/client/data/material/AbstractMaterialRenderInfoProvider.java
 slimeknights/tconstruct/library/client/data/material/MaterialPaletteDebugGenerator.java
+# --- Phase 7 slice 19: structure repaletting and the recipe remover ---
+slimeknights/tconstruct/library/data/AbstractStructureRepalleter.java
+slimeknights/tconstruct/world/data/StructureRepalleter.java
 slimeknights/tconstruct/world/data/WorldgenProvider.java
 slimeknights/mantle/data/MantleTagsProvider.java

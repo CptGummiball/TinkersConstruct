@@ -65,6 +65,7 @@ import slimeknights.tconstruct.tools.data.material.MaterialRecipeProvider;
 import slimeknights.tconstruct.tools.data.material.MaterialStatsDataProvider;
 import slimeknights.tconstruct.tools.data.material.MaterialTraitsDataProvider;
 import slimeknights.tconstruct.world.data.MobEquipmentProvider;
+import slimeknights.tconstruct.world.data.StructureRepalleter;
 import slimeknights.tconstruct.world.data.WorldRecipeProvider;
 import slimeknights.tconstruct.world.data.WorldgenProvider;
 
@@ -184,6 +185,9 @@ public class TConstructDataGenerator implements DataGeneratorEntrypoint {
     FluidTextureProvider[] fluidTextures = new FluidTextureProvider[1];
     pack.addProvider((output, registries) -> fluidTextures[0] = new FluidTextureProvider(output));
     pack.addProvider((output, registries) -> new FluidTextureCameraProvider(output, existingFileHelper, fluidTextures[0]));
+
+    // structures: repalettes the dirt island templates into the four slime island sets
+    pack.addProvider((output, registries) -> new StructureRepalleter(output, existingFileHelper));
   }
 
   @Override

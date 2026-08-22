@@ -20,9 +20,10 @@ import java.util.function.Consumer;
  * {@link CommandRegistrationCallback}. Of the upstream subcommands, the tags family is here in
  * full. The rest stayed out with the systems they front: {@code dump_loot_modifiers} (global loot
  * modifiers are a Forge feature this port replaced with plain loot table injects),
- * {@code harvest_tiers} (Forge's tier sorting registry does not exist on Fabric),
- * {@code remove}/{@code hunger} (datapack editing utilities nothing in
- * Tinkers calls; add with their command classes if ever needed).
+ * {@code harvest_tiers} (Forge's tier sorting registry does not exist on Fabric) and
+ * {@code hunger} (datapack editing utility nothing in Tinkers calls). The recipe remover is
+ * ported as {@code remove_recipes}: the shipped presets exist for it, and packs replacing
+ * vanilla tools with tinkers ones are its whole point.
  */
 public class MantleCommand {
   /** Permission level that allows a user to build in spawn protected areas */
@@ -72,6 +73,7 @@ public class MantleCommand {
       register(b, "preference", TagPreferenceCommand::register);
     });
     register(builder, "sources", b -> register(b, "data", SourcesCommand::register));
+    register(builder, "remove_recipes", RemoveRecipesCommand::register);
 
     // register final command
     dispatcher.register(builder);

@@ -52,6 +52,9 @@ public final class CommandDevHarness {
         }
       }
       case 10 -> minecraft.player.connection.sendCommand("clear @s");
+      // the give below lands in the first free slot; make sure that is the held one even
+      // when the world save carries an older hotbar selection
+      case 15 -> minecraft.player.getInventory().selected = 0;
       case 20 -> minecraft.player.connection.sendCommand("give @s tconstruct:pickaxe");
       case 40 -> minecraft.player.connection.sendCommand("tconstruct modifiers @s add tconstruct:haste 1");
       case 55 -> {
@@ -67,10 +70,21 @@ public final class CommandDevHarness {
       case 60 -> minecraft.player.connection.sendCommand("mantle tags view minecraft:item minecraft:planks");
       case 80 -> minecraft.player.connection.sendCommand("tconstruct generate part_textures all");
       case 240 -> minecraft.player.connection.sendCommand("mantle_client book export_images tconstruct:puny_smelting");
+      case 260 -> minecraft.player.connection.sendCommand("mantle remove_recipes preset tconstruct:vanilla_tools");
       case 700 -> {
         File gameDir = minecraft.gameDirectory;
         checkPngs(minecraft, new File(gameDir, "resourcepacks/TinkersConstructGeneratedPartTextures"), "part texture generator");
         checkPngs(minecraft, new File(gameDir, "screenshots/mantle_book/tconstruct/puny_smelting"), "book image export");
+        // recipe remover: the preset disables vanilla tool recipes into the generated pack
+        var server = minecraft.getSingleplayerServer();
+        if (server != null) {
+          File removed = slimeknights.mantle.command.GeneratePackHelper.getDatapackPath(server).resolve("data/minecraft/recipe/iron_pickaxe.json").toFile();
+          if (removed.isFile()) {
+            TConstruct.LOG.info("[commandharness] recipe remover wrote {}", removed);
+          } else {
+            fail(minecraft, "recipe remover did not write " + removed);
+          }
+        }
       }
       case 720 -> minecraft.setScreen(new net.minecraft.client.gui.screens.ChatScreen(""));
       case 725 -> Screenshot.grab(minecraft.gameDirectory, "commands_chat.png", minecraft.getMainRenderTarget(),
