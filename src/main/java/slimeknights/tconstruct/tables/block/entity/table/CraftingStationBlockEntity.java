@@ -163,29 +163,39 @@ public class CraftingStationBlockEntity extends RetexturedTableBlockEntity imple
     ForgeEventFactory.firePlayerCraftingEvent(player, result, this.craftingInventory);
 
     // update all slots in the inventory
-    // remove remaining items
+    // remove remaining items.
+    // PORT: 1.21's CraftingInput trims empty rows and columns off the grid, so the remaining
+    // list is indexed by the trimmed grid, not by our slots — indexing slots with it consumed
+    // nothing unless the recipe happened to sit in the top-left corner, which let a shift-click
+    // craft forever off the same inputs. Map through the positioned input like vanilla's
+    // ResultSlot does.
     ForgeHooks.setCraftingPlayer(player);
-    NonNullList<ItemStack> remaining = recipe.getRemainingItems(craftingInventory.asCraftInput());
+    net.minecraft.world.item.crafting.CraftingInput.Positioned positioned = craftingInventory.asPositionedCraftInput();
+    net.minecraft.world.item.crafting.CraftingInput input = positioned.input();
+    NonNullList<ItemStack> remaining = recipe.getRemainingItems(input);
     ForgeHooks.setCraftingPlayer(null);
-    for (int i = 0; i < remaining.size(); ++i) {
-      ItemStack original = this.getItem(i);
-      ItemStack newStack = remaining.get(i);
+    for (int y = 0; y < input.height(); y++) {
+      for (int x = 0; x < input.width(); x++) {
+        int slot = x + positioned.left() + (y + positioned.top()) * craftingInventory.getWidth();
+        ItemStack original = this.getItem(slot);
+        ItemStack newStack = remaining.get(x + y * input.width());
 
-      // if empty or size 1, set directly (decreases by 1)
-      if (original.isEmpty() || original.getCount() == 1) {
-        this.setItem(i, newStack);
-      }
-      else if (ItemStack.isSameItemSameComponents(original, newStack)) {
-        // if matching, merge (decreasing by 1
-        newStack.grow(original.getCount() - 1);
-        this.setItem(i, newStack);
-      }
-      else {
-        // directly update the slot
-        this.setItem(i, ItemHandlerHelper.copyStackWithSize(original, original.getCount() - 1));
-        // otherwise, drop the item as the player
-        if (!newStack.isEmpty() && !player.getInventory().add(newStack)) {
-          player.drop(newStack, false);
+        // if empty or size 1, set directly (decreases by 1)
+        if (original.isEmpty() || original.getCount() == 1) {
+          this.setItem(slot, newStack);
+        }
+        else if (ItemStack.isSameItemSameComponents(original, newStack)) {
+          // if matching, merge (decreasing by 1
+          newStack.grow(original.getCount() - 1);
+          this.setItem(slot, newStack);
+        }
+        else {
+          // directly update the slot
+          this.setItem(slot, ItemHandlerHelper.copyStackWithSize(original, original.getCount() - 1));
+          // otherwise, drop the item as the player
+          if (!newStack.isEmpty() && !player.getInventory().add(newStack)) {
+            player.drop(newStack, false);
+          }
         }
       }
     }

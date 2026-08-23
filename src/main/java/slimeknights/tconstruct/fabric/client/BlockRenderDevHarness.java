@@ -155,6 +155,12 @@ public final class BlockRenderDevHarness {
         server.execute(() -> checkSmeltery(server, minecraft));
       }
     }
+    if (ticks == 205) {
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> checkCraftingStation(server));
+      }
+    }
     if (ticks == 215) {
       // stand south of the smeltery at ground level looking at the controller wall
       minecraft.options.hideGui = true;
@@ -305,6 +311,45 @@ public final class BlockRenderDevHarness {
       TConstruct.LOG.error("[block harness] SLOT FAIL: added 5, delta is {} (dupe or loss); baseline {}", total - baseline, baseline);
     } else {
       TConstruct.LOG.info("[block harness] SLOT PASS: added 5, delta still 5 after place and shift-click (baseline {})", baseline);
+    }
+    player.closeContainer();
+  }
+
+  /** Regression for the crafting station result dupe: an ingredient in the grid centre must be
+   * consumed by a shift-click craft — 1.21's trimmed CraftingInput used to miss it entirely,
+   * crafting forever off the same block. */
+  private static void checkCraftingStation(MinecraftServer server) {
+    ServerLevel level = server.overworld();
+    BlockPos stationPos = ORIGIN.offset(-2, 0, -2);
+    BlockState state = level.getBlockState(stationPos);
+    var player = server.getPlayerList().getPlayers().get(0);
+    state.useWithoutItem(level, player, new net.minecraft.world.phys.BlockHitResult(
+      net.minecraft.world.phys.Vec3.atCenterOf(stationPos), net.minecraft.core.Direction.UP, stationPos, false));
+    if (!(player.containerMenu instanceof slimeknights.tconstruct.tables.menu.CraftingStationContainerMenu menu)) {
+      TConstruct.LOG.error("[block harness] CRAFT FAIL: station menu did not open, got {}", player.containerMenu);
+      return;
+    }
+    var ingot = net.minecraft.world.item.Items.IRON_INGOT;
+    int baseline = 0;
+    for (var slot : menu.slots) {
+      if (slot.getItem().is(ingot)) {
+        baseline += slot.getItem().getCount();
+      }
+    }
+    // iron block into the centre of the grid (slot 4), then shift-click the result (slot 9)
+    menu.slots.get(4).set(new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.IRON_BLOCK));
+    menu.clicked(9, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, player);
+    int total = 0;
+    for (var slot : menu.slots) {
+      if (slot.getItem().is(ingot)) {
+        total += slot.getItem().getCount();
+      }
+    }
+    boolean gridEmpty = menu.slots.get(4).getItem().isEmpty();
+    if (total - baseline == 9 && gridEmpty) {
+      TConstruct.LOG.info("[block harness] CRAFT PASS: one block crafted to exactly 9 ingots and was consumed");
+    } else {
+      TConstruct.LOG.error("[block harness] CRAFT FAIL: ingot delta {} (want 9), grid slot empty {}", total - baseline, gridEmpty);
     }
     player.closeContainer();
   }
