@@ -2045,6 +2045,48 @@ The block harness grew into a regression suite on the way: a real formed smelter
 fluid, menu slot conservation, item transform and structure sprite assertions, plus the
 floating suspect line-up. The command harness already covered books and the recipe remover.
 
+### Maintenance round 22: the crafting station result dupe
+
+A screen recording pinned the surviving dupe to the **crafting station** — round 21's
+smeltery dupe was real, but this was a second, separate one with the same symptom: an iron
+block in the grid *centre*, shift-click the result, the inventory floods with ingots while
+the block stays. 1.21 introduced `CraftingInput`, which **trims empty rows and columns** off
+the grid before recipes see it; `getRemainingItems` returns a list indexed by the trimmed
+grid, and `takeResult` indexed the raw 3x3 slots with it — consuming nothing unless the
+recipe happened to sit in the top-left corner, while vanilla's shift-click loop crafts for as
+long as the recipe still matches. Consumption now maps through `asPositionedCraftInput`
+(trimmed index plus left/top offset gives the real slot), exactly like vanilla's
+`ResultSlot`. The block harness crafts an iron block from the grid centre and asserts exactly
+nine ingots arrive and the grid empties (CRAFT PASS).
+
+### Maintenance round 23: the dupe audit
+
+Requested sweep of every place either dupe class could recur:
+
+- **Trimmed `CraftingInput` vs raw slots** (round 22's class): the crafting station was the
+  only consumer indexing raw slots with a trimmed list. The custom crafting remainders
+  (`OverslimeCraftingTableRecipe`, `ModifierRepairCraftingRecipe`) size and index their lists
+  by the trimmed input, so they are correct in both the vanilla table and the fixed station.
+  The tool crafting window (crafting modifier) uses vanilla `ResultSlot` over a
+  `TransientCraftingContainer`, which do the positioned mapping themselves. Tinker station,
+  part builder and modifier worktable consume by fixed slot indices of their own containers —
+  no trimming anywhere near them. Every result-slot click path (pickup, half pickup, swap
+  key, throw, the quick-move loop, pick-all) funnels through `onTake` into the one
+  consumption routine per table; pick-all on the station result is additionally blocked.
+- **Transfer double-bridge** (round 21's class): the item unwrap was already in place and is
+  the only construction site of the wrapper. The fluid side had the same asymmetry —
+  `TransferUtil.getFluidHandler` wrapped our own `FluidStorageBridge` back into a
+  `FabricFluidHandler`, stacking a second unit conversion and snapshot layer between two
+  pieces of our own code. It unwraps now, matching the item path. New harness check: a lava
+  bucket emptied into a seared tank and filled back out through the real click path, with
+  exact amounts asserted in both directions (TANK PASS).
+- **Found on the way, fixed**: `CapabilityHelper.get` returned empty for any block entity
+  that is not ours, so faucets, channels, gauges, the alloyer's mixer and the tank modifier
+  silently found nothing on *other mods'* tanks and inventories. It now falls back to the
+  Fabric lookups for foreign block entities — those devices work across the pack again like
+  they did on Forge, and the fallback shares `TransferUtil`'s unwrap so it cannot reintroduce
+  the double bridge.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

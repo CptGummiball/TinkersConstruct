@@ -40,6 +40,13 @@ signalum, refined glowstone/obsidian and more — see [reference/alloys.md](refe
 Whichever of these GummiCraft's tech mods provide light up automatically — no config needed.
 Ores melt with byproducts in the foundry and boosted rates in the smeltery.
 
+## Fluids and items across mods
+
+Faucets and channels pour into and drain from any mod's tanks (anything exposing Fabric
+fluid storage), gauges read them, and the alloyer's mixer pulls from adjacent foreign tanks.
+In the other direction, other mods' pipes and hoppers see the smeltery drain, tanks, casting
+blocks and tables through the standard Fabric storage lookups.
+
 ## Removing vanilla recipes
 
 The port ships four data-driven removal presets and a command that applies them to whatever

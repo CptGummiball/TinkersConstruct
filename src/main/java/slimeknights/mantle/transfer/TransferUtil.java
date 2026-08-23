@@ -39,7 +39,16 @@ public final class TransferUtil {
   /** Fluid handler of a block, or empty if that side exposes none. */
   public static Optional<IFluidHandler> getFluidHandler(Level level, BlockPos pos, @Nullable Direction side) {
     var storage = FluidStorage.SIDED.find(level, pos, side);
-    return storage == null ? Optional.empty() : Optional.of(new FabricFluidHandler(storage));
+    if (storage == null) {
+      return Optional.empty();
+    }
+    // same unwrap as the item path below: our own block entities register their Forge-shaped
+    // handler through FluidStorageBridge, and round-tripping it through the transaction API
+    // stacks a second unit conversion and snapshot layer between two pieces of our own code
+    if (storage instanceof slimeknights.mantle.transfer.fluid.FluidStorageBridge bridge) {
+      return Optional.of(bridge.getHandler());
+    }
+    return Optional.of(new FabricFluidHandler(storage));
   }
 
   /**

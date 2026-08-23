@@ -161,6 +161,12 @@ public final class BlockRenderDevHarness {
         server.execute(() -> checkCraftingStation(server));
       }
     }
+    if (ticks == 210) {
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> checkTankTransfer(server));
+      }
+    }
     if (ticks == 215) {
       // stand south of the smeltery at ground level looking at the controller wall
       minecraft.options.hideGui = true;
@@ -352,6 +358,46 @@ public final class BlockRenderDevHarness {
       TConstruct.LOG.error("[block harness] CRAFT FAIL: ingot delta {} (want 9), grid slot empty {}", total - baseline, gridEmpty);
     }
     player.closeContainer();
+  }
+
+  /** Regression for the block fluid seam: a bucket emptied into a seared tank and filled back
+   * out runs the fluid-handler lookup end to end through the real click path. A wrapper
+   * regression here dupes buckets (hand keeps the lava bucket while the tank fills) or
+   * swallows fluid (bucket empties into nothing). */
+  private static void checkTankTransfer(MinecraftServer server) {
+    ServerLevel level = server.overworld();
+    BlockPos pos = ORIGIN.offset(3, 3, 3);
+    level.setBlock(pos, TinkerSmeltery.searedTank.get(TankType.FUEL_TANK).defaultBlockState(), 3);
+    var player = server.getPlayerList().getPlayers().get(0);
+    // survival, so bucket exchange rules are the strict ones; creative would keep the full bucket
+    player.setGameMode(net.minecraft.world.level.GameType.SURVIVAL);
+    var hand = net.minecraft.world.InteractionHand.MAIN_HAND;
+    var hit = new net.minecraft.world.phys.BlockHitResult(
+      net.minecraft.world.phys.Vec3.atCenterOf(pos), net.minecraft.core.Direction.NORTH, pos, false);
+    player.setItemInHand(hand, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.LAVA_BUCKET));
+    level.getBlockState(pos).useItemOn(player.getItemInHand(hand), level, player, hand, hit);
+    if (!(level.getBlockEntity(pos) instanceof TankBlockEntity tank)) {
+      TConstruct.LOG.error("[block harness] TANK FAIL: no tank block entity at {}", pos);
+      return;
+    }
+    FluidStack afterFill = tank.getTank().getFluid();
+    var held = player.getItemInHand(hand);
+    if (!afterFill.getFluid().isSame(net.minecraft.world.level.material.Fluids.LAVA) || afterFill.getAmount() != 1000
+        || !held.is(net.minecraft.world.item.Items.BUCKET) || held.getCount() != 1) {
+      TConstruct.LOG.error("[block harness] TANK FAIL: after bucket empty, tank has {} mB of {}, hand {}",
+        afterFill.getAmount(), afterFill.getFluid(), held);
+      return;
+    }
+    // and back out with the empty bucket
+    level.getBlockState(pos).useItemOn(held, level, player, hand, hit);
+    FluidStack afterDrain = tank.getTank().getFluid();
+    held = player.getItemInHand(hand);
+    if (afterDrain.isEmpty() && held.is(net.minecraft.world.item.Items.LAVA_BUCKET) && held.getCount() == 1) {
+      TConstruct.LOG.info("[block harness] TANK PASS: bucket emptied to exactly 1000 mB and filled back, no dupe either direction");
+    } else {
+      TConstruct.LOG.error("[block harness] TANK FAIL: after refill, tank has {} mB, hand {} x{}",
+        afterDrain.getAmount(), held, held.getCount());
+    }
   }
 
   /** Clears a patch of sky and fills it with the blocks worth looking at */
