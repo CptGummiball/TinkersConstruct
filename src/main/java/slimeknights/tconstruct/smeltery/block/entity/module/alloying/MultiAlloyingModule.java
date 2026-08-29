@@ -47,9 +47,12 @@ public class MultiAlloyingModule implements IAlloyingModule {
    */
   private List<AlloyRecipe> getRecipes() {
     if (lastRecipes == null) {
+      // PORT: must stay a mutable list — iterateRecipes prunes entries that stopped matching
+      // and doAlloy shuffles it; Stream.toList is immutable and made both throw on a server
       lastRecipes = getLevel().getRecipeManager()
         .getRecipesFor(TinkerRecipeTypes.ALLOYING.get(), new slimeknights.mantle.recipe.container.ContainerRecipeInput<>(alloyTank), getLevel())
-        .stream().map(net.minecraft.world.item.crafting.RecipeHolder::value).toList();
+        .stream().map(net.minecraft.world.item.crafting.RecipeHolder::value)
+        .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
     }
     return lastRecipes;
   }

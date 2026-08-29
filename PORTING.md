@@ -2122,6 +2122,33 @@ On the way, the investigation hardened the harness permanently:
   ingredient legitimately displays no stacks until a compat alloy without real storage
   blocks is active. Cosmetic; the recipes behave correctly.
 
+### Maintenance round 25: the alloying server crash
+
+A dedicated-server crash report from pack play: `UnsupportedOperationException` in
+`MultiAlloyingModule.iterateRecipes`, a ticking-block-entity crash that takes the server
+down. Root-causing it in the harness surfaced **two** port bugs stacked on top of each other:
+
+- **The recipe cache was immutable.** The module caches the alloy recipes matching the tank
+  and both prunes that list (`iterator.remove()` when a recipe stops matching) and shuffles
+  it (`Collections.shuffle` before performing). Forge collected into an `ArrayList`; the port
+  used `Stream.toList()`, which is immutable — so the first completed alloy whose inputs ran
+  dry crashed the server on the next tick's prune. Collecting into an `ArrayList` again fixes
+  both mutation sites.
+- **Tag outputs resolved to flowing fluids.** `TagPreference` broke namespace ties
+  alphabetically for launch-to-launch stability — but every molten fluid tag lists the still
+  fluid first and the flowing second, and `flowing_` sorts before `molten_`, so **every
+  tag-based fluid output (all melting and alloying results) produced the unusable flowing
+  variant**. Tag-ingredient consumers still matched it, which masked the problem; exact-fluid
+  consumers did not, another face of "some recipes don't work". Ties now keep the tag's own
+  order (stable and Forge-faithful); `min` is stable so no second comparator is needed.
+
+New permanent harness check (**ALLOY PASS**): the mini-smeltery gets a lava fuel tank in the
+wall (mid-wall — corners are frame and not scanned for tanks), 90 copper + 90 gold go in with
+the fluid-change note melting would fire, and the full cycle must run: canAlloy consumes
+fuel, doAlloy shuffles and performs, the next tick prunes the cache — 180 mb of *still*
+molten rose gold, no leftovers, no exception. The failure branch logs structure, fuel and
+per-recipe match state for the next investigation.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

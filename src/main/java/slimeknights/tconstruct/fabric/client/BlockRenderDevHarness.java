@@ -251,6 +251,74 @@ public final class BlockRenderDevHarness {
         serverPlayer.teleportTo(serverPlayer.serverLevel(), ORIGIN.getX() - 8 + 0.5, ORIGIN.getY() - 1, ORIGIN.getZ() + 11.5, 180, -5);
       }
     }
+    if (ticks == 222) {
+      // alloying regression: 90 copper + 90 gold with lava fuel must become 180 rose gold.
+      // The first fueled tick alloys (exercising the recipe-list shuffle) and the next tick
+      // re-checks the cached recipe against the now-consumed inputs (exercising the prune) —
+      // both threw UnsupportedOperationException while the cache was an immutable list.
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> {
+          ServerLevel level = server.overworld();
+          if (level.getBlockEntity(ORIGIN.offset(-8, 0, 6)) instanceof slimeknights.tconstruct.smeltery.block.entity.controller.HeatingStructureBlockEntity structure) {
+            structure.getTank().setFluids(java.util.List.of(
+              new FluidStack(TinkerFluids.moltenCopper.get(), 90),
+              new FluidStack(TinkerFluids.moltenGold.get(), 90)));
+            // setFluids is a test backdoor; fire the change note melting would have fired, as
+            // the alloy module drops its cached recipe list on it
+            structure.notifyFluidsChanged(slimeknights.tconstruct.smeltery.block.entity.tank.ISmelteryTankHandler.FluidChange.ADDED,
+              new FluidStack(TinkerFluids.moltenCopper.get(), 90));
+            TConstruct.LOG.info("[block harness] alloy inputs set: 90 copper + 90 gold");
+          } else {
+            TConstruct.LOG.error("[block harness] ALLOY FAIL: no structure block entity to fill");
+          }
+        });
+      }
+    }
+    if (ticks == 252) {
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> {
+          ServerLevel level = server.overworld();
+          if (level.getBlockEntity(ORIGIN.offset(-8, 0, 6)) instanceof slimeknights.tconstruct.smeltery.block.entity.controller.HeatingStructureBlockEntity structure) {
+            var fluids = structure.getTank().getFluids();
+            int roseGold = 0;
+            int leftovers = 0;
+            for (FluidStack fluid : fluids) {
+              String path = net.minecraft.core.registries.BuiltInRegistries.FLUID.getKey(fluid.getFluid()).getPath();
+              if ("molten_rose_gold".equals(path)) {
+                roseGold += fluid.getAmount();
+              } else if ("molten_copper".equals(path) || "molten_gold".equals(path)) {
+                leftovers += fluid.getAmount();
+              }
+            }
+            if (roseGold == 180 && leftovers == 0) {
+              TConstruct.LOG.info("[block harness] ALLOY PASS: 90 copper + 90 gold alloyed to exactly 180 rose gold");
+            } else {
+              TConstruct.LOG.error("[block harness] ALLOY FAIL: rose gold {} (want 180), unconsumed inputs {}, tank: {}", roseGold, leftovers, fluids);
+              TConstruct.LOG.error("[block harness] ALLOY DEBUG: hasStructure={}, hasTanks={}, hasFuel={}, possibleTemp={}, canAlloy={}, alloyRecipesLoaded={}",
+                structure.getStructure() != null,
+                structure.getStructure() != null && structure.getStructure().hasTanks(),
+                structure.getFuelModule().hasFuel(),
+                structure.getFuelModule().findFuel(false),
+                ((slimeknights.tconstruct.smeltery.block.entity.controller.SmelteryBlockEntity) structure).getAlloyingModule().canAlloy(),
+                level.getRecipeManager().getAllRecipesFor(slimeknights.tconstruct.library.recipe.TinkerRecipeTypes.ALLOYING.get()).size());
+              var probe = new slimeknights.tconstruct.smeltery.block.entity.module.alloying.SmelteryAlloyTank(structure.getTank());
+              probe.setTemperature(1000);
+              TConstruct.LOG.error("[block harness] ALLOY DEBUG2: smeltery tank reports {} tanks, [0]={}, [1]={}",
+                structure.getTank().getTanks(), structure.getTank().getFluidInTank(0), structure.getTank().getFluidInTank(1));
+              for (var holder : level.getRecipeManager().getAllRecipesFor(slimeknights.tconstruct.library.recipe.TinkerRecipeTypes.ALLOYING.get())) {
+                if (holder.value().matches(probe, level)) {
+                  TConstruct.LOG.error("[block harness] ALLOY DEBUG2: {} matches, canPerform={}", holder.id(), holder.value().canPerform(probe));
+                }
+              }
+              TConstruct.LOG.error("[block harness] ALLOY DEBUG2: copper.is(c:molten_copper)={}",
+                TinkerFluids.moltenCopper.get().is(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.FLUID, net.minecraft.resources.ResourceLocation.parse("c:molten_copper"))));
+            }
+          }
+        });
+      }
+    }
     if (ticks == 240) {
       // regression: the formed controller must bake real sprites for its window and fluid;
       // missingno here is the in-structure missing-texture bug
@@ -305,6 +373,15 @@ public final class BlockRenderDevHarness {
           }
         }
       }
+    }
+    // a fuel tank full of lava in the wall, so the smeltery can actually heat and alloy;
+    // placed before the controller so the structure scan sees it from the start, and in the
+    // middle of the east wall — corners count as frame, which some structures treat specially
+    BlockPos fuelPos = center.offset(1, 0, 0);
+    level.setBlock(fuelPos, TinkerSmeltery.searedTank.get(TankType.FUEL_TANK).defaultBlockState(), 3);
+    if (level.getBlockEntity(fuelPos) instanceof TankBlockEntity fuelTank) {
+      fuelTank.getTank().setFluid(new FluidStack(net.minecraft.world.level.material.Fluids.LAVA, fuelTank.getTank().getCapacity()));
+      fuelTank.onTankContentsChanged();
     }
     // controller facing the camera (south wall, looking south), drain beside it
     level.setBlock(center.offset(0, 0, 1), TinkerSmeltery.smelteryController.get().defaultBlockState()

@@ -17,8 +17,11 @@ import java.util.Optional;
  * <p>When a recipe outputs "a copper ingot", several mods may supply one. Forge resolved this
  * with a config-driven mod priority list; this port does the same through the namespace list
  * Tinkers' common config injects here ({@code tagPreferences}). Earlier namespaces win, anything
- * unlisted ranks after every listed one, and ties fall back to the full id alphabetically so the
- * choice stays stable across launches rather than dependent on mod load order.
+ * unlisted ranks after every listed one, and ties keep the tag's own order, which is stable
+ * across launches and matches Forge. An alphabetical tiebreak looked more deterministic but
+ * broke the fluid tags: every molten tag lists the still fluid first and the flowing second,
+ * and "flowing_" sorts before "molten_", so every smeltery output resolved to the unusable
+ * flowing variant.
  *
  * <p>The default is {@code [minecraft, tconstruct]}. A pack running an output unifier (the
  * GummiCraft pack ships {@code unify}) should mirror the unifier's priority order in the config,
@@ -50,12 +53,8 @@ public class TagPreference {
     return index < 0 ? list.size() : index;
   }
 
-  private static final Comparator<Holder<?>> PREFERENCE = Comparator
-    .comparingInt(TagPreference::namespaceRank)
-    .thenComparing(holder -> holder.unwrapKey()
-      .map(key -> key.location())
-      .map(ResourceLocation::toString)
-      .orElse(""));
+  /** Namespace rank only: min/sorted are stable, so equal ranks keep the tag's own order */
+  private static final Comparator<Holder<?>> PREFERENCE = Comparator.comparingInt(TagPreference::namespaceRank);
 
   /** Preferred entry of the given tag, or empty when the tag has no entries. */
   public static <T> Optional<T> getPreference(TagKey<T> tag) {
