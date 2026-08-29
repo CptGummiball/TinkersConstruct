@@ -5,12 +5,11 @@ import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.DecoderException;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.network.NetworkEvent.Context;
-import net.minecraftforge.registries.ForgeRegistries;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.impl.ComposableModifier;
@@ -75,7 +74,7 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
     return modifier;
   }
 
-  public UpdateModifiersPacket(FriendlyByteBuf buffer) {
+  public UpdateModifiersPacket(RegistryFriendlyByteBuf buffer) {
     // read in modifiers
     int size = buffer.readVarInt();
     Map<ModifierId,Modifier> modifiers = new HashMap<>();
@@ -99,13 +98,18 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
     this.allModifiers = modifiers;
     this.tags = GenericTagUtil.decodeTags(buffer, ModifierManager.REGISTRY_KEY, id -> getModifier(modifiers, new ModifierId(id)));
 
-    // read in enchantment to modifier mapping
+    // read in enchantment to modifier mapping; enchantments are a datapack registry in
+    // 1.21, so entries are keyed by ID against the connection's registry access
+    net.minecraft.core.Registry<Enchantment> enchantmentRegistry = buffer.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
     ImmutableMap.Builder<Enchantment,Modifier> enchantmentBuilder = ImmutableMap.builder();
     size = buffer.readVarInt();
     for (int i = 0; i < size; i++) {
-      enchantmentBuilder.put(
-        buffer.readRegistryIdUnsafe(ForgeRegistries.ENCHANTMENTS),
-        getModifier(modifiers, new ModifierId(buffer.readResourceLocation())));
+      ResourceLocation enchantmentId = buffer.readResourceLocation();
+      Enchantment enchantment = enchantmentRegistry.get(enchantmentId);
+      if (enchantment == null) {
+        throw new DecoderException("Unknown enchantment " + enchantmentId + " in modifier sync");
+      }
+      enchantmentBuilder.put(enchantment, getModifier(modifiers, new ModifierId(buffer.readResourceLocation())));
     }
     enchantmentMap = enchantmentBuilder.build();
     ImmutableMap.Builder<TagKey<Enchantment>, Modifier> enchantmentTagBuilder = ImmutableMap.builder();
@@ -119,7 +123,7 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     ensureCalculated();
     // write modifiers
     buffer.writeVarInt(modifiers.size());
@@ -142,10 +146,11 @@ public class UpdateModifiersPacket implements IThreadsafePacket {
     }
     GenericTagUtil.encodeTags(buffer, Modifier::getId, this.tags);
 
-    // enchantment mapping
+    // enchantment mapping, by registry ID (datapack registry in 1.21)
+    net.minecraft.core.Registry<Enchantment> enchantmentRegistry = buffer.registryAccess().registryOrThrow(Registries.ENCHANTMENT);
     buffer.writeVarInt(enchantmentMap.size());
     for (Entry<Enchantment,Modifier> entry : enchantmentMap.entrySet()) {
-      buffer.writeRegistryIdUnsafe(ForgeRegistries.ENCHANTMENTS, entry.getKey());
+      buffer.writeResourceLocation(java.util.Objects.requireNonNull(enchantmentRegistry.getKey(entry.getKey()), "Cannot sync unregistered enchantment"));
       buffer.writeResourceLocation(entry.getValue().getId());
     }
     buffer.writeVarInt(enchantmentTagMappings.size());

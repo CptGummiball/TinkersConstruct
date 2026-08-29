@@ -10,7 +10,8 @@ public class DragonScaleItem extends TooltipItem {
     super(properties);
   }
 
-  @Override
+  // PORT (event layer): 1.21 drives item entity damage immunity through ItemStack.canBeHurtBy and
+  // components; explosion immunity for the dropped item returns with the event/mixin layer
   public boolean canBeHurtBy(DamageSource damageSource) {
     return !damageSource.is(DamageTypeTags.IS_EXPLOSION);
   }

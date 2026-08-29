@@ -1,14 +1,14 @@
 package slimeknights.tconstruct.tools.modifiers.effect;
 
 import net.minecraft.world.effect.MobEffectCategory;
-import net.minecraft.world.item.ItemStack;
 import slimeknights.tconstruct.common.TinkerEffect;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Effect that cannot be cured with milk
+ * Effect that cannot be cured with milk.
+ *
+ * <p>1.21 removed the curative-items API; milk simply calls {@code removeAllEffects}. The
+ * event-layer step adds a {@code LivingEntity} hook that skips effects whose type implements
+ * this marker when milk does the clearing.
  * TODO 1.21: move to {@link slimeknights.tconstruct.shared.effect}
  */
 public class NoMilkEffect extends TinkerEffect {
@@ -16,8 +16,8 @@ public class NoMilkEffect extends TinkerEffect {
     super(typeIn, color, show);
   }
 
-  @Override
-  public List<ItemStack> getCurativeItems() {
-    return new ArrayList<>();
+  /** If false, milk does not remove this effect. Consumed by the milk hook in the event layer. */
+  public boolean isCuredByMilk() {
+    return false;
   }
 }

@@ -20,7 +20,7 @@ public class ModifiableCrossbowClientExtension extends ModifiableItemClientExten
   @Override
   public ArmPose getArmPose(LivingEntity living, InteractionHand hand, ItemStack stack) {
     if (!living.swinging) {
-      CompoundTag tag = stack.getTag();
+      CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
       // must have ammo in persistent data
       if (tag != null && tag.getCompound(ToolStack.TAG_PERSISTENT_MOD_DATA).contains(ModifiableCrossbowItem.KEY_CROSSBOW_AMMO.toString(), CompoundTag.TAG_COMPOUND)) {
         return ArmPose.CROSSBOW_HOLD;

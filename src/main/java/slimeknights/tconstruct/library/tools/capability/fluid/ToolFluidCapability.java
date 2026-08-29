@@ -2,21 +2,28 @@ package slimeknights.tconstruct.library.tools.capability.fluid;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandlerItem;
+import org.jetbrains.annotations.ApiStatus;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandlerItem;
+import slimeknights.mantle.transfer.fluid.ItemFluidStorageBridge;
+import slimeknights.mantle.util.Lazy;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
 import slimeknights.tconstruct.library.module.ModuleHook;
+import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider;
 import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider.IToolCapabilityProvider;
+import slimeknights.tconstruct.library.tools.item.IModifiable;
 import slimeknights.tconstruct.library.tools.nbt.IModDataView;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
+import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -152,6 +159,29 @@ public class ToolFluidCapability extends FluidModifierHookIterator<ModifierEntry
   /** Adds the tanks from the fluid modifier to the tool */
   public static void addTanks(ModifierEntry modifier, ModDataNBT volatileData, FluidModifierHook hook) {
     volatileData.putInt(TOTAL_TANKS, hook.getTanks(volatileData, modifier) + volatileData.getInt(TOTAL_TANKS));
+  }
+
+  /**
+   * Wires both faces of the tool tank: the internal one for {@link ToolCapabilityProvider}, and
+   * the outward one letting other mods fill and drain a tank modifier through Fabric's item
+   * fluid storage.
+   *
+   * <p>The outward side registers as a fallback rather than per item: a tank comes from a
+   * modifier, not from the item type, so any {@link IModifiable} - including addon tools - can
+   * gain one. {@link #TOTAL_TANKS} in volatile data is the authoritative signal that a tool
+   * currently has a tank, so it is the guard here as well.
+   */
+  @ApiStatus.Internal
+  public static void register() {
+    ToolCapabilityProvider.register(Provider::new);
+    FluidStorage.ITEM.registerFallback((stack, context) -> {
+      if (!(stack.getItem() instanceof IModifiable) || ToolStack.from(stack).getVolatileData().getInt(TOTAL_TANKS) <= 0) {
+        return null;
+      }
+      // the bridge hands the factory a single item split off the source stack; a tool bound to
+      // that copy writes the tank into it, and the bridge exchanges the result back in
+      return new ItemFluidStorageBridge(context, single -> new ToolFluidCapability(single, Lazy.of(() -> ToolStack.from(single))));
+    });
   }
 
   /**

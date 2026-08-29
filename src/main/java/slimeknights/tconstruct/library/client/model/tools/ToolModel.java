@@ -6,7 +6,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.mojang.math.Transformation;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
@@ -37,14 +36,14 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec2;
-import net.minecraftforge.client.model.BakedModelWrapper;
-import net.minecraftforge.client.model.IModelBuilder;
-import net.minecraftforge.client.model.IQuadTransformer;
-import net.minecraftforge.client.model.QuadTransformers;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.BakedModelWrapper;
+import slimeknights.mantle.client.model.IModelBuilder;
+import slimeknights.mantle.client.model.IQuadTransformer;
+import slimeknights.mantle.client.model.QuadTransformers;
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import slimeknights.mantle.client.model.util.ColoredBlockModel;
@@ -75,6 +74,7 @@ import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.MaterialIdNBT;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
 import slimeknights.tconstruct.library.tools.nbt.ModifierNBT;
+import slimeknights.tconstruct.library.tools.nbt.TagCompat;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 import javax.annotation.Nullable;
@@ -90,6 +90,28 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/*
+ * PORT (phase 5, client models) — parked, loader id "tconstruct:tool" (122 model files), the only
+ * one of the six geometry consumers still out. Everything on the model side it waited on now
+ * exists: the geometry shim, ColoredBlockModel, MantleItemLayerModel, QuadTransformers,
+ * IQuadTransformer, ModelData and BakedModelWrapper are all written and in use by the five live
+ * loaders, and the Forge imports above swap to slimeknights.mantle.client.model.* one for one.
+ *
+ * What is left is a separate slice rather than a missing utility:
+ *   - slimeknights.tconstruct.library.client.modifiers: the modifier model tree, 22 files
+ *     (ModifierModelManager, ModifierModelMapManager, IBakedModifierModel and the model/ subpackage).
+ *     7 of them still carry Forge imports, all in the fluid/tank/condition models; the loadable
+ *     framework they parse through is already ported, so this is a bounded round of its own.
+ *   - slimeknights.mantle.util.ReversedListBuilder — never copied into this tree, a small list
+ *     builder that emits in reverse insertion order.
+ *   - net.minecraftforge.client.model.IModelBuilder — the one Forge model utility with no shim
+ *     yet, deliberately: writing it before its only consumer compiles would be machinery nothing
+ *     calls. It is a thin interface over SimpleBakedModel.Builder, in the shape CompositeModel
+ *     already takes.
+ *   - slimeknights.mantle.util.ItemLayerPixels is a stub; this is the model that would give it a
+ *     reason to exist, since it is the only one stacking several material layers in one item.
+ * Register in TinkerModelLoaders once it compiles.
+ */
 /**
  * Model handling all tools, both multipart and non.
  */
@@ -593,16 +615,17 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
     }
 
     @Override
-    public BakedModel applyTransform(ItemDisplayContext cameraTransformType, PoseStack mat, boolean applyLeftHandTransform) {
-      BakedModel model = originalModel;
+    public BakedModel getModelForContext(ItemDisplayContext cameraTransformType, boolean leftHand) {
       if (cameraTransformType == ItemDisplayContext.GUI) {
-        model = gui;
-      } else if (cameraTransformType == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || cameraTransformType == ItemDisplayContext.THIRD_PERSON_LEFT_HAND) {
-        model = left;
-      } else if (originalModel != small && SMALL_TOOL_TYPES.get(cameraTransformType.ordinal())) {
-        model = small;
+        return gui;
       }
-      return model.applyTransform(cameraTransformType, mat, applyLeftHandTransform);
+      if (cameraTransformType == ItemDisplayContext.FIRST_PERSON_LEFT_HAND || cameraTransformType == ItemDisplayContext.THIRD_PERSON_LEFT_HAND) {
+        return left;
+      }
+      if (originalModel != small && SMALL_TOOL_TYPES.get(cameraTransformType.ordinal())) {
+        return small;
+      }
+      return originalModel;
     }
   }
 
@@ -707,13 +730,15 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
           List<BakedQuad> ammoQuads = new ArrayList<>();
           RandomSource rand = RandomSource.create();
           for (Direction direction : Direction.values()) {
-            ammoQuads.addAll(ammoModel.getQuads(null, direction, rand, ModelData.EMPTY, null));
+            ammoQuads.addAll(ammoModel.getQuads(null, direction, rand));
           }
-          ammoQuads.addAll(ammoModel.getQuads(null, null, rand, ModelData.EMPTY, null));
+          ammoQuads.addAll(ammoModel.getQuads(null, null, rand));
 
           // bake tints into static colors; saves us having to redirect item colors which is slow
           Int2IntMap tints = new Int2IntArrayMap();
-          ItemColors colors = Minecraft.getInstance().getItemColors();
+          // 1.21 dropped Minecraft#getItemColors; the field is access widened instead, as the whole
+          // ItemColors dispatch is wanted here, not one mod's provider
+          ItemColors colors = Minecraft.getInstance().itemColors;
           Int2IntFunction colorGetter = tint -> ColoredBlockModel.swapColorRedBlue(colors.getColor(ammo, tint));
           ammoQuads = ammoQuads.stream().map(quad -> {
             if (quad.isTinted() || (flipAmmo && quad.getDirection().getAxis() != Direction.Axis.Y)) {
@@ -729,7 +754,8 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
               if (flipAmmo && direction.getAxis() != Direction.Axis.Y) {
                 direction = direction.getOpposite();
               }
-              return new BakedQuad(vertices, -1, direction, quad.getSprite(), quad.isShade(), quad.hasAmbientOcclusion());
+              // 1.21's BakedQuad has no ambient occlusion flag; that was a Forge field
+              return new BakedQuad(vertices, -1, direction, quad.getSprite(), quad.isShade());
             }
             return quad;
           }).toList();
@@ -823,9 +849,10 @@ public class ToolModel implements IUnbakedGeometry<ToolModel> {
       ItemStack ammo;
       ModDataNBT persistentData = tool.getPersistentData();
       if (ammoKey != null && persistentData.contains(ammoKey, Tag.TAG_COMPOUND)) {
-        ammo = ItemStack.of(persistentData.getCompound(ammoKey));
+        // 1.21 needs registry access to read a stack, as components resolve against it
+        ammo = ItemStack.parseOptional(TagCompat.registries(), persistentData.getCompound(ammoKey));
         builder.add(ammo.getItem());
-        CompoundTag tag = ammo.getTag();
+        CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(ammo);
         if (tag != null) {
           builder.add(tag);
         }

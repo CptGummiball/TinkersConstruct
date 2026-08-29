@@ -80,7 +80,7 @@ public class ExchangingModifier extends NoLevelsModifier implements RemoveBlockM
     // Note that we check the mined position as the block we are placing 'against', which could be considered variance against vanilla but it is the block that make the most sense here.
     Level world = context.getWorld();
     BlockPos pos = context.getPos();
-    if (entity instanceof Player player && !player.mayBuild() && !fakeStack.hasAdventureModePlaceTagForBlock(BuiltInRegistries.BLOCK, new BlockInWorld(world, pos, false))) {
+    if (entity instanceof Player player && !player.mayBuild() && !fakeStack.canPlaceOnBlockInAdventureMode(new BlockInWorld(world, pos, false))) {
       return null;
     }
 

@@ -11,8 +11,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
-import net.minecraftforge.common.util.BlockSnapshot;
-import net.minecraftforge.event.ForgeEventFactory;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.data.loadable.common.BlockStateLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -69,9 +67,10 @@ public record ReplaceBlockWalkerModule(List<BlockReplacement> replacements, Leve
         if (replacement.level.test(level)) {
           // target handles matching any desired states like fluid level
           BlockState state = replacement.state;
+          // Forge additionally fired EntityPlaceEvent here; Fabric has no entity-place
+          // event (vanilla frost walker places directly on Fabric too), so place directly.
           if (replacement.target.matches(world.getBlockState(mutable))
-              && state.canSurvive(world, mutable) && world.isUnobstructed(state, mutable, CollisionContext.empty())
-              && !ForgeEventFactory.onBlockPlace(living, BlockSnapshot.create(world.dimension(), world, mutable), Direction.UP)) {
+              && state.canSurvive(world, mutable) && world.isUnobstructed(state, mutable, CollisionContext.empty())) {
             world.setBlockAndUpdate(mutable, state);
             world.scheduleTick(mutable, state.getBlock(), Mth.nextInt(living.getRandom(), 60, 120));
 

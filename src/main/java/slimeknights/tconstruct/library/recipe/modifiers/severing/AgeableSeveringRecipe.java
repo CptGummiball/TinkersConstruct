@@ -9,7 +9,7 @@ import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.ingredient.EntityIngredient;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 public class AgeableSeveringRecipe extends SeveringRecipe {
   /** Loader instance */
@@ -42,6 +42,6 @@ public class AgeableSeveringRecipe extends SeveringRecipe {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.ageableSeveringSerializer.get();
+    return ContentLookups.recipeSerializer("ageable_severing");
   }
 }

@@ -8,8 +8,8 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.primitive.FloatLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -19,7 +19,7 @@ import slimeknights.tconstruct.library.modifiers.fluid.FluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffectContext;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffectContext.Entity;
 import slimeknights.tconstruct.library.tools.helper.ToolAttackUtil;
-import slimeknights.tconstruct.shared.TinkerEffects;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 
@@ -54,7 +54,7 @@ public record DamageFluidEffect(float damage, @Nullable DamageTypePair damageTyp
     if (damageType != null) {
       if (projectile != null) {
         // endermen with enderference will cancel projectile damage, so switch to melee damage
-        ResourceKey<DamageType> type = TinkerEffects.needsEnderferenceOverride(context.getLivingTarget()) ? damageType.melee : damageType.ranged;
+        ResourceKey<DamageType> type = ContentLookups.needsEnderferenceOverride(context.getLivingTarget()) ? damageType.melee : damageType.ranged;
         source = TinkerDamageTypes.source(context.getLevel().registryAccess(), type, projectile, entity);
       } else {
         source = TinkerDamageTypes.source(context.getLevel().registryAccess(), damageType.melee, entity);

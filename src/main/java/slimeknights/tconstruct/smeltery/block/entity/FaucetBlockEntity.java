@@ -11,13 +11,13 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
-import net.minecraftforge.fluids.capability.templates.EmptyFluidHandler;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.cap.NonNullConsumer;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.EmptyFluidHandler;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.mantle.util.WeakConsumerWrapper;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
@@ -83,7 +83,7 @@ public class FaucetBlockEntity extends MantleBlockEntity {
     assert level != null;
     BlockEntity te = level.getBlockEntity(worldPosition.relative(side));
     if (te != null) {
-      LazyOptional<IFluidHandler> handler = te.getCapability(ForgeCapabilities.FLUID_HANDLER, side.getOpposite());
+      LazyOptional<IFluidHandler> handler = slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.FLUID_HANDLER, side.getOpposite());
       if (handler.isPresent()) {
         return handler;
       }
@@ -317,10 +317,9 @@ public class FaucetBlockEntity extends MantleBlockEntity {
     }
   }
 
-  @Override
-  public AABB getRenderBoundingBox() {
-    return new AABB(worldPosition.getX(), worldPosition.getY() - 1, worldPosition.getZ(), worldPosition.getX() + 1, worldPosition.getY() + 1, worldPosition.getZ() + 1);
-  }
+  // Forge's getRenderBoundingBox is not needed here. It widened the box a per-block-entity
+  // frustum test used, and vanilla has no such test — every block entity in a visible section
+  // renders, however far outside its own block it draws.
 
 
   /* NBT and networking */
@@ -353,8 +352,8 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  protected void saveSynced(CompoundTag compound) {
-    super.saveSynced(compound);
+  protected void saveSynced(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(compound, registries);
     compound.putByte(TAG_STATE, (byte)faucetState.ordinal());
     if (!renderFluid.isEmpty()) {
       compound.put(TAG_RENDER_FLUID, renderFluid.writeToNBT(new CompoundTag()));
@@ -362,8 +361,8 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  public void saveAdditional(CompoundTag compound) {
-    super.saveAdditional(compound);
+  public void saveAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveAdditional(compound, registries);
     compound.putBoolean(TAG_STOP, stopPouring);
     compound.putBoolean(TAG_LAST_REDSTONE, lastRedstoneState);
     if (!drained.isEmpty()) {
@@ -372,8 +371,8 @@ public class FaucetBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  public void load(CompoundTag compound) {
-    super.load(compound);
+  public void loadAdditional(CompoundTag compound, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(compound, registries);
 
     faucetState = FaucetState.fromIndex(compound.getByte(TAG_STATE));
     stopPouring = compound.getBoolean(TAG_STOP);

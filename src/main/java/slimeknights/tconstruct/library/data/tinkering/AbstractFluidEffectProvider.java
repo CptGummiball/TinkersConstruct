@@ -8,6 +8,11 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.data.CachedOutput;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.PackOutput.Target;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.FluidTags;
@@ -17,11 +22,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.common.crafting.conditions.OrCondition;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.recipe.condition.ICondition;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.GenericDataProvider;
 import slimeknights.mantle.data.predicate.IJsonPredicate;
 import slimeknights.mantle.data.predicate.entity.LivingEntityPredicate;
@@ -58,19 +61,31 @@ import static slimeknights.mantle.Mantle.commonResource;
 public abstract class AbstractFluidEffectProvider extends GenericDataProvider {
   private final String modId;
   private final Map<ResourceLocation,Builder> entries = new HashMap<>();
+  private final CompletableFuture<HolderLookup.Provider> registriesFuture;
+  /** Registry access, available while {@link #addFluids()} runs; enchantments live in a datapack registry since 1.21 */
+  protected HolderLookup.Provider registries;
 
-  public AbstractFluidEffectProvider(PackOutput packOutput, String modId) {
+  public AbstractFluidEffectProvider(PackOutput packOutput, CompletableFuture<HolderLookup.Provider> registries, String modId) {
     super(packOutput, Target.DATA_PACK, FluidEffectManager.FOLDER);
+    this.registriesFuture = registries;
     this.modId = modId;
   }
 
   /** Adds the fluids to the map */
   protected abstract void addFluids();
 
+  /** Looks up an enchantment holder for effect builders */
+  protected Holder<Enchantment> enchantment(ResourceKey<Enchantment> key) {
+    return registries.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(key);
+  }
+
   @Override
   public CompletableFuture<?> run(CachedOutput cache) {
-    addFluids();
-    return allOf(entries.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().build(entry.getKey()))));
+    return registriesFuture.thenCompose(provider -> {
+      this.registries = provider;
+      addFluids();
+      return allOf(entries.entrySet().stream().map(entry -> saveJson(cache, entry.getKey(), entry.getValue().build(entry.getKey()))));
+    });
   }
 
   /* Helpers */
@@ -88,7 +103,7 @@ public abstract class AbstractFluidEffectProvider extends GenericDataProvider {
   /** Creates a new fluid builder for the given mod ID */
   @SuppressWarnings("removal")
   protected Builder addFluid(String name, FluidIngredient fluid) {
-    return addFluid(new ResourceLocation(modId, name), fluid);
+    return addFluid(ResourceLocation.fromNamespaceAndPath(modId, name), fluid);
   }
 
   /** Creates a builder for a fluid stack */
@@ -136,17 +151,17 @@ public abstract class AbstractFluidEffectProvider extends GenericDataProvider {
 
   /** Adds a conditional fluid effect */
   protected Builder compatFluid(String name, int amount) {
-    return compatFluid(FluidTags.create(commonResource(name)), amount);
+    return compatFluid(TagKey.create(Registries.FLUID, commonResource(name)), amount);
   }
 
   /** Adds a conditional fluid effect */
   protected Builder compatFluid(String modId, TagKey<Fluid> fluid, int amount) {
-    return addFluid(fluid, amount).addCondition(new ModLoadedCondition(modId));
+    return addFluid(fluid, amount).addCondition(ConditionHelper.modLoaded(modId));
   }
 
   /** Adds a conditional fluid effect */
   protected Builder compatFluid(String modId, String name, int amount) {
-    return compatFluid(modId, FluidTags.create(commonResource(name)), amount);
+    return compatFluid(modId, TagKey.create(Registries.FLUID, commonResource(name)), amount);
   }
 
   /** Builder for a metal based fluid */
@@ -224,9 +239,9 @@ public abstract class AbstractFluidEffectProvider extends GenericDataProvider {
       ICondition[] conditions = new ICondition[names.length + 1];
       conditions[0] = ConfigEnabledCondition.FORCE_INTEGRATION_MATERIALS;
       for (int i = 0; i < names.length; i++) {
-        conditions[i+1] = new TagFilledCondition<>(ItemTags.create(commonResource("ingots/" + names[i])));
+        conditions[i+1] = new TagFilledCondition<>(TagKey.create(Registries.ITEM, commonResource("ingots/" + names[i])));
       }
-      return addCondition(new OrCondition(conditions));
+      return addCondition(ConditionHelper.or(conditions));
     }
 
     /** Adds an effect to the given fluid */
@@ -336,7 +351,7 @@ public abstract class AbstractFluidEffectProvider extends GenericDataProvider {
     private JsonObject build(ResourceLocation id) {
       JsonObject json = new JsonObject();
       if (!conditions.isEmpty()) {
-        json.add("conditions", CraftingHelper.serialize(conditions.toArray(new ICondition[0])));
+        json.add("conditions", ConditionHelper.serialize(conditions.toArray(new ICondition[0])));
       }
       if (blockEffects.isEmpty() && entityEffects.isEmpty()) {
         throw new IllegalStateException("Must have at least 1 effect");

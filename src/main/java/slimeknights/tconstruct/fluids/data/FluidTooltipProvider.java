@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.fluids.data;
 
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import net.minecraft.data.PackOutput;
-import net.minecraftforge.fluids.FluidType;
 import slimeknights.mantle.fluid.tooltip.AbstractFluidTooltipProvider;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.recipe.FluidValues;
@@ -57,7 +57,7 @@ public class FluidTooltipProvider extends AbstractFluidTooltipProvider {
       .addUnit("pane", FluidValues.GLASS_PANE);
 
     add("bottle", BOTTLE_TOOLTIPS)
-      .addUnit("bucket", "mantle", FluidType.BUCKET_VOLUME)
+      .addUnit("bucket", "mantle", FluidStack.BUCKET_VOLUME)
       .addUnit("bottle", "mantle", FluidValues.BOTTLE)
       .addUnit("drop",   "mantle", FluidValues.SIP);
   }

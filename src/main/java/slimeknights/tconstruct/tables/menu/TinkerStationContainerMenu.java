@@ -2,7 +2,7 @@ package slimeknights.tconstruct.tables.menu;
 
 import lombok.Getter;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -63,10 +63,15 @@ public class TinkerStationContainerMenu extends TabbedContainerMenu<TinkerStatio
     }
 
     // add armor and offhand slots, for convenience
-    for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slotType : slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial.HUMANOID_SLOTS) {
       this.addSlot(new ArmorSlot(inv, slotType.getSlot(), 152, 20 + slotType.ordinal() * 18));
     }
-    this.addSlot(new Slot(inv, 40, 132, 74).setBackground(InventoryMenu.BLOCK_ATLAS, InventoryMenu.EMPTY_ARMOR_SLOT_SHIELD));
+    this.addSlot(new Slot(inv, 40, 132, 74) {
+      @Override
+      public com.mojang.datafixers.util.Pair<net.minecraft.resources.ResourceLocation, net.minecraft.resources.ResourceLocation> getNoItemIcon() {
+        return com.mojang.datafixers.util.Pair.of(InventoryMenu.BLOCK_ATLAS, InventoryMenu.EMPTY_ARMOR_SLOT_SHIELD);
+      }
+    });
 
     this.addInventorySlots();
   }
@@ -77,8 +82,8 @@ public class TinkerStationContainerMenu extends TabbedContainerMenu<TinkerStatio
    * @param inv  Player inventory
    * @param buf  Buffer for fetching tile
    */
-  public TinkerStationContainerMenu(int id, Inventory inv, FriendlyByteBuf buf) {
-    this(id, inv, getTileEntityFromBuf(buf, TinkerStationBlockEntity.class));
+  public TinkerStationContainerMenu(int id, Inventory inv, BlockPos pos) {
+    this(id, inv, getTileEntityFromPos(pos, TinkerStationBlockEntity.class));
   }
 
   @Override

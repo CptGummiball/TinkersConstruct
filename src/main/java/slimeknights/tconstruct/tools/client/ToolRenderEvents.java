@@ -25,13 +25,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.HitResult.Type;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderHighlightEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import slimeknights.tconstruct.TConstruct;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.tools.definition.module.ToolHooks;
 import slimeknights.tconstruct.library.tools.definition.module.aoe.AreaOfEffectIterator;
@@ -42,18 +37,34 @@ import slimeknights.tconstruct.library.utils.BlockSideHitListener;
 
 import java.util.Iterator;
 
-@Mod.EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+/**
+ * Draws the extra blocks an area-of-effect tool will hit.
+ *
+ * <p>Fabric port: Forge fired {@code RenderHighlightEvent.Block} for the outline and
+ * {@code RenderLevelStageEvent} for the break progress; both map onto {@link WorldRenderEvents},
+ * whose context carries the same pose stack, camera and level renderer.
+ */
 public class ToolRenderEvents {
   /** Maximum number of blocks from the iterator to render */
   private static final int MAX_BLOCKS = 60;
+
+  /** Registers the two render hooks */
+  public static void init() {
+    // Forge's highlight event ran alongside vanilla's own outline, which is what this callback is for
+    WorldRenderEvents.BEFORE_BLOCK_OUTLINE.register((context, hit) -> {
+      renderBlockHighlights(context);
+      return true;
+    });
+    // upstream picked the stage after tripwire blocks, which is where vanilla draws break progress
+    WorldRenderEvents.AFTER_ENTITIES.register(ToolRenderEvents::renderBlockDamageProgress);
+  }
 
   /**
    * Renders the outline on the extra blocks
    *
    * @param event the highlight event
    */
-  @SubscribeEvent
-  static void renderBlockHighlights(RenderHighlightEvent.Block event) {
+  static void renderBlockHighlights(WorldRenderContext event) {
     Level world = Minecraft.getInstance().level;
     Player player = Minecraft.getInstance().player;
     if (world == null || player == null) {
@@ -74,7 +85,7 @@ public class ToolRenderEvents {
     if (tool.isBroken()) {
       return;
     }
-    BlockHitResult blockTrace = event.getTarget();
+    BlockHitResult blockTrace = (BlockHitResult)result;
     BlockPos origin = blockTrace.getBlockPos();
     BlockState state = world.getBlockState(origin);
     AOEMatchType matchType = AOEMatchType.BREAKING;
@@ -91,8 +102,8 @@ public class ToolRenderEvents {
     }
 
     // set up renderer
-    LevelRenderer worldRender = event.getLevelRenderer();
-    PoseStack matrices = event.getPoseStack();
+    LevelRenderer worldRender = event.worldRenderer();
+    PoseStack matrices = event.matrixStack();
     MultiBufferSource.BufferSource buffers = worldRender.renderBuffers.bufferSource();
     VertexConsumer vertexBuilder = buffers.getBuffer(RenderType.lines());
     matrices.pushPose();
@@ -117,13 +128,7 @@ public class ToolRenderEvents {
   }
 
   /** Renders the block damage process on the extra blocks */
-  @SubscribeEvent
-  static void renderBlockDamageProgress(RenderLevelStageEvent event) {
-    // TODO: validate this is the right stage for block breaking particles, maybe I want a bit earlier
-    if (event.getStage() != Stage.AFTER_TRIPWIRE_BLOCKS) {
-      return;
-    }
-
+  static void renderBlockDamageProgress(WorldRenderContext event) {
     // validate required variables are set
     MultiPlayerGameMode controller = Minecraft.getInstance().gameMode;
     if (controller == null || !controller.isDestroying()) {
@@ -175,9 +180,9 @@ public class ToolRenderEvents {
     }
 
     // set up buffers
-    PoseStack matrices = event.getPoseStack();
+    PoseStack matrices = event.matrixStack();
     matrices.pushPose();
-    MultiBufferSource.BufferSource vertices = event.getLevelRenderer().renderBuffers.crumblingBufferSource();
+    MultiBufferSource.BufferSource vertices = event.worldRenderer().renderBuffers.crumblingBufferSource();
     VertexConsumer vertexBuilder = vertices.getBuffer(ModelBakery.DESTROY_TYPES.get(progress.getProgress()));
 
     // finally, render the blocks
@@ -192,7 +197,8 @@ public class ToolRenderEvents {
       matrices.pushPose();
       matrices.translate(pos.getX() - x, pos.getY() - y, pos.getZ() - z);
       PoseStack.Pose entry = matrices.last();
-      VertexConsumer blockBuilder = new SheetedDecalTextureGenerator(vertexBuilder, entry.pose(), entry.normal(), 1);
+      // 1.21 takes the whole pose instead of the matrix pair
+      VertexConsumer blockBuilder = new SheetedDecalTextureGenerator(vertexBuilder, entry, 1);
       // TODO: is it practical to fetch model data here?
       dispatcher.renderBreakingTexture(world.getBlockState(pos), pos, world, matrices, blockBuilder);
       matrices.popPose();

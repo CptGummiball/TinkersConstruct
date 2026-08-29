@@ -1,55 +1,42 @@
 package slimeknights.tconstruct.gadgets.capability;
 
-import lombok.RequiredArgsConstructor;
+import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
-import net.minecraft.core.Direction;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.LazyOptional;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 
-import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
 
 /**
- * Capability instance
- * <p>
- * Does not serialize as the world saves the entities already, they just dismounted on logout
+ * Passenger sync tracker for the piggyback pack.
+ *
+ * <p>On Forge this was a capability attached to every player; it never serialized (the
+ * world saves the entities, they just dismount on logout), so on Fabric a weak map of
+ * last-known passenger ids replaces the whole attach ceremony. UUIDs are stored instead
+ * of entities so the map values never pin their own keys.
  */
-@RequiredArgsConstructor
-public class PiggybackHandler implements ICapabilityProvider {
+public class PiggybackHandler {
+  /** Last synced passenger list per player; weak keys drop entries when players unload */
+  private static final Map<Player, List<UUID>> LAST_PASSENGERS = Collections.synchronizedMap(new WeakHashMap<>());
 
-  /** Player holding this capability */
-  @Nullable
-  private final Player riddenPlayer;
-  /** Capability instance for the provider method */
-  private final LazyOptional<PiggybackHandler> capability = LazyOptional.of(() -> this);
-  /** Last found list of passengers, used in serialization and syncing */
-  private List<Entity> lastPassengers;
-
-  @Override
-  public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
-    if (cap == PiggybackCapability.PIGGYBACK) {
-      return capability.cast();
-    }
-    return LazyOptional.empty();
-  }
+  private PiggybackHandler() {}
 
   /**
-   * Updates the passengers on the back
+   * Updates the passengers on the back, resyncing the vanilla passenger packet if they changed serverside
    */
-  public void updatePassengers() {
-    if (this.riddenPlayer != null) {
-      // tell the player itself if his riders changed serverside
-      if (!this.riddenPlayer.getPassengers().equals(this.lastPassengers)) {
-        if (this.riddenPlayer instanceof ServerPlayer) {
-          TinkerNetwork.getInstance().sendVanillaPacket(this.riddenPlayer, new ClientboundSetPassengersPacket(this.riddenPlayer));
-        }
+  public static void updatePassengers(Player riddenPlayer) {
+    List<UUID> current = riddenPlayer.getPassengers().stream().map(Entity::getUUID).toList();
+    // tell the player itself if his riders changed serverside
+    if (!current.equals(LAST_PASSENGERS.get(riddenPlayer))) {
+      if (riddenPlayer instanceof ServerPlayer) {
+        TinkerNetwork.getInstance().sendVanillaPacket(riddenPlayer, new ClientboundSetPassengersPacket(riddenPlayer));
       }
-      this.lastPassengers = this.riddenPlayer.getPassengers();
+      LAST_PASSENGERS.put(riddenPlayer, current);
     }
   }
 }

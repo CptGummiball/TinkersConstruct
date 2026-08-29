@@ -3,15 +3,14 @@ package slimeknights.tconstruct.library.modifiers.fluid.block;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.AreaEffectCloud;
-import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.primitive.FloatLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.tconstruct.library.modifiers.fluid.EffectLevel;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffect;
 import slimeknights.tconstruct.library.modifiers.fluid.FluidEffectContext;
+import slimeknights.tconstruct.library.modifiers.fluid.entity.PotionFluidEffect;
 import slimeknights.tconstruct.library.recipe.TagPredicate;
 
 import java.util.List;
@@ -32,8 +31,7 @@ public record PotionCloudFluidEffect(float scale, TagPredicate predicate) implem
   public float apply(FluidStack fluid, EffectLevel level, FluidEffectContext.Block context, FluidAction action) {
     CompoundTag tag = fluid.getTag();
     if (predicate.test(tag) && context.isOffsetReplaceable()) {
-      Potion potion = PotionUtils.getPotion(fluid.getTag());
-      List<MobEffectInstance> effects = potion.getEffects();
+      List<MobEffectInstance> effects = PotionFluidEffect.getPotionEffects(tag);
       if (!effects.isEmpty()) {
         float scale = level.value();
         if (action.execute()) {
@@ -43,7 +41,7 @@ public record PotionCloudFluidEffect(float scale, TagPredicate predicate) implem
           // keep track of how many effects are actually added
           boolean used = false;
           for (MobEffectInstance instance : effects) {
-            if (instance.getEffect().isInstantenous()) {
+            if (instance.getEffect().value().isInstantenous()) {
               // only thing we have to scale on instant effects is the amplifier, though clouds automatically half instant effects for us
               int amplifier = (int)((instance.getAmplifier() + 1) * effectScale * 2) - 1;
               if (amplifier >= 0) {

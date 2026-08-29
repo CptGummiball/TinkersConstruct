@@ -6,7 +6,7 @@ import com.google.gson.JsonParseException;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.client.book.data.BookData;
 import slimeknights.mantle.client.book.data.PageData;
 import slimeknights.mantle.client.book.data.SectionData;
@@ -60,9 +60,11 @@ public class FluidEffectInjectingTransformer extends BookTransformer {
           continue;
         }
         // skip effects with no fluids - usually means empty tag for compat
+        // upstream writes `return` here, which drops the whole section on the first compat fluid
+        // whose tag is empty; with 45 effects shipped, that is every pack without the compat mods
         List<FluidStack> fluids = effect.ingredient().getFluids();
         if (fluids.isEmpty()) {
-          return;
+          continue;
         }
 
         // start building the page

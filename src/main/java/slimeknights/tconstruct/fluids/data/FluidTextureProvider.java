@@ -19,6 +19,9 @@ public class FluidTextureProvider extends AbstractFluidTextureProvider {
 
   @Override
   public void addTextures() {
+    // PORT: milk used Forge's shared fluid type, which this provider never covered; the fabric
+    // port registers its own milk fluid, so skip it here to keep the generated set identical
+    skip(TinkerFluids.milk);
     // basic
     root(TinkerFluids.powderedSnow);
     root(TinkerFluids.potion).color(0xfff800f8);
@@ -36,6 +39,7 @@ public class FluidTextureProvider extends AbstractFluidTextureProvider {
     tintedStew(TinkerFluids.mushroomStew).color(0xFFCD8C6F);
     tintedStew(TinkerFluids.rabbitStew).color(0xFF984A2C);
     tintedStew(TinkerFluids.meatSoup).color(0xFFE03E35);
+    tintedStew(TinkerFluids.moltenCheese).color(0xFFEFC53F);
 
     // molten
     molten(TinkerFluids.moltenGlass).fog(FogShape.SPHERE, 0.25f, 8);

@@ -4,7 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -19,9 +19,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.items.ItemHandlerHelper;
+import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.mantle.transfer.item.IItemHandlerModifiable;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.tconstruct.tables.block.entity.chest.AbstractChestBlockEntity;
 
 import javax.annotation.Nullable;
@@ -56,14 +56,13 @@ public class ChestBlock extends TabbedTableBlock {
   @Override
   public void setPlacedBy(Level worldIn, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
     super.setPlacedBy(worldIn, pos, state, placer, stack);
-    // check if we also have an inventory
-
-    CompoundTag tag = stack.getTag();
+    // check if we also have an inventory; the legacy stack tag lives in minecraft:custom_data
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (tag != null && tag.contains("TinkerData", Tag.TAG_COMPOUND)) {
       CompoundTag tinkerData = tag.getCompound("TinkerData");
       BlockEntity te = worldIn.getBlockEntity(pos);
       if (te instanceof AbstractChestBlockEntity chest) {
-        chest.readInventory(tinkerData);
+        chest.readInventory(tinkerData, worldIn.registryAccess());
       }
     }
   }
@@ -75,24 +74,22 @@ public class ChestBlock extends TabbedTableBlock {
     return SHAPE;
   }
 
-  @SuppressWarnings("deprecation")
   @Override
-  @Deprecated
-  public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+  protected ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+    // 1.20's use() handled both insert and GUI; 1.21 splits them. Insert runs here, and
+    // passing to the default interaction falls through to useWithoutItem, which opens the GUI.
     BlockEntity te = worldIn.getBlockEntity(pos);
-    Inventory playerInventory = player.getInventory();
-    ItemStack heldItem = playerInventory.getSelected();
 
     if (!heldItem.isEmpty() && te instanceof AbstractChestBlockEntity chest && chest.canInsert(player, heldItem)) {
       IItemHandlerModifiable itemHandler = chest.getItemHandler();
       ItemStack rest = ItemHandlerHelper.insertItem(itemHandler, heldItem, false);
       if (rest.isEmpty() || rest.getCount() < heldItem.getCount()) {
-        playerInventory.items.set(playerInventory.selected, rest);
-        return InteractionResult.SUCCESS;
+        player.setItemInHand(handIn, rest);
+        return ItemInteractionResult.sidedSuccess(worldIn.isClientSide);
       }
     }
 
-    return super.use(state, worldIn, pos, player, handIn, hit);
+    return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
   }
 
   @Override

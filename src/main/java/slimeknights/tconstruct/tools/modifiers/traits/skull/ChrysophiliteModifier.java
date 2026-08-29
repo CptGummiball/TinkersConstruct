@@ -9,9 +9,9 @@ import net.minecraft.world.entity.EquipmentSlot.Type;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingDropsEvent;
+import slimeknights.mantle.event.EventPriority;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
@@ -70,7 +70,7 @@ public class ChrysophiliteModifier extends NoLevelsModifier implements Equipment
   public void onEquipmentChange(IToolStackView tool, ModifierEntry modifier, EquipmentChangeContext context, EquipmentSlot slotType) {
     // adding a helmet? activate bonus
     EquipmentSlot changed = context.getChangedSlot();
-    if (slotType == EquipmentSlot.HEAD && changed.getType() == Type.ARMOR) {
+    if (slotType == EquipmentSlot.HEAD && changed.getType() == Type.HUMANOID_ARMOR) {
       boolean hasGold = ChrysophiliteModifier.hasGold(context, changed);
       context.getTinkerData().ifPresent(data -> data.computeIfAbsent(TOTAL_GOLD).setGold(changed, hasGold));
     }
@@ -83,14 +83,23 @@ public class ChrysophiliteModifier extends NoLevelsModifier implements Equipment
       return tool.getVolatileData().getBoolean(ModifiableArmorItem.PIGLIN_NEUTRAL);
     } else {
       LivingEntity living = context.getEntity();
-      return living.getItemBySlot(slotType).makesPiglinsNeutral(living);
+      return makesPiglinsNeutral(living.getItemBySlot(slotType), living);
     }
+  }
+
+  /** 1.21: Forge's stack.makesPiglinsNeutral hook is gone; modifiable armor answers via its volatile data, vanilla armor by gold material like PiglinAi */
+  private static boolean makesPiglinsNeutral(ItemStack stack, LivingEntity living) {
+    if (stack.getItem() instanceof ModifiableArmorItem armor) {
+      return armor.makesPiglinsNeutral(stack, living);
+    }
+    return stack.getItem() instanceof net.minecraft.world.item.ArmorItem armor && armor.getMaterial().is(net.minecraft.world.item.ArmorMaterials.GOLD);
   }
 
   /** Gets the level of the modifier on an entity */
   public static int getTotalGold(@Nullable Entity entity) {
     return Optional.ofNullable(entity)
-                   .flatMap(e -> e.getCapability(TinkerDataCapability.CAPABILITY).resolve())
+                   .filter(e -> e instanceof LivingEntity)
+                   .map(e -> TinkerDataCapability.getData((LivingEntity) e))
                    .map(data -> data.get(ChrysophiliteModifier.TOTAL_GOLD))
                    .map(TotalGold::getTotalGold)
                    .orElse(0);
@@ -110,7 +119,7 @@ public class ChrysophiliteModifier extends NoLevelsModifier implements Equipment
           RandomSource random = target.getRandom();
           // if the stack is gold, and it drops, we get it
           // don't have to worry about checking if it already dropped, the stacks are removed on drop
-          if (!stack.isEmpty() && !EnchantmentHelper.hasVanishingCurse(stack) && stack.makesPiglinsNeutral(target) && random.nextFloat() < extraChance) {
+          if (!stack.isEmpty() && !EnchantmentHelper.has(stack, net.minecraft.world.item.enchantment.EnchantmentEffectComponents.PREVENT_EQUIPMENT_DROP) && makesPiglinsNeutral(stack, target) && random.nextFloat() < extraChance) {
             // mobs damage items, its kinda weird
             if (stack.isDamageableItem()) {
               stack.setDamageValue(stack.getMaxDamage() - random.nextInt(1 + random.nextInt(Math.max(stack.getMaxDamage() - 3, 1))));
@@ -137,7 +146,7 @@ public class ChrysophiliteModifier extends NoLevelsModifier implements Equipment
      * @param value     New value
      */
     protected boolean setGold(EquipmentSlot slotType, boolean value) {
-      if (slotType.getType() == Type.ARMOR) {
+      if (slotType.getType() == Type.HUMANOID_ARMOR) {
         int index = slotType.getIndex();
         if (hasGold[index] != value) {
           hasGold[index] = value;

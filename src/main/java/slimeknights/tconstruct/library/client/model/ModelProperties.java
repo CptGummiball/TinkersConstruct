@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.library.client.model;
 
-import net.minecraftforge.client.model.data.ModelProperty;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.client.model.data.ModelProperty;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.library.tools.nbt.MaterialIdNBT;
 

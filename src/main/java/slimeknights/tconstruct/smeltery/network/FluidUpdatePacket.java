@@ -3,8 +3,9 @@ package slimeknights.tconstruct.smeltery.network;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.mantle.util.BlockEntityHelper;
 
@@ -18,15 +19,15 @@ public class FluidUpdatePacket implements IThreadsafePacket {
     this.fluid = fluid;
   }
 
-  public FluidUpdatePacket(FriendlyByteBuf buffer) {
+  public FluidUpdatePacket(RegistryFriendlyByteBuf buffer) {
     this.pos = buffer.readBlockPos();
-    this.fluid = buffer.readFluidStack();
+    this.fluid = FluidStack.STREAM_CODEC.decode(buffer);
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
-    buffer.writeFluidStack(fluid);
+    FluidStack.STREAM_CODEC.encode(buffer, fluid);
   }
 
   @Override

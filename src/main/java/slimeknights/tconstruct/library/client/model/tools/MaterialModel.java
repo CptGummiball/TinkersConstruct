@@ -20,10 +20,10 @@ import net.minecraft.util.GsonHelper;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec2;
-import net.minecraftforge.client.model.CompositeModel;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.CompositeModel;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
 import org.joml.Vector3f;
 import slimeknights.mantle.client.model.util.MantleItemLayerModel;
 import slimeknights.mantle.util.ItemLayerPixels;
@@ -43,6 +43,19 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/*
+ * PORT (phase 5, client models) — LIVE, loader id "tconstruct:material" (29 model files: the tool
+ * parts and repair kits), registered in TinkerModelLoaders. The pieces it waited on now exist:
+ * MantleItemLayerModel builds the layer quads on vanilla's ItemModelGenerator, CompositeModel
+ * collects them, and MaterialRenderInfoLoader loads through a Fabric model-loading plugin.
+ *
+ * One fidelity gap, and it is in the renderer rather than here: a material whose render info has no
+ * sprite of its own falls back to a greyscale texture plus a vertex tint, and vanilla's
+ * ItemRenderer discards baked vertex colours on items (it calls putBulkData with readAlpha=false —
+ * Forge patched that call site). Those fallback materials therefore render grey until an
+ * ItemRenderer hook lands; materials with their own sprite, which is most of them, are unaffected
+ * because their render info reports no tint at all. See QuadTransformers for the detail.
+ */
 /**
  * Model for an item with material texture variants, such as tool parts. Used only for single material items, {@link ToolModel} is used for multi-material items.
  */

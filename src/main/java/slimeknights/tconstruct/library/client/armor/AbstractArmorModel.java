@@ -10,12 +10,10 @@ import net.minecraft.client.model.Model;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.RenderLivingEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.EventPriority;
 import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureSupplier.ArmorTexture;
 import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureSupplier.TextureType;
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
@@ -56,39 +54,40 @@ public abstract class AbstractArmorModel extends Model {
     }
   }
 
-  /** Renders a colored model */
-  public static void renderColored(Model model, PoseStack matrices, VertexConsumer buffer, int packedLightIn, int packedOverlayIn, int color, float red, float green, float blue, float alpha) {
-    if (color != -1) {
-      alpha *= (float)(color >> 24 & 255) / 255.0F;
-      red *= (float)(color >> 16 & 255) / 255.0F;
-      green *= (float)(color >> 8 & 255) / 255.0F;
-      blue *= (float)(color & 255) / 255.0F;
-    }
-    model.renderToBuffer(matrices, buffer, packedLightIn, packedOverlayIn, red, green, blue, alpha);
+  /**
+   * Renders a model with its own tint composed over the caller's.
+   *
+   * <p>1.21 collapsed the four float channels into one packed ARGB int, so what used to be four
+   * multiplications is {@link FastColor.ARGB32#multiply}.
+   */
+  public static void renderColored(Model model, PoseStack matrices, VertexConsumer buffer, int packedLightIn, int packedOverlayIn, int ownColor, int color) {
+    model.renderToBuffer(matrices, buffer, packedLightIn, packedOverlayIn, ownColor == -1 ? color : FastColor.ARGB32.multiply(ownColor, color));
   }
 
   /** Renders the wings layer */
-  protected void renderWings(PoseStack matrices, int packedLightIn, int packedOverlayIn, ArmorTexture texture, float red, float green, float blue, float alpha, boolean hasGlint) {
+  protected void renderWings(PoseStack matrices, int packedLightIn, int packedOverlayIn, ArmorTexture texture, int color, boolean hasGlint) {
     matrices.pushPose();
     matrices.translate(0.0D, 0.0D, 0.125D);
     assert buffer != null;
-    texture.renderTexture(getWings(), matrices, buffer, packedLightIn, packedOverlayIn, red, green, blue, alpha, hasGlint);
+    texture.renderTexture(getWings(), matrices, buffer, packedLightIn, packedOverlayIn, color, hasGlint);
     matrices.popPose();
   }
 
 
   /* Helpers */
 
-  /** Buffer from the render living event, stored as we lose access to it later */
+  /**
+   * Buffer source the layers draw into.
+   *
+   * <p>Forge handed the model only a single {@code VertexConsumer}, so this was scraped off
+   * {@code RenderLivingEvent} and parked in a static — a layered armor model needs a buffer per
+   * texture, not one. Fabric's {@link net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer}
+   * passes the source in, so {@link TinkerArmorRenderer} sets this around the one call that reads
+   * it. Still a static because {@code Model#renderToBuffer}, the method that reads it, is vanilla's
+   * signature and cannot grow a parameter.
+   */
   @Nullable
   public static MultiBufferSource buffer;
-
-  /** Initializes the wrapper */
-  public static void init() {
-    // register listeners to set and clear the buffer
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, RenderLivingEvent.Pre.class, event -> buffer = event.getMultiBufferSource());
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, RenderLivingEvent.Post.class, event -> buffer = null);
-  }
 
   /** Wings model to render */
   @Nullable

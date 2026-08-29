@@ -4,9 +4,13 @@ import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraftforge.event.AddReloadListenerEvent;
 import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
+import slimeknights.tconstruct.TConstruct;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +19,10 @@ import java.util.List;
  * Class that handles notifying recipe caches that they need to invalidate
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class RecipeCacheInvalidator implements IEarlySafeManagerReloadListener {
+public class RecipeCacheInvalidator implements IEarlySafeManagerReloadListener, IdentifiableResourceReloadListener {
   private static final RecipeCacheInvalidator INSTANCE = new RecipeCacheInvalidator();
   private static final List<BooleanConsumer> listeners = new ArrayList<>();
+  private static boolean registered = false;
 
   /**
    * Adds a new listener that runs every time the recipes are reloaded
@@ -33,6 +38,7 @@ public class RecipeCacheInvalidator implements IEarlySafeManagerReloadListener {
    * @return  Object that can clear cache as needed
    */
   public static DuelSidedListener addDuelSidedListener(Runnable runnable) {
+    init();
     DuelSidedListener listener = new DuelSidedListener(runnable);
     addReloadListener(listener);
     return listener;
@@ -53,11 +59,20 @@ public class RecipeCacheInvalidator implements IEarlySafeManagerReloadListener {
   }
 
   /**
-   * Called when resource managers reload
-   * @param event  Reload event
+   * Registers the invalidator with the server data reload cycle. Forge re-added it per
+   * reload through AddReloadListenerEvent; Fabric registers once. Called lazily from
+   * {@link #addDuelSidedListener(Runnable)} so caches work without bootstrap wiring.
    */
-  public static void onReloadListenerReload(AddReloadListenerEvent event) {
-    event.addListener(INSTANCE);
+  public static void init() {
+    if (!registered) {
+      registered = true;
+      ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(INSTANCE);
+    }
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return TConstruct.getResource("recipe_cache_invalidator");
   }
 
   /** Logic to respond properly to late running of the client */

@@ -1,0 +1,175 @@
+# Files inside an otherwise-ported package that are still blocked.
+#
+# Both entries below are blocked on the same open decision, recorded in PORTING.md
+# under "Buffer type decision": 1.21 requires RegistryFriendlyByteBuf for anything
+# that serialises registry contents, but the Loadable interface passes a plain
+# FriendlyByteBuf. Ingredients and item stacks are the first types that actually
+# need the registry-aware buffer, so they cannot be finished until the framework's
+# encode/decode signatures are widened.
+#
+# Fixing them by casting the buffer would compile and then fail at runtime on any
+# connection that hands over a plain buffer, so they stay out until it is done properly.
+
+
+
+# --- mantle.recipe stragglers ---
+
+# FinishedRecipe-era condition helper; the datagen rework writes conditions through
+# ConditionHelper and nothing references this class anymore.
+slimeknights/mantle/recipe/helper/TagEmptyCondition.java
+
+
+# --- mantle.fluid: client/datagen/network pieces, deferred to their phases ---
+# texture/: gated in on Fabric's FluidRenderHandlerRegistry (see TextureFluidRenderHandler).
+# The two Client*FluidType classes are dropped rather than ported: they implemented Forge's
+# IClientFluidTypeExtensions, whose sprite/tint duties the render handler now covers. Their
+# fog and screen-overlay half has no Fabric hook and returns with a later pass.
+slimeknights/mantle/fluid/texture/ClientTextureFluidType.java
+slimeknights/mantle/fluid/texture/ClientInvertedFluidType.java
+# Datagen providers, phase 7.
+# Missed in the first fluid pass:
+# (screen round) FluidTooltipHandler + FluidUnit/FluidUnitList gated in: the reload listener
+# moved to ResourceManagerHelper and the tag-flush to CommonLifecycleEvents.TAGS_LOADED.
+
+# InvertedFluid note: the big FlowingFluid spread refactor landed in 1.21.2, not 1.21.1 —
+# the 1.20-shaped internals (getCacheKey, canPassThrough, the slope caches) still exist
+# here, so the inverted overrides compile against 1.21.1 with only access widening.
+
+# Waits on OffhandCooldownTracker (phase-3 tool logic: events + TinkerData capability).
+# mantle.util.OffhandCooldownTracker itself is not copied in yet.
+
+# (model data round) the retextured block entity gated in: ModelData is delivered as a Fabric
+# render attachment now, so a retextured block shows the block it copied again.
+
+# --- mantle.item stragglers, zero TConstruct users each ---
+# Forge item-capability provider pattern; Fabric equivalent is FluidStorage.ITEM
+# registration on the items that want it, done where those items register.
+slimeknights/mantle/item/ConstantFluidContainerWrapper.java
+slimeknights/mantle/item/ContainerFoodItem.java
+# (book round) the three book items gated in: the lectern hook moved from Forge's
+# RightClickBlock event to Fabric's UseBlockCallback, and the five page packets now exist.
+
+
+# --- library/utils ---
+# (event-layer round) SlimeBounceHandler gated in: LivingTick on the shim bus,
+# server stop via Fabric's SERVER_STOPPING lifecycle event.
+# (gadgets round) CustomExplosion gated in: the explosion hooks moved to the mantle
+# ForgeEventFactory shim, the knockback dampener to the 1.21 attribute.
+
+# --- Core-slice deferrals ---
+# Forge capability system. The data caps are on Cardinal Components (ships in GummiCraft);
+# the tool caps dispatch statically from ToolCapabilityProvider, since Fabric cannot attach
+# per stack, and face outward as Fabric storage registrations.
+# (tool fluid round) fluid/** and ToolCapabilityProvider gated in: the tank hooks are Tinkers'
+# own code, so only the Forge cap imports moved to the mantle transfer.cap shim.
+# (tool inventory round) inventory/** gated in the same way; consumers reach the handler
+# through the static ToolInventoryCapability.getInventory instead of a stack capability.
+# (energy round) ToolEnergyCapability gated in on Team Reborn Energy.
+
+# THE LOMBOK KILLER still standing (DummyArmorMaterial, its twin, is redesigned onto a
+# registered Holder<ArmorMaterial>): extends ItemPredicate, a RECORD in 1.21. Lombok's
+# handlers throw on it and abort generation for every later file in the batch. Redesign
+# as an ItemSubPredicate; zero in-slice references, so it waits for the advancement pass.
+
+# --- Content-bound loot extensions waiting on the tools module (phase 4): their getType()
+# reads TinkerTools loot-type statics. MapCodec rewrite pattern established with the
+# shared-module loot conditions.
+# (tools round) AddToolDataFunction/ToolPartLootEntry gated in with the tools module
+
+
+# (gadgets round) ExplosionFluidEffect + ProjectileExplosionModule gated in alongside
+# CustomExplosion/EFLNExplosion; their loaders are registered again in TinkerModifiers.
+
+
+# --- Content-bound library files: compile once their content module gates in (phase 4) ---
+# SwappableModifierRecipe.VariantFormatter (recipe/modifiers/adding, full recipe-type tree).
+# (tools round) SlotTypeModifierPredicate gated in with the tools module
+# (tools round) modifiable item/armor classes gated in with the tools module
+
+# --- shared module: pieces deferred from the phase-4 gate-in ---
+# client work (phase 5)
+# (model data round) CommonsClientEvents + the fluid particle gated in; the part-texture
+# generation command stays with the datagen phase.
+# commands step: argument types + MaterialRegistry.getTagSource decision
+# server->client packet whose handler is the phase-5 texture-gen command
+# datagen providers (phase 7)
+# (event-layer round) CommonsEvents + AchievementEvents gated in on the shim bus
+# uses TinkerModifiers.helmetCharging + client HUD rendering; ports with the tools module,
+# the charge-bar icon overlay with phase 5
+
+# --- fluids module: pieces deferred from the phase-4 gate-in ---
+# (model data round) FluidClientEvents gated in: render layers through BlockRenderLayerMap and
+# the potion bucket colour through ColorProviderRegistry.
+# datagen providers (phase 7)
+
+# --- world module: pieces deferred from the phase-4 gate-in ---
+# (armor round) the world module's client half gated in whole: the slime and terracube renderers,
+# the plant colours, the slime particles, and the mob head models the slimeskull draws under a
+# helmet. WorldClientEvents is now called from the client entrypoint.
+# datagen providers (phase 7)
+# (event-layer round) WorldEvents + AncientToolItemListing gated in: shim visibility/drops
+# events, wandering trades via Fabric's TradeOfferHelper (pool 2 = Forge's rare list)
+
+# --- tables module: pieces deferred from the phase-4 gate-in ---
+# (screen round) tables/client/** and TableClientEvents gated in; the block/item colour and
+# block-entity renderer registrations inside TableClientEvents stay PORT-commented for the
+# renderer slice.
+# datagen provider (phase 7)
+
+# --- recipe-tree datagen builders (FinishedRecipe/RecipeOutput rework, phase 7) ---
+# generate melting_recipes serializes through the recipe builders above, so it waits with them
+
+# --- tables-module recipe builders, same FinishedRecipe/RecipeOutput rework as the
+# datagen builders above (phase 7) ---
+# --- smeltery round parks: client rendering (phase 5), datagen providers (phase 7) ---
+# (screen round) smeltery/client/screen/** and SmelteryClientEvents gated in.
+# (renderer round) smeltery/client/render/** and smeltery/client/util/** gated in, along with the
+# renderer and reload-listener registrations in SmelteryClientEvents; only the model-loader and
+# ToolModel.registerSmallTool lines there stay PORT-commented for the model slice.
+# --- Phase 5 client model slice: what stayed out ---
+# (tool model round) ToolModel and the whole library/client/modifiers tree gated in, along with
+# ReversedListBuilder and the IModelBuilder shim. tconstruct:tool is live.
+# Datagen-only: the sprite generator info hanging off a material render info; it reaches into
+# library/client/data, which is the phase-7 texture generation tree.
+
+# --- tools round parks ---
+# client rendering + models (phase 5)
+# (interaction round) the rest of tools/client gated in: the interaction handlers, the modifier
+# render hooks, the tool inventory screen and the AOE highlight renderer.
+# (renderer round) CrystalshotRenderer, FluidEffectProjectileRenderer, ThrownToolRenderer and
+# ThrownShurikenRenderer gated in. (armor round) SlimeskullArmorModel and CombatFishingHookRenderer
+# gated in with the armor texture suppliers they read.
+# datagen providers (phase 7); MaterialIds/ModifierIds stay gated in ported.gradle
+# --- tools round: modules bound to the tool fluid/inventory capability step ---
+# (tool inventory round) ToolContainerMenu gated in: the opening buffer became an
+# ExtendedScreenHandlerType payload, everything else is Tinkers' own slot math.
+# (event-layer round) ShearsModule gated in on the vanilla Shearable interface.
+# (GLM round) the global loot modifier runtime lives in mantle/loot/modifier now.
+# phase-7 datagen builders
+# (tool inventory round) ToolContainerFluidUpdatePacket gated in on the RegistryFriendlyByteBuf
+# packet shape; it still needs the tools module's packet registration, like its neighbours.
+# (event-layer round) deprecated legacy classes with zero references; their behavior is
+# datapack modules now (double_jump/reflecting/shears loaders are registered again), so
+# they stay parked rather than being ported to an API nothing calls.
+slimeknights/tconstruct/tools/modifiers/ability/armor/DoubleJumpModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/armor/ReflectingModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/interaction/ShearsAbilityModifier.java
+slimeknights/tconstruct/tools/modifiers/ability/interaction/SilkyShearsAbilityModifier.java
+
+# --- Phase 4 gadgets round: parked pieces ---
+# (renderer round) GadgetClientEvents and gadgets/client/** gated in: the frame models are registered
+# through Fabric's ModelLoadingPlugin and the renderers through EntityRendererRegistry.
+# Datagen (phase 7).
+# Forge attach-capability glue; superseded by the static PiggybackHandler tracker.
+slimeknights/tconstruct/gadgets/capability/PiggybackCapability.java
+# Dead code upstream (never registered) AND Forge-only: onMinecartPass is a Forge Block
+# extension with no Fabric hook, and the cart-side item capability needs an entity
+# storage bridge. If it ever becomes content, wire via an AbstractMinecart mixin.
+slimeknights/tconstruct/gadgets/block/DropperRailBlock.java
+
+# --- Phase 7 leftovers in mantle.recipe.data ---
+# NBT-name datagen ingredient: NBT moved to components in 1.21, rework when an addon needs it.
+slimeknights/mantle/recipe/data/NBTNameIngredient.java
+# Structure repaletting datagen (phase 7, structures slice): the abstract base trips the
+# lombok-on-records killer and the shipped structures are current; returns with the
+# structure regeneration pass.

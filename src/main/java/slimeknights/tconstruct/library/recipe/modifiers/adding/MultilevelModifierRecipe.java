@@ -19,7 +19,7 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationContai
 import slimeknights.tconstruct.library.tools.SlotType.SlotCount;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -97,7 +97,7 @@ public class MultilevelModifierRecipe extends ModifierRecipe implements IMultiRe
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.multilevelModifierSerializer.get();
+    return ContentLookups.recipeSerializer("multilevel_modifier");
   }
 
 

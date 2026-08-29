@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "slimeknights.tconstruct.fabric.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "AbstractClientPlayerFovMixin",
+    "BlockModelInheritedGeometryMixin",
+    "ItemInHandRendererMixin",
+    "ItemRendererBakedColorMixin",
+    "LocalPlayerMovementMixin",
+    "MinecraftInteractionMixin",
+    "ClientPacketListenerRecipesUpdatedMixin",
+    "ScreenEffectRendererMixin",
+    "ItemRendererModelSwapMixin",
+    "SkullBlockRendererMixin"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}

@@ -1,24 +1,24 @@
 package slimeknights.tconstruct.fluids;
 
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ModelEvent.RegisterGeometryLoaders;
-import net.minecraftforge.client.event.RegisterColorHandlersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.alchemy.PotionContents;
 import slimeknights.mantle.registration.object.FlowingFluidObject;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
-import slimeknights.tconstruct.library.client.model.FluidContainerModel;
 
-@EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.MOD)
+/**
+ * Client half of the fluids module: which fluids draw see-through, and the potion bucket's tint.
+ *
+ * <p>Fabric port: the model loader that lived here registers from the client entrypoint with the
+ * others. Render layers move from {@code ItemBlockRenderTypes} — which is not safe to mutate on
+ * Fabric — to {@code BlockRenderLayerMap}, and the item colour registers per item rather than
+ * through a handed-out {@code ItemColors}.
+ */
 public class FluidClientEvents extends ClientEventBase {
-  @SubscribeEvent
-  static void clientSetup(final FMLClientSetupEvent event) {
+  /** Registers the fluid client hooks */
+  public static void init() {
     setTranslucent(TinkerFluids.honey);
     // slime
     setTranslucent(TinkerFluids.earthSlime);
@@ -28,24 +28,18 @@ public class FluidClientEvents extends ClientEventBase {
     setTranslucent(TinkerFluids.moltenDiamond);
     setTranslucent(TinkerFluids.moltenEmerald);
     setTranslucent(TinkerFluids.moltenGlass);
-    setTranslucent(TinkerFluids.moltenGlass);
     setTranslucent(TinkerFluids.liquidSoul);
     setTranslucent(TinkerFluids.moltenSoulsteel);
     setTranslucent(TinkerFluids.moltenAmethyst);
+
+    // the potion bucket takes its colour from the potion inside it
+    ColorProviderRegistry.ITEM.register(
+      (stack, index) -> index > 0 ? -1 : stack.getOrDefault(DataComponents.POTION_CONTENTS, PotionContents.EMPTY).getColor(),
+      TinkerFluids.potion.asItem());
   }
 
-  @SubscribeEvent
-  static void itemColors(final RegisterColorHandlersEvent.Item event) {
-    event.register((stack, index) -> index > 0 ? -1 : PotionUtils.getColor(stack), TinkerFluids.potion.asItem());
-  }
-
-  @SubscribeEvent
-  static void registerModelLoaders(RegisterGeometryLoaders event) {
-    event.register("fluid_container", FluidContainerModel.LOADER);
-  }
-
+  /** Draws a fluid with the translucent layer, so what is behind it shows through */
   private static void setTranslucent(FlowingFluidObject<?> fluid) {
-    ItemBlockRenderTypes.setRenderLayer(fluid.getStill(), RenderType.translucent());
-    ItemBlockRenderTypes.setRenderLayer(fluid.getFlowing(), RenderType.translucent());
+    BlockRenderLayerMap.INSTANCE.putFluids(RenderType.translucent(), fluid.getStill(), fluid.getFlowing());
   }
 }

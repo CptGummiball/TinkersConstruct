@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.common.registration;
 
-import net.minecraftforge.fluids.FluidType;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.mantle.registration.deferred.FluidDeferredRegister;
 import slimeknights.tconstruct.fluids.fluids.SlimeFluidType;
 

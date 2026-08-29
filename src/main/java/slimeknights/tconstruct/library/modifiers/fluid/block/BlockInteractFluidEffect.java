@@ -18,11 +18,10 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.Event.Result;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import net.minecraft.world.ItemInteractionResult;
+import slimeknights.mantle.event.ForgeHooks;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 import slimeknights.mantle.data.loadable.record.SingletonLoader;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.library.modifiers.fluid.EffectLevel;
@@ -44,8 +43,8 @@ public enum BlockInteractFluidEffect implements FluidEffect<FluidEffectContext.B
     // we expect modded items will have the same bug, so just go ahead and damage them. On the chance it works, they get 2 damage, no big deal
     // our tools we know work so ignore them
     if (!level.isClientSide && context.getPlayer() == null && stack.isDamageableItem() && !stack.is(TinkerTags.Items.MODIFIABLE)) {
-      // unable to call Forge damageItem as that needs entity access, but its just vanilla broken anyways, right?
-      stack.hurt(1, level.getRandom(), null);
+      // 1.21 removed ItemStack.hurt without an entity; with no player around, count the damage directly
+      stack.setDamageValue(stack.getDamageValue() + 1);
       // calling methods again instead of using return as return may be incorrect for custom broken stacks
       if (stack.getDamageValue() >= stack.getMaxDamage()) {
         // but that won't happen, right? will need to consider another workaround in that case.
@@ -76,12 +75,13 @@ public enum BlockInteractFluidEffect implements FluidEffect<FluidEffectContext.B
       return 1;
     }
 
-    // determine if sneak bypass is enabled
+    // determine if sneak bypass is enabled; doesSneakBypassUse was a Forge item extension,
+    // so this is vanilla's shape: sneaking with anything held skips the block interaction
     LivingEntity entity = context.getEntity();
     Player player = context.getPlayer();
     boolean skipBlock = false;
     if (player != null) {
-      skipBlock = player.isSecondaryUseActive() && (!player.getMainHandItem().doesSneakBypassUse(world, pos, player) || !player.getOffhandItem().doesSneakBypassUse(player.level(), pos, player));
+      skipBlock = player.isSecondaryUseActive() && (!player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty());
     } else if (entity != null) {
       skipBlock = entity.isShiftKeyDown() && (!entity.getMainHandItem().isEmpty() || !entity.getOffhandItem().isEmpty());
     }
@@ -99,14 +99,12 @@ public enum BlockInteractFluidEffect implements FluidEffect<FluidEffectContext.B
         return 0;
       }
 
-      // try the event
-      Result useItem = Result.DEFAULT;
-      Result useBlock = Result.DEFAULT;
+      // try the event; the Fabric use-block callback either passes (null) or supplies a result
       if (player != null) {
-        PlayerInteractEvent.RightClickBlock event = ForgeHooks.onRightClickBlock(player, hand, pos, hitResult);
-        if (event.isCanceled()) {
+        InteractionResult eventResult = ForgeHooks.onRightClickBlock(player, hand, pos, hitResult);
+        if (eventResult != null) {
           // if successful, swing hand
-          if (event.getCancellationResult().consumesAction()) {
+          if (eventResult.consumesAction()) {
             if (entity != null) {
               entity.swing(hand, true);
             }
@@ -114,42 +112,37 @@ public enum BlockInteractFluidEffect implements FluidEffect<FluidEffectContext.B
           }
           return 0;
         }
-        useItem = event.getUseItem();
-        useBlock = event.getUseBlock();
       }
       // skipped: never spectator mode if we made it this far
+      // skipped: Forge's onItemUseFirst hook has no Fabric counterpart
 
-      // use the item
       UseOnContext useContext = new UseOnContext(world, player, hand, heldItem, hitResult);
-      if (useItem != Result.DENY && !heldItem.isEmpty()) {
-        InteractionResult result = heldItem.onItemUseFirst(useContext);
-        if (result != InteractionResult.PASS) {
-          if (result.consumesAction()) {
-            if (entity != null) {
-              entity.swing(hand, true);
-            }
-            damageIfNeeded(useContext);
-            return 1;
-          }
-          return 0; // failure exits the loop
-        }
-      }
 
-      // click the block
+      // click the block; 1.21 split BlockState.use into useItemOn + useWithoutItem
       ItemStack original = heldItem.copy();
-      if (player != null && (useBlock == Result.ALLOW || (useItem == Result.DEFAULT && !skipBlock))) {
-        InteractionResult result = state.use(world, player, hand, hitResult);
-        if (result.consumesAction()) {
+      if (player != null && !skipBlock) {
+        ItemInteractionResult itemResult = state.useItemOn(heldItem, world, player, hand, hitResult);
+        if (itemResult.consumesAction()) {
           if (player instanceof ServerPlayer serverPlayer) {
             CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, original);
           }
           player.swing(hand, true);
           return 1;
         }
+        if (itemResult == ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION && hand == InteractionHand.MAIN_HAND) {
+          InteractionResult blockResult = state.useWithoutItem(world, player, hitResult);
+          if (blockResult.consumesAction()) {
+            if (player instanceof ServerPlayer serverPlayer) {
+              CriteriaTriggers.ITEM_USED_ON_BLOCK.trigger(serverPlayer, pos, original);
+            }
+            player.swing(hand, true);
+            return 1;
+          }
+        }
       }
 
       // post block item usage
-      if (useItem == Result.ALLOW || (useItem == Result.DEFAULT && !heldItem.isEmpty() && (player == null || !player.getCooldowns().isOnCooldown(heldItem.getItem())))) {
+      if (!heldItem.isEmpty() && (player == null || !player.getCooldowns().isOnCooldown(heldItem.getItem()))) {
         InteractionResult result;
         if (player != null && player.isCreative()) {
           int oldCount = heldItem.getCount();

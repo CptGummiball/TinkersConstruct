@@ -12,19 +12,12 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureSet;
 import net.minecraft.world.level.levelgen.structure.StructureType;
 import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceType;
-import net.minecraftforge.common.data.ExistingFileHelper;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import slimeknights.mantle.registration.RegistryObject;
+import slimeknights.mantle.registration.deferred.SynchronizedDeferredRegister;
 import org.apache.logging.log4j.Logger;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerModule;
 import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.world.data.StructureRepalleter;
 import slimeknights.tconstruct.world.worldgen.islands.IslandPiece;
 import slimeknights.tconstruct.world.worldgen.islands.IslandStructure;
 import slimeknights.tconstruct.world.worldgen.trees.ExtraRootVariantPlacer;
@@ -40,21 +33,13 @@ import slimeknights.tconstruct.world.worldgen.trees.feature.SlimeTreeFeature;
 @SuppressWarnings("unused")
 public final class TinkerStructures extends TinkerModule {
   static final Logger log = Util.getLogger("tinker_structures");
-  private static final DeferredRegister<Feature<?>> FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, TConstruct.MOD_ID);
-  private static final DeferredRegister<StructureType<?>> STRUCTURE_TYPE = DeferredRegister.create(Registries.STRUCTURE_TYPE, TConstruct.MOD_ID);
-  private static final DeferredRegister<StructurePieceType> STRUCTURE_PIECE = DeferredRegister.create(Registries.STRUCTURE_PIECE, TConstruct.MOD_ID);
-  private static final DeferredRegister<TreeDecoratorType<?>> TREE_DECORATORS = DeferredRegister.create(Registries.TREE_DECORATOR_TYPE, TConstruct.MOD_ID);
-  private static final DeferredRegister<RootPlacerType<?>> ROOT_PLACERS = DeferredRegister.create(Registries.ROOT_PLACER_TYPE, TConstruct.MOD_ID);
+  private static final SynchronizedDeferredRegister<Feature<?>> FEATURES = SynchronizedDeferredRegister.create(Registries.FEATURE, TConstruct.MOD_ID);
+  private static final SynchronizedDeferredRegister<StructureType<?>> STRUCTURE_TYPE = SynchronizedDeferredRegister.create(Registries.STRUCTURE_TYPE, TConstruct.MOD_ID);
+  private static final SynchronizedDeferredRegister<StructurePieceType> STRUCTURE_PIECE = SynchronizedDeferredRegister.create(Registries.STRUCTURE_PIECE, TConstruct.MOD_ID);
+  private static final SynchronizedDeferredRegister<TreeDecoratorType<?>> TREE_DECORATORS = SynchronizedDeferredRegister.create(Registries.TREE_DECORATOR_TYPE, TConstruct.MOD_ID);
+  private static final SynchronizedDeferredRegister<RootPlacerType<?>> ROOT_PLACERS = SynchronizedDeferredRegister.create(Registries.ROOT_PLACER_TYPE, TConstruct.MOD_ID);
 
-
-  public TinkerStructures() {
-    IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-    FEATURES.register(bus);
-    STRUCTURE_TYPE.register(bus);
-    STRUCTURE_PIECE.register(bus);
-    TREE_DECORATORS.register(bus);
-    ROOT_PLACERS.register(bus);
-  }
+  private TinkerStructures() {}
 
 
   /*
@@ -92,8 +77,8 @@ public final class TinkerStructures extends TinkerModule {
   /*
    * Structures
    */
-  public static final RegistryObject<StructurePieceType> islandPiece = STRUCTURE_PIECE.register("island", () -> IslandPiece::new);
-  public static final RegistryObject<StructureType<IslandStructure>> island = STRUCTURE_TYPE.register("island", () -> () -> IslandStructure.CODEC);
+  public static final RegistryObject<StructurePieceType> islandPiece = STRUCTURE_PIECE.register("island", () -> (StructurePieceType) IslandPiece::new);
+  public static final RegistryObject<StructureType<IslandStructure>> island = STRUCTURE_TYPE.register("island", () -> (StructureType<IslandStructure>) () -> IslandStructure.CODEC);
 
 
   // island structures - TODO 1.21: rename to better match placement?
@@ -110,15 +95,4 @@ public final class TinkerStructures extends TinkerModule {
   public static final ResourceKey<StructureSet> netherOceanIsland = key(Registries.STRUCTURE_SET, "nether_ocean_island");
   public static final ResourceKey<StructureSet> endSkyIsland = key(Registries.STRUCTURE_SET, "end_sky_island");
 
-
-  @SubscribeEvent
-  void gatherData(final GatherDataEvent event) {
-    DataGenerator generator = event.getGenerator();
-    PackOutput packOutput = generator.getPackOutput();
-    ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
-    boolean server = event.includeServer();
-    generator.addProvider(server, new StructureRepalleter(packOutput, existingFileHelper));
-//    generator.addProvider(server, new StructureUpdater(packOutput, existingFileHelper, TConstruct.MOD_ID, Target.DATA_PACK, "structures"));
-//    generator.addProvider(event.includeClient(), new StructureUpdater(packOutput, existingFileHelper, TConstruct.MOD_ID, Target.RESOURCE_PACK, "book/structures"));
-  }
 }

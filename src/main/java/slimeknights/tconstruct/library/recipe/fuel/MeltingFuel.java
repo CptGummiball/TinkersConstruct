@@ -7,15 +7,14 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.recipe.ICustomOutputRecipe;
 import slimeknights.mantle.recipe.ingredient.FluidIngredient;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
-import slimeknights.tconstruct.smeltery.block.component.SearedTankBlock.TankType;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.List;
 
@@ -105,11 +104,11 @@ public class MeltingFuel implements ICustomOutputRecipe<IFluidContainer> {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerSmeltery.fuelSerializer.get();
+    return ContentLookups.recipeSerializer("melting_fuel");
   }
 
   @Override
   public ItemStack getToastSymbol() {
-    return new ItemStack(TinkerSmeltery.searedTank.get(TankType.FUEL_TANK));
+    return ContentLookups.toastSymbol("seared_fuel_tank");
   }
 }

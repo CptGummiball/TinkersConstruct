@@ -1,13 +1,6 @@
 package slimeknights.tconstruct.gadgets.item;
 
-import com.google.common.collect.ImmutableMultimap;
-import com.google.common.collect.Multimap;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.EffectRenderingInventoryScreen;
 import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -16,25 +9,21 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
-import net.minecraftforge.items.ItemHandlerHelper;
 import slimeknights.mantle.item.TooltipItem;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerEffect;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.gadgets.TinkerGadgets;
-import slimeknights.tconstruct.gadgets.capability.PiggybackCapability;
 import slimeknights.tconstruct.gadgets.capability.PiggybackHandler;
 
 import javax.annotation.Nonnull;
-import java.util.function.Consumer;
 
 public class PiggyBackPackItem extends TooltipItem {
   private static final int MAX_ENTITY_STACK = 3; // how many entities can be carried at once
@@ -152,74 +141,39 @@ public class PiggyBackPackItem extends TooltipItem {
   public void inventoryTick(ItemStack stack, Level worldIn, Entity entityIn, int itemSlot, boolean isSelected) {
     if (entityIn instanceof LivingEntity livingEntity && livingEntity.getItemBySlot(EquipmentSlot.CHEST) == stack && entityIn.isVehicle()) {
       int amplifier = this.getEntitiesCarriedCount(livingEntity) - 1;
-      livingEntity.addEffect(new MobEffectInstance(TinkerGadgets.carryEffect.get(), 2, amplifier, true, false, true));
+      livingEntity.addEffect(new MobEffectInstance(TinkerGadgets.carryEffect.get().holder(), 2, amplifier, true, false, true));
     }
   }
 
-  @SuppressWarnings("deprecation")
-  @Override
-  public Multimap<Attribute, AttributeModifier> getDefaultAttributeModifiers(EquipmentSlot equipmentSlot) {
-    return ImmutableMultimap.of(); // no attributes, the potion effect handles them
-  }
+  // 1.21: no attribute override needed, items carry no modifiers by default; the potion effect handles them
 
   public static class CarryPotionEffect extends TinkerEffect {
-    static final String UUID = "ff4de63a-2b24-11e6-b67b-9e71128cae77";
-
     public CarryPotionEffect() {
       super(MobEffectCategory.NEUTRAL, true);
-
-      this.addAttributeModifier(Attributes.MOVEMENT_SPEED, UUID, -0.05D, AttributeModifier.Operation.MULTIPLY_TOTAL);
+      // 1.21 keys attribute modifiers by resource location instead of UUID
+      this.addAttributeModifier(Attributes.MOVEMENT_SPEED, TConstruct.getResource("carry"), -0.05D, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
     }
 
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
       return true; // check every tick
     }
 
     @Override
-    public void applyEffectTick(@Nonnull LivingEntity livingEntityIn, int p_76394_2_) {
+    public boolean applyEffectTick(@Nonnull LivingEntity livingEntityIn, int p_76394_2_) {
       ItemStack chestArmor = livingEntityIn.getItemBySlot(EquipmentSlot.CHEST);
       if (chestArmor.isEmpty() || chestArmor.getItem() != TinkerGadgets.piggyBackpack.get()) {
         TinkerGadgets.piggyBackpack.get().matchCarriedEntitiesToCount(livingEntityIn, 0);
       } else {
         TinkerGadgets.piggyBackpack.get().matchCarriedEntitiesToCount(livingEntityIn, chestArmor.getCount());
-        if (!livingEntityIn.getCommandSenderWorld().isClientSide) {
-          livingEntityIn.getCapability(PiggybackCapability.PIGGYBACK, null).ifPresent(PiggybackHandler::updatePassengers);
+        if (!livingEntityIn.getCommandSenderWorld().isClientSide && livingEntityIn instanceof Player player) {
+          PiggybackHandler.updatePassengers(player);
         }
       }
+      return true;
     }
 
-    @Override
-    public void initializeClient(Consumer<IClientMobEffectExtensions> consumer) {
-      consumer.accept(new IClientMobEffectExtensions() {
-        private final Minecraft mc = Minecraft.getInstance();
-        private static final ResourceLocation[] ICONS = {
-          TConstruct.getResource("carry"),
-          TConstruct.getResource("carry_2"),
-          TConstruct.getResource("carry_3")
-        };
-
-        /** Common logic to render the icon */
-        private void renderIcon(MobEffectInstance effect, GuiGraphics graphics, int x, int y) {
-          int amplifier = effect.getAmplifier();
-          if (amplifier > 2) {
-            amplifier = 2;
-          }
-          graphics.blit(x, y, 0, 18, 18, mc.getMobEffectTextures().getSprite(ICONS[amplifier]));
-        }
-
-        @Override
-        public boolean renderInventoryIcon(MobEffectInstance effect, EffectRenderingInventoryScreen<?> gui, GuiGraphics graphics, int x, int y, int z) {
-          renderIcon(effect, graphics, x, y + 7);
-          return true;
-        }
-
-        @Override
-        public boolean renderGuiIcon(MobEffectInstance effect, Gui gui, GuiGraphics graphics, int x, int y, float z, float alpha) {
-          renderIcon(effect, graphics, x + 3, y + 3);
-          return true;
-        }
-      });
-    }
+    // PORT (phase 5 client): the Forge IClientMobEffectExtensions hook rendered the
+    // carry_1/2/3 HUD icons; reimplement via the client effect texture layer.
   }
 }

@@ -1,0 +1,25 @@
+{
+  "type": "tconstruct:molding_table",
+  "material": {
+    "tag": "tconstruct:casts/sand"
+  },
+  "pattern": {
+    "fabric:type": "fabric:any",
+    "ingredients": [
+      {
+        "fabric:type": "fabric:difference",
+        "base": {
+          "tag": "c:ingots"
+        },
+        "subtracted": {
+          "item": "tconstruct:fake_ingot"
+        }
+      },
+      {
+        "fabric:type": "tconstruct:material",
+        "item": "tconstruct:fake_ingot"
+      }
+    ]
+  },
+  "result": "tconstruct:ingot_sand_cast"
+}

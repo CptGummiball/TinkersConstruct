@@ -4,7 +4,8 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.tags.ItemTagsProvider;
+import net.minecraft.data.tags.IntrinsicHolderTagsProvider.IntrinsicTagAppender;
+import slimeknights.mantle.data.BuiltinRegistryTagProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.ItemTags;
@@ -15,8 +16,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
-import net.minecraftforge.common.Tags;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.datagen.Tags;
+import slimeknights.mantle.data.ExistingFileHelper;
 import slimeknights.mantle.datagen.MantleTags;
 import slimeknights.mantle.registration.object.EnumObject;
 import slimeknights.mantle.registration.object.FluidObject;
@@ -125,13 +126,13 @@ import static slimeknights.tconstruct.common.TinkerTags.Items.UNSWAPPABLE_TOOLS;
 import static slimeknights.tconstruct.common.TinkerTags.Items.WORN_ARMOR;
 
 @SuppressWarnings({"unchecked", "removal"})
-public class ItemTagProvider extends ItemTagsProvider {
+public class ItemTagProvider extends BuiltinRegistryTagProvider<Item> {
   /** Twlight forest uncrafting table blacklist */
-  private static final TagKey<Item> BANNED_UNCRAFTABLE = ItemTags.create(new ResourceLocation("twilightforest", "banned_uncraftables"));
-  private final Function<ResourceLocation,IntrinsicTagAppender<Item>> MAKE_TAG = tag -> tag(ItemTags.create(tag));
+  private static final TagKey<Item> BANNED_UNCRAFTABLE = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("twilightforest", "banned_uncraftables"));
+  private final Function<ResourceLocation,IntrinsicTagAppender<Item>> MAKE_TAG = tag -> tag(TagKey.create(Registries.ITEM, tag));
 
   public ItemTagProvider(PackOutput output, CompletableFuture<Provider> lookupProvider, CompletableFuture<TagLookup<Block>> blockTagProvider, ExistingFileHelper existingFileHelper) {
-    super(output, lookupProvider, blockTagProvider, TConstruct.MOD_ID, existingFileHelper);
+    super(output, net.minecraft.core.registries.BuiltInRegistries.ITEM, lookupProvider, blockTagProvider.thenApply(lookup -> (TagLookup<?>)lookup), TConstruct.MOD_ID, existingFileHelper);
   }
 
   @Override
@@ -144,6 +145,11 @@ public class ItemTagProvider extends ItemTagsProvider {
 
   @SuppressWarnings("unchecked")
   private void addCommon() {
+    // PORT: carried from the migrated data — the chest keeps its vanilla dye interaction,
+    // and the vanilla storage tags forge used to ship come from us now
+    this.tag(net.minecraft.tags.ItemTags.DYEABLE).add(slimeknights.tconstruct.tables.TinkerTables.tinkersChest.asItem());
+    this.tag(TagKey.create(Registries.ITEM, slimeknights.mantle.Mantle.commonResource("storage_blocks/amethyst"))).add(net.minecraft.world.item.Items.AMETHYST_BLOCK);
+    this.tag(TagKey.create(Registries.ITEM, slimeknights.mantle.Mantle.commonResource("storage_blocks/quartz"))).add(net.minecraft.world.item.Items.QUARTZ_BLOCK);
     this.tag(TinkerTags.Items.TINKERS_GUIDES)
         .add(TinkerCommons.materialsAndYou.get(), TinkerCommons.tinkersGadgetry.get(),
              TinkerCommons.punySmelting.get(), TinkerCommons.mightySmelting.get(),
@@ -163,7 +169,7 @@ public class ItemTagProvider extends ItemTagsProvider {
     this.tag(TinkerTags.Items.SLIMEBALL_AMMO).add(Items.MAGMA_CREAM);
 
     this.tag(Tags.Items.INGOTS).add(TinkerSmeltery.searedBrick.get(), TinkerSmeltery.scorchedBrick.get(), TinkerToolParts.fakeIngot.get()).addTag(TinkerTags.Items.INGOTS_NETHERITE_SCRAP);
-    this.tag(Tags.Items.NUGGETS).addTags(TinkerTags.Items.NUGGETS_COPPER, TinkerTags.Items.NUGGETS_NETHERITE, TinkerTags.Items.NUGGETS_NETHERITE_SCRAP);
+    this.tag(Tags.Items.NUGGETS).addTag(TinkerTags.Items.NUGGETS_COPPER).addTag(TinkerTags.Items.NUGGETS_NETHERITE).addTag(TinkerTags.Items.NUGGETS_NETHERITE_SCRAP);
     this.tag(TinkerTags.Items.BONES).add(Items.BONE);
     this.tag(TinkerTags.Items.WITHER_BONES).add(TinkerMaterials.necroticBone.get()).addTag(TinkerTags.Items.WEIRD_WITHER_BONES_TAG);
     this.tag(TinkerTags.Items.WEIRD_WITHER_BONES_TAG).add(TinkerMaterials.necroticBone.get());
@@ -177,6 +183,11 @@ public class ItemTagProvider extends ItemTagsProvider {
     this.tag(TinkerTags.Items.COBALT_SHARD).add(TinkerWorld.cobaltShard.get());
     this.tag(TinkerTags.Items.KNIGHTMETAL_SHARD).add(TinkerWorld.knightmetalShard.get());
 
+    // PORT (phase 7): also emit c:storage_blocks/amethyst and c:storage_blocks/quartz, holding
+    // minecraft:amethyst_block and minecraft:quartz_block. Tinkers names both tags on the melting
+    // and casting sides; Forge's own tag data supplied them, Fabric's convention tags do not, and
+    // an unfillable casting output kills the connection of every joining player. The two files are
+    // written by hand under src/generated/resources/data/c/tags until this provider emits them.
     // ores
     addMetalTags(TinkerMaterials.steel);
     addMetalTags(TinkerMaterials.cobalt);
@@ -204,11 +215,22 @@ public class ItemTagProvider extends ItemTagsProvider {
     copy(Tags.Blocks.GLASS_PANES_COLORLESS, Tags.Items.GLASS_PANES_COLORLESS);
     copy(Tags.Blocks.STAINED_GLASS, Tags.Items.STAINED_GLASS);
     copy(Tags.Blocks.STAINED_GLASS_PANES, Tags.Items.STAINED_GLASS_PANES);
+    // the c:glass and c:glass_panes parents came from the loader's own datagen on Forge; on
+    // Fabric nothing provides them, which left the tank, gauge and glass material recipes
+    // matching an empty tag. The fabric ecosystem's name for the block group is
+    // c:glass_blocks, so pull it in too — that way other mods' glass works in those recipes.
+    IntrinsicTagAppender<Item> glass = this.tag(Tags.Items.GLASS);
+    glass.addTag(Tags.Items.GLASS_COLORLESS).addTag(Tags.Items.GLASS_TINTED);
+    glass.addOptionalTag(commonResource("glass_blocks"));
+    IntrinsicTagAppender<Item> glassPanes = this.tag(Tags.Items.GLASS_PANES);
+    glassPanes.addTag(Tags.Items.GLASS_PANES_COLORLESS);
     for (DyeColor color : DyeColor.values()) {
       ResourceLocation name = commonResource("glass/" + color.getSerializedName());
       copy(TagKey.create(Registries.BLOCK, name), TagKey.create(Registries.ITEM, name));
+      glass.addTag(TagKey.create(Registries.ITEM, name));
       name = commonResource("glass_panes/" + color.getSerializedName());
       copy(TagKey.create(Registries.BLOCK, name), TagKey.create(Registries.ITEM, name));
+      glassPanes.addTag(TagKey.create(Registries.ITEM, name));
     }
 
     copy(TinkerTags.Blocks.WORKBENCHES, TinkerTags.Items.WORKBENCHES);
@@ -225,15 +247,10 @@ public class ItemTagProvider extends ItemTagsProvider {
 
     // beacons are happy to accept any expensive ingots
     // mirrors the block list
-    this.tag(ItemTags.BEACON_PAYMENT_ITEMS).addTags(
-      // ores
-      TinkerMaterials.steel.getIngotTag(), TinkerMaterials.cobalt.getIngotTag(),
-      // tier 3
-      TinkerMaterials.slimesteel.getIngotTag(),
-      // tier 4
-      TinkerMaterials.cinderslime.getIngotTag(), TinkerMaterials.queensSlime.getIngotTag(),
-      TinkerMaterials.manyullyn.getIngotTag(), TinkerMaterials.hepatizon.getIngotTag(),
-      TinkerMaterials.knightmetal.getIngotTag(), TinkerMaterials.knightslime.getIngotTag());
+    this.tag(ItemTags.BEACON_PAYMENT_ITEMS).addTag(// ores
+      TinkerMaterials.steel.getIngotTag()).addTag(TinkerMaterials.cobalt.getIngotTag()).addTag(// tier 3
+      TinkerMaterials.slimesteel.getIngotTag()).addTag(// tier 4
+      TinkerMaterials.cinderslime.getIngotTag()).addTag(TinkerMaterials.queensSlime.getIngotTag()).addTag(TinkerMaterials.manyullyn.getIngotTag()).addTag(TinkerMaterials.hepatizon.getIngotTag()).addTag(TinkerMaterials.knightmetal.getIngotTag()).addTag(TinkerMaterials.knightslime.getIngotTag());
 
     this.copy(TinkerTags.Blocks.COPPER_PLATFORMS, TinkerTags.Items.COPPER_PLATFORMS);
 
@@ -382,70 +399,70 @@ public class ItemTagProvider extends ItemTagsProvider {
     // care about order for armor in the book
     tag(BASIC_ARMOR);
     IntrinsicTagAppender<Item> bookArmor = tag(PUNY_ARMOR);
-    for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slotType : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       bookArmor.add(TinkerTools.travelersGear.get(slotType));
     }
     bookArmor.add(TinkerTools.travelersShield.get());
-    for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slotType : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       bookArmor.add(TinkerTools.plateArmor.get(slotType));
     }
     bookArmor.add(TinkerTools.plateShield.get());
     tag(MIGHTY_ARMOR);
     tag(FANTASTIC_ARMOR);
     bookArmor = tag(GADGETRY_ARMOR);
-    for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slotType : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       bookArmor.add(TinkerTools.slimesuit.get(slotType));
     }
     bookArmor.add(TinkerTools.slimeWings.asItem());
-    tag(BOOK_ARMOR).addTags(BASIC_ARMOR, PUNY_ARMOR, MIGHTY_ARMOR, FANTASTIC_ARMOR, GADGETRY_ARMOR);
+    tag(BOOK_ARMOR).addTag(BASIC_ARMOR).addTag(PUNY_ARMOR).addTag(MIGHTY_ARMOR).addTag(FANTASTIC_ARMOR).addTag(GADGETRY_ARMOR);
 
 
     // add tags to other tags
     // harvest primary and stone harvest are both automatically harvest
-    this.tag(TinkerTags.Items.HARVEST).addTags(HARVEST_PRIMARY, STONE_HARVEST);
+    this.tag(TinkerTags.Items.HARVEST).addTag(HARVEST_PRIMARY).addTag(STONE_HARVEST);
     // melee nesting - currently most all sub-tags are held exclusive as they revolve around tool damage or having an item in hand
-    this.tag(MELEE_WEAPON).addTags(MELEE_PRIMARY, SWORD, PARRY);
+    this.tag(MELEE_WEAPON).addTag(MELEE_PRIMARY).addTag(SWORD).addTag(PARRY);
     this.tag(AMMO).addTag(THROWN_AMMO);
     // by default, this tag just redirects to melee weapon, but you can reconfigure it to suit your pack
-    this.tag(BALLISTA_AMMO).addTags(MELEE_WEAPON, HARVEST);
-    this.tag(MELEE).addTags(MELEE_WEAPON, UNARMED);
+    this.tag(BALLISTA_AMMO).addTag(MELEE_WEAPON).addTag(HARVEST);
+    this.tag(MELEE).addTag(MELEE_WEAPON).addTag(UNARMED);
     // modifier helper tags
-    this.tag(LOOT_CAPABLE_TOOL).addTags(MELEE, HARVEST, FISHING_RODS);
+    this.tag(LOOT_CAPABLE_TOOL).addTag(MELEE).addTag(HARVEST).addTag(FISHING_RODS);
     this.tag(UNARMED).addTag(CHESTPLATES);
-    this.tag(INTERACTABLE_RIGHT).addTags(INTERACTABLE_DUAL);
+    this.tag(INTERACTABLE_RIGHT).addTag(INTERACTABLE_DUAL);
     this.tag(INTERACTABLE_LEFT).addTag(INTERACTABLE_DUAL);
-    this.tag(INTERACTABLE_CHARGE_MODIFIER).addTags(INTERACTABLE_RIGHT, SHIELDS);
-    this.tag(INTERACTABLE_CHARGE).addTags(INTERACTABLE_CHARGE_MODIFIER, BOWS);
+    this.tag(INTERACTABLE_CHARGE_MODIFIER).addTag(INTERACTABLE_RIGHT).addTag(SHIELDS);
+    this.tag(INTERACTABLE_CHARGE).addTag(INTERACTABLE_CHARGE_MODIFIER).addTag(BOWS);
     // interactable armor is mostly so some mod could disable all chestplate interactions in one swing
     this.tag(INTERACTABLE_ARMOR).addTag(CHESTPLATES);
     // left and right handed are held, but not armor
-    this.tag(HELD).addTags(INTERACTABLE_RIGHT, INTERACTABLE_LEFT, HELD_ARMOR);
-    this.tag(INTERACTABLE).addTags(INTERACTABLE_LEFT, INTERACTABLE_RIGHT, INTERACTABLE_ARMOR);
-    this.tag(WORN_ARMOR).addTags(BOOTS, LEGGINGS, CHESTPLATES, HELMETS);
+    this.tag(HELD).addTag(INTERACTABLE_RIGHT).addTag(INTERACTABLE_LEFT).addTag(HELD_ARMOR);
+    this.tag(INTERACTABLE).addTag(INTERACTABLE_LEFT).addTag(INTERACTABLE_RIGHT).addTag(INTERACTABLE_ARMOR);
+    this.tag(WORN_ARMOR).addTag(BOOTS).addTag(LEGGINGS).addTag(CHESTPLATES).addTag(HELMETS);
     this.tag(HELD_ARMOR).addTag(SHIELDS);
-    this.tag(ARMOR).addTags(WORN_ARMOR, HELD_ARMOR);
+    this.tag(ARMOR).addTag(WORN_ARMOR).addTag(HELD_ARMOR);
     this.tag(TRIM).addTag(TRIM_NO_PATTERN);
     this.tag(TRIM_NO_PATTERN);
     this.tag(SKULLS).addTag(SWAPPABLE_SKULLS);
     this.tag(AOE).addTag(BOOTS); // boot walk modifiers
-    this.tag(LAUNCHERS).addTags(BOWS, STAFFS, FISHING_RODS);
-    this.tag(RANGED).addTags(LAUNCHERS, SMALL_RANGED, BROAD_RANGED);
-    this.tag(BOWS).addTags(LONGBOWS, CROSSBOWS);
-    this.tag(RANGED_POWER).addTags(LONGBOWS, STAFFS, FISHING_RODS);
-    this.tag(RANGED_QUICK_CHARGE).addTags(CROSSBOWS, STAFFS, FISHING_RODS);
-    this.tag(RANGED_BOUNCE).addTags(LONGBOWS, STAFFS);
+    this.tag(LAUNCHERS).addTag(BOWS).addTag(STAFFS).addTag(FISHING_RODS);
+    this.tag(RANGED).addTag(LAUNCHERS).addTag(SMALL_RANGED).addTag(BROAD_RANGED);
+    this.tag(BOWS).addTag(LONGBOWS).addTag(CROSSBOWS);
+    this.tag(RANGED_POWER).addTag(LONGBOWS).addTag(STAFFS).addTag(FISHING_RODS);
+    this.tag(RANGED_QUICK_CHARGE).addTag(CROSSBOWS).addTag(STAFFS).addTag(FISHING_RODS);
+    this.tag(RANGED_BOUNCE).addTag(LONGBOWS).addTag(STAFFS);
     // TODO 1.21: consider dropping unsalvagable from this tag
-    this.tag(UNRECYCLABLE).addTags(UNSALVAGABLE, ANCIENT_TOOLS); // ancient tools lack tool parts, but may have special override recipes to salvage
+    this.tag(UNRECYCLABLE).addTag(UNSALVAGABLE).addTag(ANCIENT_TOOLS); // ancient tools lack tool parts, but may have special override recipes to salvage
     this.tag(UNSWAPPABLE_TOOLS).addTag(UNSWAPPABLE);
     this.tag(UNSWAPPABLE_PARTS).addTag(UNSWAPPABLE);
     // headlight support
-    this.tag(ItemTags.create(new ResourceLocation("headlight", "headlight_helmets"))).addTag(HELMETS);
+    this.tag(TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("headlight", "headlight_helmets"))).addTag(HELMETS);
 
     // general
     this.tag(MULTIPART_TOOL).addTag(SINGLEPART_TOOL);
-    this.tag(MODIFIABLE).addTags(MULTIPART_TOOL, DURABILITY, MELEE, HARVEST, RANGED, AMMO, AOE, HELD, BONUS_SLOTS);
+    this.tag(MODIFIABLE).addTag(MULTIPART_TOOL).addTag(DURABILITY).addTag(MELEE).addTag(HARVEST).addTag(RANGED).addTag(AMMO).addTag(AOE).addTag(HELD).addTag(BONUS_SLOTS);
     // disable parry mod on our items, we have our own modifier for that
-    this.tag(TagKey.create(Registries.ITEM, new ResourceLocation("parry", "excluded_shields"))).addTag(HELD);
+    this.tag(TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath("parry", "excluded_shields"))).addTag(HELD);
 
     // kamas are a shear type, when broken we don't pass it to loot tables
     this.tag(Tags.Items.SHEARS).add(TinkerTools.kama.get());
@@ -520,13 +537,13 @@ public class ItemTagProvider extends ItemTagsProvider {
         .add(Items.CRIMSON_PLANKS, Items.WARPED_PLANKS)
         .addTag(TinkerTags.Items.SLIMY_PLANKS);
     // the logs have "variants" as they have their own recipes
-    this.tag(TinkerTags.Items.VARIANT_LOGS).addTags(ItemTags.OAK_LOGS, ItemTags.SPRUCE_LOGS, ItemTags.BIRCH_LOGS, ItemTags.JUNGLE_LOGS, ItemTags.DARK_OAK_LOGS, ItemTags.ACACIA_LOGS, ItemTags.MANGROVE_LOGS, ItemTags.CHERRY_LOGS, ItemTags.CRIMSON_STEMS, ItemTags.WARPED_STEMS, TinkerTags.Items.SLIMY_LOGS);
+    this.tag(TinkerTags.Items.VARIANT_LOGS).addTag(ItemTags.OAK_LOGS).addTag(ItemTags.SPRUCE_LOGS).addTag(ItemTags.BIRCH_LOGS).addTag(ItemTags.JUNGLE_LOGS).addTag(ItemTags.DARK_OAK_LOGS).addTag(ItemTags.ACACIA_LOGS).addTag(ItemTags.MANGROVE_LOGS).addTag(ItemTags.CHERRY_LOGS).addTag(ItemTags.CRIMSON_STEMS).addTag(ItemTags.WARPED_STEMS).addTag(TinkerTags.Items.SLIMY_LOGS);
 
     // part builder
     this.tag(TinkerTags.Items.DEFAULT_PATTERNS).add(TinkerTables.pattern.get());
     this.tag(TinkerTags.Items.REUSABLE_PATTERNS).addTag(TinkerTags.Items.GOLD_CASTS);
     this.tag(TinkerTags.Items.PATTERNS)
-        .addTags(TinkerTags.Items.DEFAULT_PATTERNS, TinkerTags.Items.REUSABLE_PATTERNS, TinkerTags.Items.SAND_CASTS, TinkerTags.Items.RED_SAND_CASTS)
+        .addTag(TinkerTags.Items.DEFAULT_PATTERNS).addTag(TinkerTags.Items.REUSABLE_PATTERNS).addTag(TinkerTags.Items.SAND_CASTS).addTag(TinkerTags.Items.RED_SAND_CASTS)
         .add(Items.SAND, Items.RED_SAND, TinkerFluids.venomBottle.get());
 
     // stone
@@ -543,7 +560,7 @@ public class ItemTagProvider extends ItemTagsProvider {
       TinkerTables.tinkersAnvil.asItem(), TinkerTables.scorchedAnvil.asItem(), TinkerTables.modifierWorktable.asItem()
     );
     String tf = "twilightforest";
-    Function<String,ResourceLocation> trophy = name -> new ResourceLocation(tf, name + "_trophy");
+    Function<String,ResourceLocation> trophy = name -> ResourceLocation.fromNamespaceAndPath(tf, name + "_trophy");
     this.tag(TinkerTags.Items.BOSS_TROPHIES)
       .addOptional(trophy.apply("naga"))
       .addOptional(trophy.apply("lich"))
@@ -555,8 +572,8 @@ public class ItemTagProvider extends ItemTagsProvider {
       .addOptional(trophy.apply("snow_queen"))
       .addOptional(trophy.apply("quest_ram"));
     this.tag(TinkerTags.Items.THROWABLE)
-      .addOptional(new ResourceLocation(tf, "ice_bomb"));
-    this.tag(TinkerTags.Items.KNIGHTMETAL_SHARD).addOptional(new ResourceLocation(tf, "armor_shard"));
+      .addOptional(ResourceLocation.fromNamespaceAndPath(tf, "ice_bomb"));
+    this.tag(TinkerTags.Items.KNIGHTMETAL_SHARD).addOptional(ResourceLocation.fromNamespaceAndPath(tf, "armor_shard"));
   }
 
   private void addSmeltery() {
@@ -567,7 +584,7 @@ public class ItemTagProvider extends ItemTagsProvider {
     this.copy(TinkerTags.Blocks.FOUNDRY_BRICKS, TinkerTags.Items.FOUNDRY_BRICKS);
     this.copy(BlockTags.SOUL_FIRE_BASE_BLOCKS, ItemTags.SOUL_FIRE_BASE_BLOCKS);
 
-    this.tag(TinkerTags.Items.NON_SINGULAR_ORE_RATES).addTags(Tags.Items.ORE_RATES_DENSE, Tags.Items.ORE_RATES_SPARSE);
+    this.tag(TinkerTags.Items.NON_SINGULAR_ORE_RATES).addTag(Tags.Items.ORE_RATES_DENSE).addTag(Tags.Items.ORE_RATES_SPARSE);
 
     // smeltery and foundry structure blocks
     this.tag(TinkerTags.Items.SMELTERY)
@@ -651,7 +668,7 @@ public class ItemTagProvider extends ItemTagsProvider {
 
     // add all casts to a common tag
     this.tag(TinkerTags.Items.CASTS)
-        .addTags(TinkerTags.Items.GOLD_CASTS, TinkerTags.Items.SAND_CASTS, TinkerTags.Items.RED_SAND_CASTS, TinkerTags.Items.TABLE_EMPTY_CASTS, TinkerTags.Items.BASIN_EMPTY_CASTS);
+        .addTag(TinkerTags.Items.GOLD_CASTS).addTag(TinkerTags.Items.SAND_CASTS).addTag(TinkerTags.Items.RED_SAND_CASTS).addTag(TinkerTags.Items.TABLE_EMPTY_CASTS).addTag(TinkerTags.Items.BASIN_EMPTY_CASTS);
     this.tag(TinkerTags.Items.TABLE_EMPTY_CASTS).add(TinkerCommons.goldBars.asItem());
     this.tag(TinkerTags.Items.BASIN_EMPTY_CASTS).add(TinkerCommons.goldPlatform.asItem());
 
@@ -671,7 +688,7 @@ public class ItemTagProvider extends ItemTagsProvider {
 
     // melting tags //
     // ores
-    Function<String,ResourceLocation> ie = path -> new ResourceLocation("immersiveengineering", path);
+    Function<String,ResourceLocation> ie = path -> ResourceLocation.fromNamespaceAndPath("immersiveengineering", path);
     String tf = "twilightforest";
     moltenTools(TinkerFluids.moltenCopper).add(1, Items.BRUSH).toolTags().toolsComplement();
     moltenTools(TinkerFluids.moltenIron).minecraft()
@@ -680,9 +697,9 @@ public class ItemTagProvider extends ItemTagsProvider {
       .add(2, true, ie.apply("hammer"))
       .crowbar().excavatorSpikeMaul();
     moltenTools(TinkerFluids.moltenGold).minecraft("golden")
-      .add(1, true,  new ResourceLocation("farmersdelight", "golden_knife"))
-      .add(4, false, new ResourceLocation("golden_boots"))
-      .add(4, true,  new ResourceLocation(tf, "gold_minotaur_axe"));
+      .add(1, true,  ResourceLocation.fromNamespaceAndPath("farmersdelight", "golden_knife"))
+      .add(4, false, ResourceLocation.parse("golden_boots"))
+      .add(4, true,  ResourceLocation.fromNamespaceAndPath(tf, "gold_minotaur_axe"));
     moltenTools(TinkerFluids.moltenSteel).toolTags().leggingsPaxel().crowbar()
       .toolTag(1, "shovel")
       .add(1, true, ie.apply("shovel_steel"))
@@ -698,8 +715,8 @@ public class ItemTagProvider extends ItemTagsProvider {
       .optionalMetal(7, tf, "leggings", "shield");
     // gems
     moltenTools(TinkerFluids.moltenDiamond).minecraft().excavatorSpikeMaul().crowbar().fdKnife()
-      .add(4, false, new ResourceLocation("diamond_boots"))
-      .add(4, true,  new ResourceLocation(tf, "diamond_minotaur_axe"));
+      .add(4, false, ResourceLocation.parse("diamond_boots"))
+      .add(4, true,  ResourceLocation.fromNamespaceAndPath(tf, "diamond_minotaur_axe"));
     // mod ores
     moltenTools(TinkerFluids.moltenTin).toolTags().toolsComplement();
     moltenTools(TinkerFluids.moltenLead).toolTags().toolsComplement();
@@ -772,6 +789,8 @@ public class ItemTagProvider extends ItemTagsProvider {
       case LEGGINGS -> LEGGINGS;
       case CHESTPLATE -> CHESTPLATES;
       case HELMET -> HELMETS;
+      // 1.21 added animal body armor; tinkers armor never occupies it
+      case BODY -> throw new IllegalArgumentException("No tinkers tag for body armor");
     };
   }
 
@@ -781,6 +800,7 @@ public class ItemTagProvider extends ItemTagsProvider {
       case LEGGINGS -> Tags.Items.ARMORS_LEGGINGS;
       case CHESTPLATE -> Tags.Items.ARMORS_CHESTPLATES;
       case HELMET -> Tags.Items.ARMORS_HELMETS;
+      case BODY -> throw new IllegalArgumentException("No common tag for body armor");
     };
   }
 

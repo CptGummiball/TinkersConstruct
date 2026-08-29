@@ -17,7 +17,7 @@ public record AttributeEntityVariable(Attribute attribute) implements EntityVari
 
   @Override
   public float getValue(LivingEntity entity) {
-    return (float)entity.getAttributeValue(attribute);
+    return (float)entity.getAttributeValue(net.minecraft.core.registries.BuiltInRegistries.ATTRIBUTE.wrapAsHolder(attribute));
   }
 
   @Override

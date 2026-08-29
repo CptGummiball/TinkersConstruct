@@ -1,8 +1,6 @@
 package slimeknights.tconstruct.smeltery;
 
-import net.minecraft.core.registries.Registries;
-import net.minecraft.data.DataGenerator;
-import net.minecraft.data.PackOutput;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ArmorItem;
@@ -26,12 +24,8 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraftforge.data.event.GatherDataEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.registries.RegisterEvent;
-import net.minecraftforge.registries.RegistryObject;
+import slimeknights.mantle.transfer.fluid.FluidType;
+import slimeknights.mantle.registration.RegistryObject;
 import slimeknights.mantle.block.GaugeBlock;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.recipe.helper.LoadableRecipeSerializer;
@@ -46,8 +40,8 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerModule;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.registration.CastItemObject;
+import slimeknights.mantle.fluid.transfer.EmptyPotionTransfer;
 import slimeknights.tconstruct.fluids.TinkerFluids;
-import slimeknights.tconstruct.fluids.item.EmptyPotionTransfer;
 import slimeknights.tconstruct.library.recipe.FluidValues;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
 import slimeknights.tconstruct.library.recipe.alloying.AlloyRecipe;
@@ -121,8 +115,6 @@ import slimeknights.tconstruct.smeltery.block.entity.controller.AlloyerBlockEnti
 import slimeknights.tconstruct.smeltery.block.entity.controller.FoundryBlockEntity;
 import slimeknights.tconstruct.smeltery.block.entity.controller.MelterBlockEntity;
 import slimeknights.tconstruct.smeltery.block.entity.controller.SmelteryBlockEntity;
-import slimeknights.tconstruct.smeltery.data.FluidContainerTransferProvider;
-import slimeknights.tconstruct.smeltery.data.SmelteryRecipeProvider;
 import slimeknights.tconstruct.smeltery.item.CopperCanItem;
 import slimeknights.tconstruct.smeltery.item.DummyMaterialItem;
 import slimeknights.tconstruct.smeltery.item.TankItem;
@@ -130,7 +122,7 @@ import slimeknights.tconstruct.smeltery.menu.AlloyerContainerMenu;
 import slimeknights.tconstruct.smeltery.menu.HeatingStructureContainerMenu;
 import slimeknights.tconstruct.smeltery.menu.MelterContainerMenu;
 import slimeknights.tconstruct.smeltery.menu.SingleItemContainerMenu;
-import slimeknights.tconstruct.tools.TinkerToolParts;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -148,10 +140,10 @@ public final class TinkerSmeltery extends TinkerModule {
   private static final StatePredicate NEVER = Blocks::never;
   /** Creative tab for smeltery, all contents related to the multiblocks */
   public static final RegistryObject<CreativeModeTab> tabSmeltery = CREATIVE_TABS.register(
-    "smeltery", () -> CreativeModeTab.builder().title(TConstruct.makeTranslation("itemGroup", "smeltery"))
+    "smeltery", () -> FabricItemGroup.builder().title(TConstruct.makeTranslation("itemGroup", "smeltery"))
                                      .icon(() -> new ItemStack(TinkerSmeltery.smelteryController))
                                      .displayItems(TinkerSmeltery::addTabItems)
-                                     .withTabsBefore(TinkerToolParts.tabToolParts.getId())
+                                     // PORT: Forge's withTabsBefore ordering has no Fabric equivalent
                                      .build());
 
   /* Bricks */
@@ -267,19 +259,20 @@ public final class TinkerSmeltery extends TinkerModule {
   static {
     Function<Block, BlockItem> tankItem = b -> new TankItem(b, ITEM_PROPS, true);
     Function<Block, BlockItem> lanternItem = b -> new TankItem(b, ITEM_PROPS, false);
-    // seared
-    Properties seared = searedNonSolidProps(SoundType.METAL).lightLevel(SearedTankBlock.LIGHT_GETTER);
-    searedTank = BLOCKS.registerEnum("seared", SearedTankBlock.TankType.values(), type -> new SearedTankBlock(seared, type.getCapacity(), PushReaction.DESTROY), tankItem);
-    searedCastingTank = BLOCKS.register("seared_casting_tank", () -> new CastingTankBlock(seared), b -> new TankItem(b, ITEM_PROPS, true));
-    searedFluidCannon = BLOCKS.register("seared_fluid_cannon", () -> new FluidCannonBlock(seared, FluidType.BUCKET_VOLUME * 2, 1.0f, 1.1f, 6.0f), tankItem);
+    // fresh Properties per block: SearedTankBlock bakes its piston reaction into them
+    // (1.21 removed the override), so instances must not be shared
+    Supplier<Properties> seared = () -> searedNonSolidProps(SoundType.METAL).lightLevel(SearedTankBlock.LIGHT_GETTER);
+    searedTank = BLOCKS.registerEnum("seared", SearedTankBlock.TankType.values(), type -> new SearedTankBlock(seared.get(), type.getCapacity(), PushReaction.DESTROY), tankItem);
+    searedCastingTank = BLOCKS.register("seared_casting_tank", () -> new CastingTankBlock(seared.get()), b -> new TankItem(b, ITEM_PROPS, true));
+    searedFluidCannon = BLOCKS.register("seared_fluid_cannon", () -> new FluidCannonBlock(seared.get(), FluidType.BUCKET_VOLUME * 2, 1.0f, 1.1f, 6.0f), tankItem);
     searedLantern = BLOCKS.register("seared_lantern", () -> new SearedLanternBlock(searedNonSolidProps(SoundType.LANTERN).lightLevel(SearedTankBlock.LIGHT_GETTER), FluidValues.LANTERN_CAPACITY), lanternItem);
     // scorched
-    Properties scorched = scorchedNonSolidProps(SoundType.BASALT).lightLevel(SearedTankBlock.LIGHT_GETTER);
-    scorchedTank = BLOCKS.registerEnum("scorched", SearedTankBlock.TankType.values(), type -> new SearedTankBlock(scorched, type.getCapacity(), PushReaction.DESTROY), tankItem);
-    scorchedFluidCannon = BLOCKS.register("scorched_fluid_cannon", () -> new FluidCannonBlock(scorched, FluidType.BUCKET_VOLUME * 2, 2.0f, 1.5f, 7.0f), tankItem);
+    Supplier<Properties> scorched = () -> scorchedNonSolidProps(SoundType.BASALT).lightLevel(SearedTankBlock.LIGHT_GETTER);
+    scorchedTank = BLOCKS.registerEnum("scorched", SearedTankBlock.TankType.values(), type -> new SearedTankBlock(scorched.get(), type.getCapacity(), PushReaction.DESTROY), tankItem);
+    scorchedFluidCannon = BLOCKS.register("scorched_fluid_cannon", () -> new FluidCannonBlock(scorched.get(), FluidType.BUCKET_VOLUME * 2, 2.0f, 1.5f, 7.0f), tankItem);
     scorchedLantern = BLOCKS.register("scorched_lantern", () -> new SearedLanternBlock(scorchedNonSolidProps(SoundType.LANTERN).lightLevel(SearedTankBlock.LIGHT_GETTER), FluidValues.LANTERN_CAPACITY), lanternItem);
     // end
-    endFluidCannon = BLOCKS.register("end_fluid_cannon", () -> new KnightMetalFluidCannonBlock(seared, FluidType.BUCKET_VOLUME * 4, 1.5f, 3.0f, 6.0f), tankItem);
+    endFluidCannon = BLOCKS.register("end_fluid_cannon", () -> new KnightMetalFluidCannonBlock(seared.get(), FluidType.BUCKET_VOLUME * 4, 1.5f, 3.0f, 6.0f), tankItem);
   }
 
   // utility
@@ -365,40 +358,42 @@ public final class TinkerSmeltery extends TinkerModule {
   public static final CastItemObject nuggetCast = ITEMS.registerCast("nugget", ITEM_PROPS);
   public static final CastItemObject gemCast    = ITEMS.registerCast("gem", ITEM_PROPS);
   public static final CastItemObject rodCast    = ITEMS.registerCast("rod", ITEM_PROPS);
-  public static final CastItemObject repairKitCast = ITEMS.registerCast(TinkerToolParts.repairKit, ITEM_PROPS);
+  // PORT: tool-part-bound casts register by name with a ContentLookups seam; the ItemObject
+  // overload needs TinkerToolParts, which ports with the tools module
+  public static final CastItemObject repairKitCast = ITEMS.registerCast("repair_kit", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("repair_kit")));
   // compatability
   public static final CastItemObject plateCast  = ITEMS.registerCast("plate", ITEM_PROPS);
   public static final CastItemObject gearCast   = ITEMS.registerCast("gear", ITEM_PROPS);
   public static final CastItemObject coinCast   = ITEMS.registerCast("coin", ITEM_PROPS);
   public static final CastItemObject wireCast   = ITEMS.registerCast("wire", ITEM_PROPS);
   // small tool heads
-  public static final CastItemObject pickHeadCast = ITEMS.registerCast(TinkerToolParts.pickHead, ITEM_PROPS);
-  public static final CastItemObject smallAxeHeadCast = ITEMS.registerCast(TinkerToolParts.smallAxeHead, ITEM_PROPS);
-  public static final CastItemObject smallBladeCast = ITEMS.registerCast(TinkerToolParts.smallBlade, ITEM_PROPS);
-  public static final CastItemObject adzeHeadCast = ITEMS.registerCast(TinkerToolParts.adzeHead, ITEM_PROPS);
+  public static final CastItemObject pickHeadCast = ITEMS.registerCast("pick_head", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("pick_head")));
+  public static final CastItemObject smallAxeHeadCast = ITEMS.registerCast("small_axe_head", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("small_axe_head")));
+  public static final CastItemObject smallBladeCast = ITEMS.registerCast("small_blade", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("small_blade")));
+  public static final CastItemObject adzeHeadCast = ITEMS.registerCast("adze_head", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("adze_head")));
   // large tool heads
-  public static final CastItemObject hammerHeadCast   = ITEMS.registerCast(TinkerToolParts.hammerHead, ITEM_PROPS);
-  public static final CastItemObject broadBladeCast   = ITEMS.registerCast(TinkerToolParts.broadBlade, ITEM_PROPS);
-  public static final CastItemObject broadAxeHeadCast = ITEMS.registerCast(TinkerToolParts.broadAxeHead, ITEM_PROPS);
-  public static final CastItemObject largePlateCast  = ITEMS.registerCast(TinkerToolParts.largePlate, ITEM_PROPS);
+  public static final CastItemObject hammerHeadCast   = ITEMS.registerCast("hammer_head", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("hammer_head")));
+  public static final CastItemObject broadBladeCast   = ITEMS.registerCast("broad_blade", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("broad_blade")));
+  public static final CastItemObject broadAxeHeadCast = ITEMS.registerCast("broad_axe_head", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("broad_axe_head")));
+  public static final CastItemObject largePlateCast  = ITEMS.registerCast("large_plate", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("large_plate")));
   // bindings
-  public static final CastItemObject toolBindingCast = ITEMS.registerCast(TinkerToolParts.toolBinding, ITEM_PROPS);
-  public static final CastItemObject toughBindingCast = ITEMS.registerCast(TinkerToolParts.toughBinding, ITEM_PROPS);
+  public static final CastItemObject toolBindingCast = ITEMS.registerCast("tool_binding", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("tool_binding")));
+  public static final CastItemObject toughBindingCast = ITEMS.registerCast("tough_binding", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("tough_binding")));
   // tool rods
-  public static final CastItemObject toolHandleCast  = ITEMS.registerCast(TinkerToolParts.toolHandle, ITEM_PROPS);
-  public static final CastItemObject toughHandleCast = ITEMS.registerCast(TinkerToolParts.toughHandle, ITEM_PROPS);
+  public static final CastItemObject toolHandleCast  = ITEMS.registerCast("tool_handle", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("tool_handle")));
+  public static final CastItemObject toughHandleCast = ITEMS.registerCast("tough_handle", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("tough_handle")));
   // bow
-  public static final CastItemObject bowLimbCast = ITEMS.registerCast(TinkerToolParts.bowLimb, ITEM_PROPS);
-  public static final CastItemObject bowGripCast = ITEMS.registerCast(TinkerToolParts.bowGrip, ITEM_PROPS);
+  public static final CastItemObject bowLimbCast = ITEMS.registerCast("bow_limb", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("bow_limb")));
+  public static final CastItemObject bowGripCast = ITEMS.registerCast("bow_grip", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("bow_grip")));
   public static final ItemObject<Item> arrowCast = ITEMS.register("arrow_cast", TOOLTIP_ITEM);
   // armor
-  public static final CastItemObject helmetPlatingCast = ITEMS.registerCast("helmet_plating", () -> new PartCastItem(ITEM_PROPS, () -> TinkerToolParts.plating.get(ArmorItem.Type.HELMET)));
-  public static final CastItemObject chestplatePlatingCast = ITEMS.registerCast("chestplate_plating", () -> new PartCastItem(ITEM_PROPS, () -> TinkerToolParts.plating.get(ArmorItem.Type.CHESTPLATE)));
-  public static final CastItemObject leggingsPlatingCast = ITEMS.registerCast("leggings_plating", () -> new PartCastItem(ITEM_PROPS, () -> TinkerToolParts.plating.get(ArmorItem.Type.LEGGINGS)));
-  public static final CastItemObject bootsPlatingCast = ITEMS.registerCast("boots_plating", () -> new PartCastItem(ITEM_PROPS, () -> TinkerToolParts.plating.get(ArmorItem.Type.BOOTS)));
-  public static final CastItemObject mailleCast = ITEMS.registerCast(TinkerToolParts.maille, ITEM_PROPS);
+  public static final CastItemObject helmetPlatingCast = ITEMS.registerCast("helmet_plating", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("helmet_plating")));
+  public static final CastItemObject chestplatePlatingCast = ITEMS.registerCast("chestplate_plating", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("chestplate_plating")));
+  public static final CastItemObject leggingsPlatingCast = ITEMS.registerCast("leggings_plating", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("leggings_plating")));
+  public static final CastItemObject bootsPlatingCast = ITEMS.registerCast("boots_plating", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("boots_plating")));
+  public static final CastItemObject mailleCast = ITEMS.registerCast("maille", () -> new PartCastItem(ITEM_PROPS, () -> ContentLookups.materialItem("maille")));
   // dummy cast creation items
-  public static final EnumObject<ArmorItem.Type,DummyMaterialItem> dummyPlating = ITEMS.registerEnum(ArmorItem.Type.values(), "plating_dummy", type -> new DummyMaterialItem(ITEM_PROPS));
+  public static final EnumObject<ArmorItem.Type,DummyMaterialItem> dummyPlating = ITEMS.registerEnum(slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial.HUMANOID_SLOTS, "plating_dummy", type -> new DummyMaterialItem(ITEM_PROPS));
 
 
   /*
@@ -451,30 +446,69 @@ public final class TinkerSmeltery extends TinkerModule {
   public static final RegistryObject<MenuType<SingleItemContainerMenu>> singleItemContainer = MENUS.register("single_item", SingleItemContainerMenu::new);
   public static final RegistryObject<MenuType<AlloyerContainerMenu>> alloyerContainer = MENUS.register("alloyer", AlloyerContainerMenu::new);
 
-  @SubscribeEvent
-  void commonSetup(FMLCommonSetupEvent event) {
-    event.enqueueWork(() -> {
-      Consumer<Block> dispenserBehavior = block -> DispenserBlock.registerBehavior(block.asItem(), PlaceBlockDispenserBehavior.INSTANCE);
-      searedTank.forEach(dispenserBehavior);
-      scorchedTank.forEach(dispenserBehavior);
+  /**
+   * Runtime wiring; call once from the bootstrap. Replaces the Forge event handlers:
+   * common setup (dispenser behaviors), serializer registration (potion-emptying
+   * transfer — the mantle deserializer, the TiC alias was deleted with the fluids
+   * round), and gatherData (datagen providers move to phase 7).
+   */
+  public static void init() {
+    Consumer<Block> dispenserBehavior = block -> DispenserBlock.registerBehavior(block.asItem(), PlaceBlockDispenserBehavior.INSTANCE);
+    searedTank.forEach(dispenserBehavior);
+    scorchedTank.forEach(dispenserBehavior);
+
+    FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(EmptyPotionTransfer.ID, EmptyPotionTransfer.DESERIALIZER);
+
+    // Outward-facing Fabric storage: every smeltery block entity keeps the shimmed Forge
+    // capability surface internally, so one generic provider bridges whatever a BE exposes
+    // per side. Registered per BE type; a BE without that capability returns null.
+    net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.registerFallback((level, pos, state, be, direction) -> {
+      if (be instanceof slimeknights.mantle.transfer.cap.ICapabilityProvider provider && net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace().equals(TConstruct.MOD_ID)) {
+        slimeknights.mantle.transfer.cap.LazyOptional<slimeknights.mantle.transfer.fluid.IFluidHandler> cap = provider.getCapability(slimeknights.mantle.transfer.cap.ForgeCapabilities.FLUID_HANDLER, direction);
+        if (cap.isPresent()) {
+          return new slimeknights.mantle.transfer.fluid.FluidStorageBridge(cap.orElse(slimeknights.mantle.transfer.fluid.EmptyFluidHandler.INSTANCE));
+        }
+      }
+      return null;
     });
-  }
+    net.fabricmc.fabric.api.transfer.v1.item.ItemStorage.SIDED.registerFallback((level, pos, state, be, direction) -> {
+      if (be instanceof slimeknights.mantle.transfer.cap.ICapabilityProvider provider && net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace().equals(TConstruct.MOD_ID)) {
+        slimeknights.mantle.transfer.cap.LazyOptional<slimeknights.mantle.transfer.item.IItemHandler> cap = provider.getCapability(slimeknights.mantle.transfer.cap.ForgeCapabilities.ITEM_HANDLER, direction);
+        if (cap.isPresent()) {
+          return new slimeknights.mantle.transfer.item.ItemStorageBridge(cap.orElse(slimeknights.mantle.inventory.EmptyItemHandler.INSTANCE));
+        }
+      }
+      return null;
+    });
 
-  @SuppressWarnings("removal")
-  @SubscribeEvent
-  void registerSerializers(RegisterEvent event) {
-    if (event.getRegistryKey() == Registries.RECIPE_SERIALIZER) {
-      FluidContainerTransferManager.TRANSFER_LOADERS.registerDeserializer(EmptyPotionTransfer.ID, EmptyPotionTransfer.DESERIALIZER);
+    // Item fluid containers: tanks, lanterns, cannons, and the copper can bridge their
+    // tag-driven handlers into Fabric's item fluid storage
+    java.util.List<ItemLike> tankItems = new java.util.ArrayList<>();
+    tankItems.addAll(searedTank.values());
+    tankItems.addAll(scorchedTank.values());
+    tankItems.add(searedCastingTank.get());
+    tankItems.add(searedLantern.get());
+    tankItems.add(scorchedLantern.get());
+    tankItems.add(searedFluidCannon.get());
+    tankItems.add(scorchedFluidCannon.get());
+    tankItems.add(endFluidCannon.get());
+    net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM.registerForItems(
+      (stack, context) -> new slimeknights.mantle.transfer.fluid.ItemFluidStorageBridge(context, s -> new slimeknights.tconstruct.smeltery.item.TankItemFluidHandler((TankItem) s.getItem(), s)),
+      tankItems.toArray(new ItemLike[0]));
+    net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.ITEM.registerForItems(
+      (stack, context) -> new slimeknights.mantle.transfer.fluid.ItemFluidStorageBridge(context, slimeknights.tconstruct.smeltery.item.CopperCanFluidHandler::new),
+      copperCan.get());
+
+    // Pathfinding: 1.21 removed the Forge block hook, so the in-structure danger moves to
+    // Fabric's registry; every seared/controller block shares the same property instance
+    net.fabricmc.fabric.api.registry.LandPathNodeTypesRegistry.DynamicPathNodeTypeProvider inStructure = (state, level, pos, neighbor) ->
+      state.getValue(SearedBlock.IN_STRUCTURE) ? net.minecraft.world.level.pathfinder.PathType.DAMAGE_FIRE : net.minecraft.world.level.pathfinder.PathType.OPEN;
+    for (Block block : net.minecraft.core.registries.BuiltInRegistries.BLOCK) {
+      if (block instanceof SearedBlock || block instanceof ControllerBlock) {
+        net.fabricmc.fabric.api.registry.LandPathNodeTypesRegistry.registerDynamic(block, inStructure);
+      }
     }
-  }
-
-  @SubscribeEvent
-  void gatherData(final GatherDataEvent event) {
-    boolean server = event.includeServer();
-    DataGenerator generator = event.getGenerator();
-    PackOutput packOutput = generator.getPackOutput();
-    generator.addProvider(server, new SmelteryRecipeProvider(packOutput));
-    generator.addProvider(server, new FluidContainerTransferProvider(packOutput));
+    net.fabricmc.fabric.api.registry.LandPathNodeTypesRegistry.register(endFluidCannon.get(), net.minecraft.world.level.pathfinder.PathType.DAMAGE_OTHER, null);
   }
 
   /** Adds all relevant items to the creative tab */
@@ -566,6 +600,9 @@ public final class TinkerSmeltery extends TinkerModule {
 
     // casts
     addCasts(output, CastItemObject::get);
+    // the arrow cast has no sand forms, so it goes with the gold pass only — in every pass it
+    // would land in the tab twice, which vanilla treats as a crash
+    output.accept(arrowCast);
     output.accept(blankSandCast);
     addCasts(output, CastItemObject::getSand);
     output.accept(blankRedSandCast);
@@ -618,7 +655,6 @@ public final class TinkerSmeltery extends TinkerModule {
     // ranged
     accept(output, getter, bowLimbCast);
     accept(output, getter, bowGripCast);
-    output.accept(arrowCast);
     // no binding cast
     // armor
     accept(output, getter, helmetPlatingCast);
@@ -635,7 +671,7 @@ public final class TinkerSmeltery extends TinkerModule {
 
   /** Adds a cast to the tab */
   private static void acceptIfTag(CreativeModeTab.Output output, Function<CastItemObject,ItemLike> getter, CastItemObject cast) {
-    acceptIfTag(output, getter.apply(cast), ItemTags.create(commonResource(cast.getName().getPath() + "s")));
+    acceptIfTag(output, getter.apply(cast), net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, commonResource(cast.getName().getPath() + "s")));
   }
 
 

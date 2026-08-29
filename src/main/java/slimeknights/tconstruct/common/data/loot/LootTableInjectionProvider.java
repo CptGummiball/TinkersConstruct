@@ -10,10 +10,9 @@ import net.minecraft.world.level.storage.loot.functions.LootItemConditionalFunct
 import net.minecraft.world.level.storage.loot.functions.SetItemCountFunction;
 import net.minecraft.world.level.storage.loot.functions.SetItemDamageFunction;
 import net.minecraft.world.level.storage.loot.providers.number.UniformGenerator;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.ModLoadedCondition;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
+import slimeknights.mantle.recipe.condition.ICondition;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.predicate.IJsonPredicate;
 import slimeknights.mantle.loot.AbstractLootTableInjectionProvider;
 import slimeknights.mantle.loot.LootTableInjection;
@@ -36,8 +35,8 @@ import slimeknights.tconstruct.world.block.FoliageType;
 
 /** Add all relevant loot to loot tables */
 public class LootTableInjectionProvider extends AbstractLootTableInjectionProvider {
-  public LootTableInjectionProvider(PackOutput packOutput) {
-    super(packOutput, TConstruct.MOD_ID);
+  public LootTableInjectionProvider(PackOutput packOutput, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
+    super(packOutput, TConstruct.MOD_ID, registries);
   }
 
   @SuppressWarnings("removal")
@@ -156,7 +155,7 @@ public class LootTableInjectionProvider extends AbstractLootTableInjectionProvid
                                  .build());
     // diamond armor shows in bastions, add in some plate with similar weight to enchanted version
     RandomMaterial randomHighTier = RandomMaterial.random().allowHidden().tier(3, 4).material(includeInLoot).build();
-    for (ArmorItem.Type slot : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slot : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       bastion.addToPool("main", LootItem.lootTableItem(TinkerTools.plateArmor.get(slot))
                                         .setWeight(6)
                                         .apply(AddToolDataFunction.builder()
@@ -166,7 +165,7 @@ public class LootTableInjectionProvider extends AbstractLootTableInjectionProvid
     }
 
     // swashers are found in the ocean in all sorts of places, maybe there were pirates once
-    LootItemConditionalFunction.Builder<?> setFluid = SetFluidLootFunction.builder(new FluidStack(Fluids.LAVA, FluidType.BUCKET_VOLUME));
+    LootItemConditionalFunction.Builder<?> setFluid = SetFluidLootFunction.builder(new FluidStack(Fluids.LAVA, FluidStack.BUCKET_VOLUME));
     injectChest("buried_treasure")
       .addToPool("pool3", LootItem.lootTableItem(TinkerTools.swasher.get())
                                   .setWeight(2) // 50% chance because the vanilla stuff in that table is trash anyways
@@ -179,7 +178,7 @@ public class LootTableInjectionProvider extends AbstractLootTableInjectionProvid
                                   .apply(ancientToolData3)
                                  .apply(setFluid)
                                   .build());
-    inject("fishing_treasure", new ResourceLocation("gameplay/fishing/treasure"))
+    inject("fishing_treasure", ResourceLocation.parse("gameplay/fishing/treasure"))
       .addToPool("main", LootItem.lootTableItem(TinkerTools.swasher.get())
                                  .setWeight(1) // all treasure from fishing is the same weight
                                  .apply(ancientToolData3)
@@ -195,12 +194,12 @@ public class LootTableInjectionProvider extends AbstractLootTableInjectionProvid
 
     // twilight forest - minotaur axe
     String tf = "twilightforest";
-    ICondition tfLoaded = new ModLoadedCondition(tf);
+    ICondition tfLoaded = ConditionHelper.modLoaded(tf);
     LootPoolEntryContainer minotaurAxe = LootItem.lootTableItem(FakeRegistryEntry.item(TinkerTools.minotaurAxe.getId()))
       .setWeight(1) // TF tends to use 1 for its weight
       .apply(ancientToolData3)
       .build();
-    inject("labyrinth_room", new ResourceLocation(tf, "chests/labyrinth_room"), tfLoaded)
+    inject("labyrinth_room", ResourceLocation.fromNamespaceAndPath(tf, "chests/labyrinth_room"), tfLoaded)
       .addToPool("pool1", minotaurAxe)
       .addToPool("pool2", minotaurAxe);
   }

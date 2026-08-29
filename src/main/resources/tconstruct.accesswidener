@@ -1,0 +1,338 @@
+accessWidener v2 named
+# Tinkers' Construct — Fabric access widener
+#
+# Converted from the Forge accesstransformer.cfg. AccessWidener requires field
+# descriptors that the AT format does not carry, so entries are migrated
+# alongside the module that needs them rather than in one unverifiable batch.
+# See PORTING.md for the remaining AT entries still to migrate.
+
+# Entity.wasEyeInWater — read by LivingEntityPredicate.EYES_IN_WATER.
+# Migrated from the Forge AT entry for the same field.
+accessible field net/minecraft/world/entity/Entity wasEyeInWater Z
+
+# WoodType.register — Mantle registers its own wood types for signs/hanging signs.
+# Vanilla made this private in 1.21; Forge exposed it via its own registration hook.
+accessible method net/minecraft/world/level/block/state/properties/WoodType register (Lnet/minecraft/world/level/block/state/properties/WoodType;)Lnet/minecraft/world/level/block/state/properties/WoodType;
+
+# BucketItem.content — Forge exposed this via getFluid(); vanilla keeps it private.
+# Read by FluidTransferHelper for bucket -> tank interactions.
+accessible field net/minecraft/world/item/BucketItem content Lnet/minecraft/world/level/material/Fluid;
+
+# FlowingFluid internals used by InvertedFluid's upside-down spread logic.
+# The Forge build reached these through its AT.
+accessible method net/minecraft/world/level/material/FlowingFluid affectsFlow (Lnet/minecraft/world/level/material/FluidState;)Z
+accessible method net/minecraft/world/level/material/FlowingFluid sourceNeighborCount (Lnet/minecraft/world/level/LevelReader;Lnet/minecraft/core/BlockPos;)I
+accessible method net/minecraft/world/level/material/FlowingFluid canHoldFluid (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/Fluid;)Z
+accessible method net/minecraft/world/level/material/FlowingFluid spreadToSides (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/material/FluidState;Lnet/minecraft/world/level/block/state/BlockState;)V
+accessible method net/minecraft/world/level/material/FlowingFluid canPassThroughWall (Lnet/minecraft/core/Direction;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
+accessible method net/minecraft/world/level/material/FlowingFluid isSourceBlockOfThisType (Lnet/minecraft/world/level/material/FluidState;)Z
+# BlockSetType/WoodType registration for Mantle's wood registration flow; both went
+# private in 1.21, Forge exposed them through its registration hooks.
+accessible method net/minecraft/world/level/block/state/properties/BlockSetType register (Lnet/minecraft/world/level/block/state/properties/BlockSetType;)Lnet/minecraft/world/level/block/state/properties/BlockSetType;
+# ArgumentTypeInfos.BY_CLASS — 1.21 removed the public registerByClass helper; custom
+# argument types still need their class->info mapping for serialization.
+accessible field net/minecraft/commands/synchronization/ArgumentTypeInfos BY_CLASS Ljava/util/Map;
+
+# ResourceLocation went final in 1.21. Tinkers' whole typed-id system (MaterialId,
+# ModifierId, ToolDefinitionId, ...) extends it via ResourceId for type safety across
+# hundreds of signatures; un-finaling beats rewriting all of them onto a wrapper.
+extendable class net/minecraft/resources/ResourceLocation
+accessible method net/minecraft/resources/ResourceLocation <init> (Ljava/lang/String;Ljava/lang/String;)V
+extendable method net/minecraft/resources/ResourceLocation <init> (Ljava/lang/String;Ljava/lang/String;)V
+# UseOnContext.getHitResult — MutableUseOnContext (used by AOE tool interactions) copies
+# contexts; the accessor went protected in vanilla.
+accessible method net/minecraft/world/item/context/UseOnContext getHitResult ()Lnet/minecraft/world/phys/BlockHitResult;
+# ClientboundBlockEntityDataPacket constructor — Util.createBEPacket builds sync packets
+# with custom tag payloads; vanilla only exposes the create() factory.
+accessible method net/minecraft/network/protocol/game/ClientboundBlockEntityDataPacket <init> (Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/nbt/CompoundTag;)V
+# LivingEntity.getCurrentSwingDuration — OffhandCooldownTracker.swingHand replicates the
+# swing without the vanilla cooldown reset; Forge exposed this via AT in Mantle.
+accessible method net/minecraft/world/entity/LivingEntity getCurrentSwingDuration ()I
+# Combat + tool logic internals that Forge exposed via AT:
+# getLastHandItem — offhand attribute computation reads the authoritative last stack
+accessible method net/minecraft/world/entity/LivingEntity getLastHandItem (Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;
+# lastHurt — ToolAttackUtil restores the pre-attack damage for extra attacks
+accessible field net/minecraft/world/entity/LivingEntity lastHurt F
+# spawnItemParticles — EdibleModule shows eat particles for tool foods
+accessible method net/minecraft/world/entity/LivingEntity spawnItemParticles (Lnet/minecraft/world/item/ItemStack;I)V
+# getModifiersOrEmpty — CombatHelper copies per-operation modifier sets
+accessible method net/minecraft/world/entity/ai/attributes/AttributeInstance getModifiersOrEmpty (Lnet/minecraft/world/entity/ai/attributes/AttributeModifier$Operation;)Ljava/util/Collection;
+# Biome.getTemperature — temperature-scaled mining/armor variables
+accessible method net/minecraft/world/level/biome/Biome getTemperature (Lnet/minecraft/core/BlockPos;)F
+# Block.popExperience — AOE harvest drops XP like vanilla block breaking
+accessible method net/minecraft/world/level/block/Block popExperience (Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;I)V
+# ItemEntity internals for the indestructible drop entity (Forge had a lifespan field)
+accessible field net/minecraft/world/entity/item/ItemEntity age I
+mutable field net/minecraft/world/entity/item/ItemEntity age I
+accessible field net/minecraft/world/entity/item/ItemEntity pickupDelay I
+# Vanilla transform maps backing the tool-action transform shim (Fabric API's content
+# registries write into these same maps).
+accessible field net/minecraft/world/item/AxeItem STRIPPABLES Ljava/util/Map;
+accessible field net/minecraft/world/item/ShovelItem FLATTENABLES Ljava/util/Map;
+# FlowingFluid spread internals used by Mantle's InvertedFluid (upward-flowing fluids);
+# Forge exposed these via AT. Making them accessible also lets the inverted overrides
+# receive vanilla's internal calls, same as on Forge.
+accessible method net/minecraft/world/level/material/FlowingFluid getCacheKey (Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;)S
+accessible method net/minecraft/world/level/material/FlowingFluid canPassThrough (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/Direction;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Z
+accessible method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
+# isWaterHole is final in vanilla; extendable removes final for the inverted override
+extendable method net/minecraft/world/level/material/FlowingFluid isWaterHole (Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/world/level/material/Fluid;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)Z
+# AttributeSupplier internals: the DefaultAttributes mixin rebuilds suppliers with Tinkers'
+# custom attributes merged in (replaces Forge's EntityAttributeModificationEvent).
+accessible field net/minecraft/world/entity/ai/attributes/AttributeSupplier instances Ljava/util/Map;
+accessible method net/minecraft/world/entity/ai/attributes/AttributeSupplier <init> (Ljava/util/Map;)V
+# LivingEntity.jumping — antigravity ladder handling reads the jump input state
+accessible field net/minecraft/world/entity/LivingEntity jumping Z
+# Spawn placement registration (Forge's SpawnPlacementRegisterEvent replacement): register
+# our entities and OR-merge extra predicates onto vanilla slime placement.
+accessible method net/minecraft/world/entity/SpawnPlacements register (Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/SpawnPlacementType;Lnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/entity/SpawnPlacements$SpawnPredicate;)V
+accessible field net/minecraft/world/entity/SpawnPlacements DATA_BY_TYPE Ljava/util/Map;
+accessible class net/minecraft/world/entity/SpawnPlacements$Data
+# Heads: firework star shapes (Forge AT). The skull block entity's valid-blocks set is NOT
+# widened: fabric api keeps it mutable for its injected addSupportedBlock, which is what
+# TinkerWorld uses; swapping the field breaks other mods' additions (Supplementaries).
+accessible field net/minecraft/world/item/crafting/FireworkStarRecipe SHAPE_BY_ITEM Ljava/util/Map;
+# Mangrove propagule shapes reused by the ender slime propagule block
+accessible field net/minecraft/world/level/block/MangrovePropaguleBlock SHAPE_PER_AGE [Lnet/minecraft/world/phys/shapes/VoxelShape;
+# Enderbark roots reuse the mangrove root placement config (Forge AT)
+accessible field net/minecraft/world/level/levelgen/feature/rootplacers/MangroveRootPlacer mangroveRootPlacement Lnet/minecraft/world/level/levelgen/feature/rootplacers/MangroveRootPlacement;
+# Huge fungus internals reused by the slime fungus feature (Forge AT)
+accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature placeStem (Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;Lnet/minecraft/core/BlockPos;IZ)V
+accessible method net/minecraft/world/level/levelgen/feature/HugeFungusFeature placeHat (Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/util/RandomSource;Lnet/minecraft/world/level/levelgen/feature/HugeFungusConfiguration;Lnet/minecraft/core/BlockPos;IZ)V
+# Spawn placement data record constructor (used by the OR-merge helper)
+accessible method net/minecraft/world/entity/SpawnPlacements$Data <init> (Lnet/minecraft/world/level/levelgen/Heightmap$Types;Lnet/minecraft/world/entity/SpawnPlacementType;Lnet/minecraft/world/entity/SpawnPlacements$SpawnPredicate;)V
+# ApplyBonusCount formula internals reused by the modifier/chrysophilite bonus functions (Forge AT)
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$Formula
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$BinomialWithBonusCount
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$OreDrops
+accessible class net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$UniformBonusCount
+accessible method net/minecraft/world/level/storage/loot/functions/ApplyBonusCount$BinomialWithBonusCount <init> (IF)V
+# Thrown tool entities (ThrownTool extends ThrownTrident, ModifiableArrow extends Arrow):
+# trident/arrow internals the Forge build reached via AT. pickupItemStack replaced the
+# old tridentItem field in 1.20.5; life drives the custom despawn timers.
+accessible field net/minecraft/world/entity/projectile/ThrownTrident dealtDamage Z
+accessible field net/minecraft/world/entity/projectile/ThrownTrident ID_LOYALTY Lnet/minecraft/network/syncher/EntityDataAccessor;
+accessible field net/minecraft/world/entity/projectile/ThrownTrident ID_FOIL Lnet/minecraft/network/syncher/EntityDataAccessor;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow life I
+accessible field net/minecraft/world/entity/projectile/AbstractArrow pickupItemStack Lnet/minecraft/world/item/ItemStack;
+# setPierceLevel went private in 1.21; the pierce module sets it directly and
+# ModifiableArrow overrides it as an adder (accessible+extendable = public non-final)
+accessible method net/minecraft/world/entity/projectile/AbstractArrow setPierceLevel (B)V
+extendable method net/minecraft/world/entity/projectile/AbstractArrow setPierceLevel (B)V
+# CombatFishingHook reuses the vanilla bobber's retrieve/despawn internals
+accessible field net/minecraft/world/entity/projectile/FishingHook life I
+# ReduceEffectOnUnequipModule directly shortens running effect durations (Forge AT)
+accessible field net/minecraft/world/effect/MobEffectInstance duration I
+# HarvestModule reads crop age property bounds (Forge AT)
+accessible field net/minecraft/world/level/block/state/properties/IntegerProperty min I
+accessible field net/minecraft/world/level/block/state/properties/IntegerProperty max I
+# ExchangingModifier forces block replacement in its synthetic placement context (Forge AT)
+accessible field net/minecraft/world/item/context/BlockPlaceContext replaceClicked Z
+# Creative slot + modifier crystal check for "no container open" the same way Forge did
+accessible field net/minecraft/world/inventory/AbstractContainerMenu menuType Lnet/minecraft/world/inventory/MenuType;
+# BrushModule reuses the vanilla brush's dust particle spawning
+accessible method net/minecraft/world/item/BrushItem spawnDustParticles (Lnet/minecraft/world/level/Level;Lnet/minecraft/world/phys/BlockHitResult;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/entity/HumanoidArm;)V
+# CustomExplosion/EFLNExplosion (gadgets round): the subclasses read the vanilla
+# explosion's private state directly, as the Forge build did via patched access.
+# 1.21 removed getPosition()/getDamageSource(); center() covers position, the
+# damageSource field read replaces the removed getter.
+accessible field net/minecraft/world/level/Explosion fire Z
+accessible field net/minecraft/world/level/Explosion level Lnet/minecraft/world/level/Level;
+accessible field net/minecraft/world/level/Explosion x D
+accessible field net/minecraft/world/level/Explosion y D
+accessible field net/minecraft/world/level/Explosion z D
+accessible field net/minecraft/world/level/Explosion source Lnet/minecraft/world/entity/Entity;
+accessible field net/minecraft/world/level/Explosion radius F
+accessible field net/minecraft/world/level/Explosion damageCalculator Lnet/minecraft/world/level/ExplosionDamageCalculator;
+accessible field net/minecraft/world/level/Explosion damageSource Lnet/minecraft/world/damagesource/DamageSource;
+# FancyItemFrameEntity: setRotation(int, boolean) is private in vanilla but the fancy
+# frames override it for 16-step/capped rotation; extendable rewrites the internal
+# invokespecial so the override is actually virtual. DATA_ROTATION is written raw.
+extendable method net/minecraft/world/entity/decoration/ItemFrame setRotation (IZ)V
+accessible field net/minecraft/world/entity/decoration/ItemFrame DATA_ROTATION Lnet/minecraft/network/syncher/EntityDataAccessor;
+# ShapelessMaterialsRecipe re-serializes the shapeless result the same way the shaped
+# extensions below read theirs.
+accessible field net/minecraft/world/item/crafting/ShapelessRecipe result Lnet/minecraft/world/item/ItemStack;
+# Shaped recipe extensions (mantle retextured/fallback + Tinkers material recipes):
+# subclasses re-serialize the base recipe, so they read its package-private state, and
+# the "texture"/"parts" symbol strings resolve against the pattern's retained key map.
+accessible field net/minecraft/world/item/crafting/ShapedRecipe pattern Lnet/minecraft/world/item/crafting/ShapedRecipePattern;
+accessible field net/minecraft/world/item/crafting/ShapedRecipe result Lnet/minecraft/world/item/ItemStack;
+accessible field net/minecraft/world/item/crafting/ShapedRecipePattern data Ljava/util/Optional;
+# Event bridge (LivingEntityEventsMixin): the equipment-change event reads the last-seen
+# armor stack per slot the same way the Forge patch did; getLastHandItem is widened above.
+accessible method net/minecraft/world/entity/LivingEntity getLastArmorItem (Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;
+# Gameplay event handlers (tools/logic round):
+# LivingEntity.lastPos — livingWalk boot-modifier hook reads the previous block position
+# (vanilla updates it later in aiStep); the Forge build read the same field via its AT.
+accessible field net/minecraft/world/entity/LivingEntity lastPos Lnet/minecraft/core/BlockPos;
+# Projectile/arrow internals for the reflecting shield + enderference arrow reimplementation
+# in ModifierEvents.projectileImpact, all reached through the Forge AT before.
+accessible field net/minecraft/world/entity/projectile/Projectile leftOwner Z
+accessible field net/minecraft/world/entity/projectile/AbstractArrow soundEvent Lnet/minecraft/sounds/SoundEvent;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow piercingIgnoreEntityIds Lit/unimi/dsi/fastutil/ints/IntOpenHashSet;
+accessible field net/minecraft/world/entity/projectile/AbstractArrow piercedAndKilledEntities Ljava/util/List;
+accessible method net/minecraft/world/entity/projectile/AbstractArrow doPostHurtEffects (Lnet/minecraft/world/entity/LivingEntity;)V
+accessible method net/minecraft/world/entity/projectile/AbstractArrow getPickupItem ()Lnet/minecraft/world/item/ItemStack;
+# BeehiveBlock bee-release internals used by the kama's hive harvest (public in 1.20, private now)
+accessible method net/minecraft/world/level/block/BeehiveBlock hiveContainsBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Z
+accessible method net/minecraft/world/level/block/BeehiveBlock angerNearbyBees (Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)V
+# CraftingMenu.slotChangedCraftingGrid — the tool inventory menu's optional crafting grid
+# recomputes its result through vanilla's helper, which is protected static (Forge's patch
+# left it callable). 1.21 also appended a nullable "last matched recipe" hint parameter.
+accessible method net/minecraft/world/inventory/CraftingMenu slotChangedCraftingGrid (Lnet/minecraft/world/inventory/AbstractContainerMenu;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/inventory/CraftingContainer;Lnet/minecraft/world/inventory/ResultContainer;Lnet/minecraft/world/item/crafting/RecipeHolder;)V
+# --- client model phase: the custom-geometry bridge ---
+# BlockModel.GSON — the geometry shim hands IGeometryLoader.read a JsonDeserializationContext,
+# as Forge's patched deserializer did. Backing it with vanilla's own model GSON is what makes
+# context.deserialize(json, BlockModel.class) build elements/faces/transforms with the same
+# adapters vanilla uses; the alternative is re-registering all six package-private Deserializers.
+accessible field net/minecraft/client/renderer/block/model/BlockModel GSON Lcom/google/gson/Gson;
+# SimpleBakedModel.Builder's flag constructor — SimpleBlockModel bakes sub-models against the
+# owning model's lighting/transform data, not the sub-model's own, so it cannot use the public
+# (BlockModel, ItemOverrides, boolean) constructor which reads those off the model it is given.
+accessible method net/minecraft/client/resources/model/SimpleBakedModel$Builder <init> (ZZZLnet/minecraft/client/renderer/block/model/ItemTransforms;Lnet/minecraft/client/renderer/block/model/ItemOverrides;)V
+
+# --- Phase 5, menu screens ---
+# Forge's AT made these public; the multi-module screen system positions modules and GUI
+# widgets from outside the AbstractContainerScreen subclass hierarchy (GuiTankModule,
+# GuiFuelModule, TinkerTabsWidget, ...), which vanilla's protected access does not allow.
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen leftPos I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen topPos I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageWidth I
+accessible field net/minecraft/client/gui/screens/inventory/AbstractContainerScreen imageHeight I
+# Screen.font — the same GUI modules draw text without being Screens themselves.
+accessible field net/minecraft/client/gui/screens/Screen font Lnet/minecraft/client/gui/Font;
+# isHovering went private in 1.21 (it was protected in 1.20.1). The side inventory and the
+# tinker station hide slots that scrolled out of view or belong to an inactive layout, which
+# only works if vanilla's hover test dispatches to the override.
+extendable method net/minecraft/client/gui/screens/inventory/AbstractContainerScreen isHovering (Lnet/minecraft/world/inventory/Slot;DD)Z
+# Slot.x/y are final in vanilla; the scrolling side inventories and the tinker station's slot
+# layouts move slots at runtime. Forge's AT dropped the final for the same reason.
+mutable field net/minecraft/world/inventory/Slot x I
+mutable field net/minecraft/world/inventory/Slot y I
+# EditBox.isEditable went private in 1.21; the tinker station only enables its rename field
+# when a fresh tool is in the output, and needs to read the current state to avoid clobbering
+# the typed name every display refresh.
+accessible method net/minecraft/client/gui/components/EditBox isEditable ()Z
+
+# --- Phase 5, block entity renderers ---
+# RenderType.create is private in vanilla (Forge's AT made it public) and returns the package
+# private CompositeRenderType. The fluid render types in MantleRenderTypes and TinkerRenderTypes
+# are built the same way vanilla builds its own, which is the only way to get a composite state.
+accessible class net/minecraft/client/renderer/RenderType$CompositeRenderType
+accessible method net/minecraft/client/renderer/RenderType create (Ljava/lang/String;Lcom/mojang/blaze3d/vertex/VertexFormat;Lcom/mojang/blaze3d/vertex/VertexFormat$Mode;IZZLnet/minecraft/client/renderer/RenderType$CompositeState;)Lnet/minecraft/client/renderer/RenderType$CompositeRenderType;
+# The casting table fades its item in by swapping the render type for a translucent one carrying the
+# same texture, which means reading the type's name and its texture back off the composite state.
+accessible field net/minecraft/client/renderer/RenderStateShard name Ljava/lang/String;
+accessible field net/minecraft/client/renderer/RenderType$CompositeRenderType state Lnet/minecraft/client/renderer/RenderType$CompositeState;
+accessible field net/minecraft/client/renderer/RenderType$CompositeState textureState Lnet/minecraft/client/renderer/RenderStateShard$EmptyTextureStateShard;
+accessible field net/minecraft/client/renderer/RenderStateShard$TextureStateShard texture Ljava/util/Optional;
+
+# --- Phase 5, client model geometry ---
+# ItemOverrides' no-arg constructor is private in vanilla; Forge's AT opened it for the same reason.
+# Every dynamic model subclasses ItemOverrides to swap the baked model from an item's NBT — the
+# tank's contained fluid, a retextured block, a tool part's material — and the subclass cannot call
+# an inaccessible super constructor.
+accessible method net/minecraft/client/renderer/block/model/ItemOverrides <init> ()V
+# Custom sprite source (shield banner -> modifier textures). Forge exposed an open registry
+# for these; 1.21 keeps the register method and the shield material map private, and without
+# the registration the whole pack's block atlas definition fails to parse.
+accessible field net/minecraft/client/renderer/texture/atlas/SpriteSources TYPES Lcom/google/common/collect/BiMap;
+# Minecraft.itemColors — 1.21 dropped the getItemColors() accessor. The tool model bakes an ammo
+# item's tints into static vertex colours, which needs the whole ItemColors dispatch rather than a
+# single registered provider.
+accessible field net/minecraft/client/Minecraft itemColors Lnet/minecraft/client/color/item/ItemColors;
+# ItemProperties.register — vanilla keeps it private and registers only its own properties;
+# Forge exposed an open registration. Every tconstruct:tool model names tconstruct:broken and
+# tconstruct:charging in its overrides, which resolve to zero unless these are registered.
+accessible method net/minecraft/client/renderer/item/ItemProperties register (Lnet/minecraft/world/item/Item;Lnet/minecraft/resources/ResourceLocation;Lnet/minecraft/client/renderer/item/ClampedItemPropertyFunction;)V
+# --- Phase 5, armor rendering ---
+# ItemRenderer.renderModelLists — the block-model skull draws an item model by hand inside an
+# entity model; Forge exposed this through its AT for the same reason.
+accessible method net/minecraft/client/renderer/entity/ItemRenderer renderModelLists (Lnet/minecraft/client/resources/model/BakedModel;Lnet/minecraft/world/item/ItemStack;IILcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;)V
+# FishingHookRenderer.stringVertex — the combat bobber reuses vanilla's line geometry rather than
+# copying it; 1.21 made the helper private.
+accessible method net/minecraft/client/renderer/entity/FishingHookRenderer stringVertex (FFFLcom/mojang/blaze3d/vertex/VertexConsumer;Lcom/mojang/blaze3d/vertex/PoseStack$Pose;FF)V
+# SkullBlockRenderer.SKIN_BY_TYPE — the mod adds its own SkullBlock.Type values and has to name a
+# texture for each; vanilla keeps the map private, Forge exposed it through its AT.
+accessible field net/minecraft/client/renderer/blockentity/SkullBlockRenderer SKIN_BY_TYPE Ljava/util/Map;
+# BreakingItemParticle's constructor — the slime splash particle subclasses it; vanilla keeps the
+# constructor package-private, Forge's AT opened it.
+accessible method net/minecraft/client/particle/BreakingItemParticle <init> (Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDDLnet/minecraft/world/item/ItemStack;)V
+# --- Phase 5, tool interaction and overlays ---
+# ItemInHandRenderer.renderPlayerArm — modifiers that show the player's arm where vanilla would not
+# (gloves, the empty offhand a chestplate uses) draw through vanilla's own arm renderer.
+accessible method net/minecraft/client/renderer/ItemInHandRenderer renderPlayerArm (Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IFFLnet/minecraft/world/entity/HumanoidArm;)V
+# ItemInHandRenderer's map background render types, for the minimap modifier's HUD overlay.
+accessible field net/minecraft/client/renderer/ItemInHandRenderer MAP_BACKGROUND Lnet/minecraft/client/renderer/RenderType;
+accessible field net/minecraft/client/renderer/ItemInHandRenderer MAP_BACKGROUND_CHECKERBOARD Lnet/minecraft/client/renderer/RenderType;
+# Gui.renderSlot — the shield strap, sleeves and item frame modifiers draw hotbar-style slots, and
+# vanilla's own slot renderer is what makes them match the hotbar exactly.
+accessible method net/minecraft/client/gui/Gui renderSlot (Lnet/minecraft/client/gui/GuiGraphics;IILnet/minecraft/client/DeltaTracker;Lnet/minecraft/world/entity/player/Player;Lnet/minecraft/world/item/ItemStack;I)V
+# LevelRenderer internals for the area-of-effect preview: the buffer sources it batches through, the
+# outline it draws per block, and the map of blocks currently being broken. Forge's AT opened all
+# three for the same reason — the preview has to draw exactly like vanilla's own highlight.
+accessible field net/minecraft/client/renderer/LevelRenderer renderBuffers Lnet/minecraft/client/renderer/RenderBuffers;
+accessible field net/minecraft/client/renderer/LevelRenderer destroyingBlocks Lit/unimi/dsi/fastutil/ints/Int2ObjectMap;
+accessible method net/minecraft/client/renderer/LevelRenderer renderHitOutline (Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/entity/Entity;DDDLnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V
+
+# Player.closeContainer — Mantle's book item closes the open container before reopening the book
+# on top of it, so the reader returns to the same page. Protected in 1.21.
+accessible method net/minecraft/world/entity/player/Player closeContainer ()V
+
+# Minecraft.fontManager and FontManager.fontSets — the books are set in the unicode font, which
+# needs the FontSet behind Minecraft.UNIFORM_FONT. FontManager only exposes createFont(), which
+# always returns the default font.
+accessible field net/minecraft/client/Minecraft fontManager Lnet/minecraft/client/gui/font/FontManager;
+accessible field net/minecraft/client/gui/font/FontManager fontSets Ljava/util/Map;
+# BlockModel.textureMap and BlockModel.parent — ModelTextureIteratable walks a model's texture
+# maps up the parent chain to follow #name references, which is how the connected and NBT-key
+# models find their texture names. Both fields are protected in 1.21.
+accessible field net/minecraft/client/renderer/block/model/BlockModel textureMap Ljava/util/Map;
+accessible field net/minecraft/client/renderer/block/model/BlockModel parent Lnet/minecraft/client/renderer/block/model/BlockModel;
+
+# Datagen (phase 7): the vanilla criterion helpers the mantle recipe helpers and providers
+# share; has() stayed protected and inventoryTrigger went private in 1.21.
+accessible method net/minecraft/data/recipes/RecipeProvider has (Lnet/minecraft/world/level/ItemLike;)Lnet/minecraft/advancements/Criterion;
+accessible method net/minecraft/data/recipes/RecipeProvider has (Lnet/minecraft/tags/TagKey;)Lnet/minecraft/advancements/Criterion;
+accessible method net/minecraft/data/recipes/RecipeProvider inventoryTrigger ([Lnet/minecraft/advancements/critereon/ItemPredicate;)Lnet/minecraft/advancements/Criterion;
+accessible method net/minecraft/data/recipes/RecipeProvider inventoryTrigger ([Lnet/minecraft/advancements/critereon/ItemPredicate$Builder;)Lnet/minecraft/advancements/Criterion;
+# Datagen: vanilla ingredient union — Forge's CompoundIngredient flattened all-vanilla
+# children into one plain value array, which is the shape the shipped data files keep.
+accessible class net/minecraft/world/item/crafting/Ingredient$Value
+accessible field net/minecraft/world/item/crafting/Ingredient values [Lnet/minecraft/world/item/crafting/Ingredient$Value;
+accessible method net/minecraft/world/item/crafting/Ingredient fromValues (Ljava/util/stream/Stream;)Lnet/minecraft/world/item/crafting/Ingredient;
+# Datagen: FakeRegistryEntry needs to slip fake entries for absent mods into frozen
+# registries; Forge exposed unfreeze(), vanilla needs the flag opened.
+accessible field net/minecraft/core/MappedRegistry frozen Z
+mutable field net/minecraft/core/MappedRegistry frozen Z
+# Tag removals (forge 'remove' tag extension): match entries by their element id.
+accessible field net/minecraft/tags/TagEntry id Lnet/minecraft/resources/ResourceLocation;
+accessible field net/minecraft/tags/TagEntry tag Z
+# Datagen: the intrinsic tag appender type is protected in 1.21; the tag providers and
+# the cost-tag helper pass it around (Forge shipped an AT for the same reason).
+accessible class net/minecraft/data/tags/IntrinsicHolderTagsProvider$IntrinsicTagAppender
+accessible field net/minecraft/tags/TagEntry required Z
+# Loot injections (forge LootTableLoadEvent parity): the injector rebuilds parsed pools
+# with extra entries, so the pool internals and the table's pool list open up.
+accessible field net/minecraft/world/level/storage/loot/LootTable pools Ljava/util/List;
+mutable field net/minecraft/world/level/storage/loot/LootTable pools Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool entries Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool conditions Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool functions Ljava/util/List;
+accessible field net/minecraft/world/level/storage/loot/LootPool rolls Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;
+accessible field net/minecraft/world/level/storage/loot/LootPool bonusRolls Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;
+accessible method net/minecraft/world/level/storage/loot/LootPool <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;Lnet/minecraft/world/level/storage/loot/providers/number/NumberProvider;)V
+# Loot datagen: vanilla constants and maps the providers reuse.
+accessible field net/minecraft/data/loot/BlockLootSubProvider NORMAL_LEAVES_STICK_CHANCES [F
+accessible field net/minecraft/data/loot/EntityLootSubProvider map Ljava/util/Map;
+# Datagen: the mantle tag provider writes through the raw builders map.
+accessible field net/minecraft/data/tags/TagsProvider builders Ljava/util/Map;
+accessible field net/minecraft/data/tags/TagsProvider registryKey Lnet/minecraft/resources/ResourceKey;
+accessible method net/minecraft/data/tags/IntrinsicHolderTagsProvider$IntrinsicTagAppender <init> (Lnet/minecraft/tags/TagBuilder;Ljava/util/function/Function;)V
+accessible field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
+mutable field net/minecraft/core/MappedRegistry unregisteredIntrusiveHolders Ljava/util/Map;
+# Client asset datagen: the trim permutation sprite source hides its constructor in 1.21.
+accessible method net/minecraft/client/renderer/texture/atlas/sources/PalettedPermutations <init> (Ljava/util/List;Lnet/minecraft/resources/ResourceLocation;Ljava/util/Map;)V
+# Book screen renders its widgets directly; 1.21 Screen.render would re-blur the drawn book.
+accessible field net/minecraft/client/gui/screens/Screen renderables Ljava/util/List;

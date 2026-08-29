@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.StringReader;
 import net.minecraft.ResourceLocationException;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
@@ -28,7 +28,7 @@ public sealed interface MaterialVariantId permits MaterialId, MaterialVariantIdI
     return location;
   }, MaterialVariantId::toString);
   ContextKey<MaterialVariantId> CONTEXT_KEY = new ContextKey<>("material_variant");
-  EntityDataSerializer<MaterialVariantId> DATA_ACCESSOR = EntityDataSerializer.simple((buffer, material) -> material.toNetwork(buffer), MaterialVariantId::fromNetwork);
+  EntityDataSerializer<MaterialVariantId> DATA_ACCESSOR = EntityDataSerializer.forValueType(net.minecraft.network.codec.StreamCodec.of((buffer, material) -> material.toNetwork(buffer), MaterialVariantId::fromNetwork));
 
   /** Variant ID that will match normal {@link MaterialId} with no variant, to allow checking for non-variant materials specifically. */
   String DEFAULT_VARIANT = "default";
@@ -209,12 +209,12 @@ public sealed interface MaterialVariantId permits MaterialId, MaterialVariantIdI
   /* Networking */
 
   /** Writes an ID to the packet buffer */
-  default void toNetwork(FriendlyByteBuf buf) {
+  default void toNetwork(RegistryFriendlyByteBuf buf) {
     buf.writeUtf(toString());
   }
 
   /** Reads an ID from the packet buffer */
-  static MaterialVariantId fromNetwork(FriendlyByteBuf buf) {
+  static MaterialVariantId fromNetwork(RegistryFriendlyByteBuf buf) {
     return parse(buf.readUtf(Short.MAX_VALUE));
   }
 }

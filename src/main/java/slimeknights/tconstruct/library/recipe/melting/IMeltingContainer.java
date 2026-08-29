@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.library.recipe.melting;
 
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.recipe.container.ISingleStackContainer;
 
 /** Interface for melting inventories */

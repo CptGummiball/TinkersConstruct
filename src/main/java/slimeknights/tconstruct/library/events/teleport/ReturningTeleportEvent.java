@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.library.events.teleport;
 
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.event.entity.EntityTeleportEvent;
-import net.minecraftforge.eventbus.api.Cancelable;
+import slimeknights.mantle.event.entity.EntityTeleportEvent;
+import slimeknights.mantle.event.Cancelable;
 
 /** Event fired when {@link slimeknights.tconstruct.shared.TinkerEffects#returning} teleport triggers */
 @Cancelable

@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * So if the material's mod name is "foobar", the location for your material's stats is "data/foobar/materials/stats".
  */
 @Log4j2
-public class MaterialStatsManager extends MergingJsonDataLoader<Map<ResourceLocation,JsonObject>> {
+public class MaterialStatsManager extends MergingJsonDataLoader<Map<ResourceLocation,JsonObject>> implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   public static final String FOLDER = "tinkering/materials/stats";
 
   /** Runnable to run after loading material stats */
@@ -250,5 +250,10 @@ public class MaterialStatsManager extends MergingJsonDataLoader<Map<ResourceLoca
         .build()));
     }
     return builder.build();
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("material_stats");
   }
 }

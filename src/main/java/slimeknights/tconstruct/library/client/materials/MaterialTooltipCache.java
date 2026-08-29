@@ -3,9 +3,8 @@ package slimeknights.tconstruct.library.client.materials;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.fabricmc.fabric.api.event.lifecycle.v1.CommonLifecycleEvents;
 import slimeknights.mantle.client.ResourceColorManager;
-import slimeknights.mantle.data.listener.ISafeManagerReloadListener;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.library.utils.Util;
 
@@ -23,18 +22,15 @@ public class MaterialTooltipCache {
   /** Map of the key for each material variant */
   private static final Map<MaterialVariantId,Component> COLORED_DISPLAY_NAME_CACHE = new HashMap<>();
 
-  /** Clears all resource pack driven caches */
-  private static final ISafeManagerReloadListener RELOAD_LISTENER = manager -> {
-    COLOR_CACHE.clear();
-    DISPLAY_NAME_CACHE.clear();
-    COLORED_DISPLAY_NAME_CACHE.clear();
-  };
-
   private MaterialTooltipCache() {}
 
-  /** Called during the event to initialize the cache invalidators */
-  public static void init(RegisterClientReloadListenersEvent manager)  {
-    manager.registerReloadListener(RELOAD_LISTENER);
+  /** Registers cache invalidation; tags reload on every resource/datapack reload. */
+  public static void init() {
+    CommonLifecycleEvents.TAGS_LOADED.register((registries, client) -> {
+      COLOR_CACHE.clear();
+      DISPLAY_NAME_CACHE.clear();
+      COLORED_DISPLAY_NAME_CACHE.clear();
+    });
   }
 
   /** Logic to convert a material ID to a string */

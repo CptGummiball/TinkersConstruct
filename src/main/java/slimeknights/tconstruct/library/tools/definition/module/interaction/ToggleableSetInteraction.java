@@ -7,7 +7,7 @@ import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.hook.interaction.InteractionSource;
 import slimeknights.tconstruct.library.module.HookProvider;
 import slimeknights.tconstruct.library.module.ModuleHook;
-import slimeknights.tconstruct.library.recipe.worktable.ModifierSetWorktableRecipe;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.tools.definition.module.ToolHooks;
 import slimeknights.tconstruct.library.tools.definition.module.ToolModule;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
@@ -33,7 +33,7 @@ public record ToggleableSetInteraction(IJsonPredicate<ModifierId> interactModifi
     InteractionSource toggled = interactModifiers.matches(modifier) ? InteractionSource.LEFT_CLICK : InteractionSource.RIGHT_CLICK;
     // if the source is the toggled target, must be in the toggled set
     // if the source is not the toggled target, must not be in the toggled set
-    return (source == toggled) == ModifierSetWorktableRecipe.isInSet(tool.getPersistentData(), toggled.getKey(), modifier);
+    return (source == toggled) == ContentLookups.isInWorktableSet(tool.getPersistentData(), toggled.getKey(), modifier);
   }
 
   @Override

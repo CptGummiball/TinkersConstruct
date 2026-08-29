@@ -12,7 +12,7 @@ public record EntityEffectLevelVariable(MobEffect effect) implements EntityVaria
 
   @Override
   public float getValue(LivingEntity entity) {
-    MobEffectInstance instance = entity.getEffect(effect);
+    MobEffectInstance instance = entity.getEffect(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect));
     if (instance != null) {
       return instance.getAmplifier() + 1;
     }

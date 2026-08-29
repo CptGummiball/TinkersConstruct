@@ -1,5 +1,6 @@
 package slimeknights.tconstruct.world;
 
+import net.fabricmc.fabric.api.object.builder.v1.trade.TradeOfferHelper;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -10,23 +11,26 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.SkullBlock;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingVisibilityEvent;
-import net.minecraftforge.event.village.WandererTradesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import slimeknights.tconstruct.TConstruct;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingDropsEvent;
+import slimeknights.mantle.event.entity.living.LivingMiscEvents.LivingVisibilityEvent;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.world.logic.AncientToolItemListing;
 
 import java.util.Collections;
 
 @SuppressWarnings("unused")
-@Mod.EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class WorldEvents {
+
+  /** Registers event handlers; replaces Forge's {@code @EventBusSubscriber} scan with explicit shim-bus registration */
+  public static void init() {
+    MinecraftForge.EVENT_BUS.addListener(LivingVisibilityEvent.class, WorldEvents::livingVisibility);
+    MinecraftForge.EVENT_BUS.addListener(LivingDropsEvent.class, WorldEvents::creeperKill);
+    registerWanderingTrades();
+  }
+
   /* Heads */
 
-  @SubscribeEvent
   static void livingVisibility(LivingVisibilityEvent event) {
     Entity lookingEntity = event.getLookingEntity();
     if (lookingEntity == null) {
@@ -41,7 +45,6 @@ public class WorldEvents {
     }
   }
 
-  @SubscribeEvent
   static void creeperKill(LivingDropsEvent event) {
     DamageSource source = event.getSource();
     if (source != null) {
@@ -59,12 +62,17 @@ public class WorldEvents {
     }
   }
 
-  @SubscribeEvent
-  static void wanderingTrades(WandererTradesEvent event) {
-    // add ancient tools to the wandering trader table
-    int weight = Config.COMMON.wandererAncientToolWeight.get();
-    if (weight > 0) {
-      event.getRareTrades().addAll(Collections.nCopies(weight, AncientToolItemListing.INSTANCE));
-    }
+  /**
+   * Adds ancient tools to the wandering trader table.
+   * PORT: Forge's WandererTradesEvent has no shim; Fabric's TradeOfferHelper appends into the same vanilla
+   * pool the event exposed — pool 2 is Forge's getRareTrades() list, from which the trader picks one offer.
+   */
+  private static void registerWanderingTrades() {
+    TradeOfferHelper.registerWanderingTraderOffers(2, trades -> {
+      int weight = Config.COMMON.wandererAncientToolWeight.get();
+      if (weight > 0) {
+        trades.addAll(Collections.nCopies(weight, AncientToolItemListing.INSTANCE));
+      }
+    });
   }
 }

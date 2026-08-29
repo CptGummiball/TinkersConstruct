@@ -1,16 +1,13 @@
 package slimeknights.tconstruct.library.tools.capability;
 
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.Lazy;
-import net.minecraftforge.common.util.LazyOptional;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.util.Lazy;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -18,24 +15,35 @@ import java.util.function.BiFunction;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-/** Capability provider for tool stacks, returns the proper cap for  */
-public class ToolCapabilityProvider implements ICapabilityProvider {
+/**
+ * Resolves the capabilities a tool exposes through its modifiers, such as tanks and inventories.
+ *
+ * <p>Fabric has no per-stack capability attach, so there is no object to hang the providers off
+ * and no lifetime for them to be cached against. {@link #getCapability(ItemStack, Capability)}
+ * therefore builds the provider list for the stack on the spot; providers are cheap wrappers and
+ * the tool cache they hold would have to be cleared on every lookup regardless, which is what
+ * Forge's per-stack instances did on each {@code getCapability} call.
+ *
+ * <p>This is the internal face used by modifier hooks. Outward-facing lookups for other mods are
+ * separate Fabric storage registrations, see {@code ToolFluidCapability#register()}.
+ */
+public class ToolCapabilityProvider {
   private static final List<BiFunction<ItemStack,Supplier<? extends IToolStackView>,IToolCapabilityProvider>> PROVIDER_CONSTRUCTORS = new ArrayList<>();
 
-  private final ItemStack stack;
-  private final Lazy<ToolStack> tool;
-  private final List<IToolCapabilityProvider> providers;
+  private ToolCapabilityProvider() {}
 
-  public ToolCapabilityProvider(ItemStack stack) {
-    // NBT is not yet initialized when capabilities are created, so delay tool stack creation
-    this.stack = stack;
-    this.tool = Lazy.of(() -> ToolStack.from(stack));
-    this.providers = PROVIDER_CONSTRUCTORS.stream().map(con -> con.apply(stack, tool)).filter(Objects::nonNull).collect(Collectors.toList());
-  }
-
+  /** Gets the given capability from the tool, empty if no modifier provides it */
   @Nonnull
-  @Override
-  public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
+  public static <T> LazyOptional<T> getCapability(ItemStack stack, Capability<T> cap) {
+    if (stack.isEmpty() || PROVIDER_CONSTRUCTORS.isEmpty()) {
+      return LazyOptional.empty();
+    }
+    // NBT may not be initialized when a provider is created, so delay tool stack creation
+    Lazy<ToolStack> tool = Lazy.of(() -> ToolStack.from(stack));
+    List<IToolCapabilityProvider> providers = PROVIDER_CONSTRUCTORS.stream().map(con -> con.apply(stack, tool)).filter(Objects::nonNull).collect(Collectors.toList());
+    if (providers.isEmpty()) {
+      return LazyOptional.empty();
+    }
     // clear the tool cache, as it may have changed since the last time a cap was fetched
     ToolStack toolStack = tool.get();
     toolStack.refreshTag(stack);
@@ -50,7 +58,7 @@ public class ToolCapabilityProvider implements ICapabilityProvider {
     return LazyOptional.empty();
   }
 
-  /** Registers a tool capability provider constructor. Every new tool will call this constructor to create your provider.
+  /** Registers a tool capability provider constructor. Every capability lookup on a tool will call this constructor to create your provider.
    * Is it valid for this constructor to return null, just note that it will not be called a second time if the tools state changes. Thus you should avoid conditioning on anything other than item type */
   public static void register(BiFunction<ItemStack,Supplier<? extends IToolStackView>,IToolCapabilityProvider> constructor) {
     PROVIDER_CONSTRUCTORS.add(constructor);

@@ -3,16 +3,15 @@ package slimeknights.tconstruct.library.recipe.casting.container;
 import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.ItemLike;
 import slimeknights.mantle.recipe.data.AbstractRecipeBuilder;
+import slimeknights.mantle.recipe.data.IConditionalRecipeOutput;
 import slimeknights.mantle.recipe.helper.TypeAwareRecipeSerializer;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 
-import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
 /**
  * Builder for a container filling recipe. Takes an arbitrary fluid for a specific amount to fill a Forge {@link net.minecraftforge.fluids.capability.IFluidHandlerItem}
@@ -76,34 +75,23 @@ public class ContainerFillingRecipeBuilder extends AbstractRecipeBuilder<Contain
   }
 
   @Override
-  public void save(Consumer<FinishedRecipe> consumer) {
+  public void save(RecipeOutput consumer) {
     this.save(consumer, this.result);
   }
 
   @Override
-  public void save(Consumer<FinishedRecipe> consumerIn, ResourceLocation id) {
-    ResourceLocation advancementId = this.buildOptionalAdvancement(id, "casting");
-    consumerIn.accept(new ContainerFillingRecipeBuilder.Result(id, advancementId));
+  public void save(RecipeOutput consumerIn, ResourceLocation id) {
+    AdvancementHolder advancementId = this.buildOptionalAdvancement(consumerIn, id, "casting");
+    // written as raw JSON: the container is stored by name so compat recipes can reference
+    // items from mods absent at datagen (the load is condition-guarded)
+    JsonObject json = new JsonObject();
+    json.addProperty("type", BuiltInRegistries.RECIPE_SERIALIZER.getKey(recipeSerializer).toString());
+    if (!group.isEmpty()) {
+      json.addProperty("group", group);
+    }
+    json.addProperty("fluid_amount", fluidAmount);
+    json.addProperty("container", result.toString());
+    IConditionalRecipeOutput.of(consumerIn).acceptJson(id, json, advancementId);
   }
 
-  private class Result extends AbstractFinishedRecipe {
-    public Result(ResourceLocation ID, @Nullable ResourceLocation advancementID) {
-      super(ID, advancementID);
-    }
-
-    @Override
-    public RecipeSerializer<?> getType() {
-      return recipeSerializer;
-    }
-
-    @Override
-    public void serializeRecipeData(JsonObject json) {
-      if (!group.isEmpty()) {
-        json.addProperty("group", group);
-      }
-      json.addProperty("fluid_amount", fluidAmount);
-      // TODO: consider another way to spoof this for datagen?
-      json.addProperty("container", result.toString());
-    }
-  }
 }

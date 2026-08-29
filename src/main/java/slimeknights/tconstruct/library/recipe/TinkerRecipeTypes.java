@@ -3,9 +3,8 @@ package slimeknights.tconstruct.library.recipe;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeType;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import slimeknights.mantle.registration.RegistryObject;
+import slimeknights.mantle.registration.deferred.SynchronizedDeferredRegister;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.recipe.alloying.AlloyRecipe;
 import slimeknights.tconstruct.library.recipe.casting.ICastingRecipe;
@@ -23,8 +22,8 @@ import slimeknights.tconstruct.library.recipe.worktable.IModifierWorktableRecipe
  * Class containing all of Tinkers Construct recipe types
  */
 public class TinkerRecipeTypes {
-  /** Deferred instance */
-  private static final DeferredRegister<RecipeType<?>> TYPES = DeferredRegister.create(Registries.RECIPE_TYPE, TConstruct.MOD_ID);
+  /** Deferred instance; registers eagerly on Fabric */
+  private static final SynchronizedDeferredRegister<RecipeType<?>> TYPES = SynchronizedDeferredRegister.create(Registries.RECIPE_TYPE, TConstruct.MOD_ID);
 
   public static final RegistryObject<RecipeType<IPartBuilderRecipe>> PART_BUILDER = register("part_builder");
   public static final RegistryObject<RecipeType<MaterialRecipe>> MATERIAL = register("material");
@@ -49,10 +48,8 @@ public class TinkerRecipeTypes {
   /** Internal recipe type for recipes that are not pulled by any specific crafting block */
   public static final RegistryObject<RecipeType<Recipe<?>>> DATA = register("data");
 
-  /** Initializes the deferred register */
-  public static void init(IEventBus bus) {
-    TYPES.register(bus);
-  }
+  /** Initializes the deferred register; registration is eager, touching the class suffices */
+  public static void init() {}
 
   /**
    * Registers a new recipe type, prefixing with the mod ID

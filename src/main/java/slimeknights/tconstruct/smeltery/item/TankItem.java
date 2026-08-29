@@ -17,13 +17,13 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.ICapabilityProvider;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidTank;
 import slimeknights.mantle.data.loadable.Loadables;
-import slimeknights.mantle.fluid.FluidTransferHelper;
 import slimeknights.mantle.fluid.tooltip.FluidTooltipHandler;
+import slimeknights.mantle.fluid.FluidTransferHelper;
 import slimeknights.mantle.fluid.transfer.FluidContainerTransferManager;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferDirection;
 import slimeknights.mantle.fluid.transfer.IFluidContainerTransfer.TransferResult;
@@ -54,31 +54,33 @@ public class TankItem extends BlockTooltipItem {
   /** Checks if the tank item is filled */
   private static boolean isFilled(ItemStack stack) {
     // has a container if not empty
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     return nbt != null && nbt.contains(NBTTags.TANK, Tag.TAG_COMPOUND);
   }
 
   @Override
-  public boolean hasCraftingRemainingItem(ItemStack stack) {
-    return isFilled(stack);
-  }
-
-  @Override
-  public ItemStack getCraftingRemainingItem(ItemStack stack) {
+  public ItemStack getRecipeRemainder(ItemStack stack) {
+    // Fabric's stack-aware remainder replaces Forge's has/getCraftingRemainingItem pair
     return isFilled(stack) ? new ItemStack(this) : ItemStack.EMPTY;
   }
 
-  @Override
-  public int getMaxStackSize(ItemStack stack) {
-    if (!limitStackSize) {
-      return super.getMaxStackSize(stack);
+  /**
+   * Applies the filled stack-size limit; 1.21 moved per-stack max size onto the
+   * MAX_STACK_SIZE component, so the setters below maintain it instead of an override.
+   */
+  private static void updateStackLimit(ItemStack stack) {
+    if (stack.getItem() instanceof TankItem tankItem && tankItem.limitStackSize) {
+      if (isFilled(stack)) {
+        stack.set(net.minecraft.core.component.DataComponents.MAX_STACK_SIZE, 16);
+      } else {
+        stack.remove(net.minecraft.core.component.DataComponents.MAX_STACK_SIZE);
+      }
     }
-    return isFilled(stack) ? 16: 64;
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable Level worldIn, List<Component> tooltip, TooltipFlag flag) {
-    if (stack.hasTag()) {
+  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    if (isFilled(stack)) {
       FluidTank tank = getTank(stack, 1);
       if (tank.getFluidAmount() > 0) {
         FluidStack fluid = tank.getFluid();
@@ -90,19 +92,16 @@ public class TankItem extends BlockTooltipItem {
       }
     }
     else {
-      super.appendHoverText(stack, worldIn, tooltip, flag);
+      super.appendHoverText(stack, context, tooltip, flag);
     }
   }
 
-  @Nullable
-  @Override
-  public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
-    return new TankItemFluidHandler(this, stack);
-  }
+  // Forge initCapabilities replaced by the FluidStorage.ITEM registration in
+  // TinkerSmeltery.init(), which bridges TankItemFluidHandler
 
   /** Checks if the given stack has fluid transfer */
   public static boolean mayHaveFluid(ItemStack stack) {
-    return FluidContainerTransferManager.INSTANCE.mayHaveTransfer(stack) || stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).isPresent();
+    return FluidContainerTransferManager.INSTANCE.mayHaveTransfer(stack) || slimeknights.mantle.transfer.TransferUtil.getFluidHandlerItem(stack).isPresent();
   }
 
   @Override
@@ -182,7 +181,7 @@ public class TankItem extends BlockTooltipItem {
         // transfer the fluid
         FluidTank tank = getTank(stack);
         // if both tanks are empty, just do standard stack operations; makes it nice and easy to move just 1 item at a time
-        if (tank.isEmpty() && ItemStack.isSameItemSameTags(stack, held)) {
+        if (tank.isEmpty() && ItemStack.isSameItemSameComponents(stack, held)) {
           return false;
         }
         TransferResult result = FluidTransferHelper.interactWithStack(tank, held, TransferDirection.AUTO);
@@ -204,13 +203,12 @@ public class TankItem extends BlockTooltipItem {
 
   /** Removes the tank from the given stack */
   private static void removeTank(ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt != null) {
       nbt.remove(NBTTags.TANK);
-      if (nbt.isEmpty()) {
-        stack.setTag(null);
-      }
+      slimeknights.tconstruct.library.tools.nbt.TagCompat.setTag(stack, nbt.isEmpty() ? null : nbt);
     }
+    updateStackLimit(stack);
   }
 
   /**
@@ -223,7 +221,8 @@ public class TankItem extends BlockTooltipItem {
     if (tank.isEmpty()) {
       removeTank(stack);
     } else {
-      stack.getOrCreateTag().put(NBTTags.TANK, tank.writeToNBT(new CompoundTag()));
+      slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(stack).put(NBTTags.TANK, tank.writeToNBT(new CompoundTag()));
+      updateStackLimit(stack);
     }
     return stack;
   }
@@ -238,7 +237,8 @@ public class TankItem extends BlockTooltipItem {
     if (fluid.isEmpty()) {
       removeTank(stack);
     } else {
-      stack.getOrCreateTag().put(NBTTags.TANK, fluid.writeToNBT(new CompoundTag()));
+      slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(stack).put(NBTTags.TANK, fluid.writeToNBT(new CompoundTag()));
+      updateStackLimit(stack);
     }
     return stack;
   }
@@ -249,7 +249,8 @@ public class TankItem extends BlockTooltipItem {
     tag.putString("FluidName", fluid.toString());
     tag.putInt("Amount", amount);
     ItemStack stack = new ItemStack(item);
-    stack.getOrCreateTag().put(NBTTags.TANK, tag);
+    slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(stack).put(NBTTags.TANK, tag);
+    updateStackLimit(stack);
     return stack;
   }
 
@@ -276,9 +277,9 @@ public class TankItem extends BlockTooltipItem {
    */
   public static FluidTank getTank(ItemStack stack, int scale) {
     FluidTank tank = ScaledFluidTank.create(TankBlockEntity.getCapacity(stack.getItem()), scale);
-    if (stack.hasTag()) {
-      assert stack.getTag() != null;
-      tank.readFromNBT(stack.getTag().getCompound(NBTTags.TANK));
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
+    if (nbt != null) {
+      tank.readFromNBT(nbt.getCompound(NBTTags.TANK));
     }
     return tank;
   }
@@ -289,7 +290,7 @@ public class TankItem extends BlockTooltipItem {
    * @return  String variant name
    */
   public static String getSubtype(ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt != null && nbt.contains(NBTTags.TANK, Tag.TAG_COMPOUND)) {
       return nbt.getCompound(NBTTags.TANK).getString("FluidName");
     }
@@ -300,7 +301,7 @@ public class TankItem extends BlockTooltipItem {
   @SuppressWarnings("deprecation")
   public static void addFilledVariants(Consumer<ItemStack> output) {
     BuiltInRegistries.FLUID.holders().filter(holder -> {
-      Fluid fluid = holder.get();
+      Fluid fluid = holder.value();
       return fluid.isSource(fluid.defaultFluidState()) && !holder.is(TinkerTags.Fluids.HIDE_IN_CREATIVE_TANKS);
     }).forEachOrdered(holder -> {
       // use an ingot variety for metals

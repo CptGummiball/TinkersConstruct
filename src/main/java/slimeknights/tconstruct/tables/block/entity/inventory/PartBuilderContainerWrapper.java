@@ -67,7 +67,10 @@ public class PartBuilderContainerWrapper implements IPartBuilderContainer {
         }
       } else {
         Level world = getWorld();
-        this.material = world.getRecipeManager().getRecipeFor(TinkerRecipeTypes.MATERIAL.get(), this, world).orElse(null);
+        this.material = world.getRecipeManager()
+          .getRecipeFor(TinkerRecipeTypes.MATERIAL.get(), new slimeknights.mantle.recipe.container.ContainerRecipeInput<>(this), world)
+          .map(net.minecraft.world.item.crafting.RecipeHolder::value)
+          .orElse(null);
       }
     }
     return this.material;

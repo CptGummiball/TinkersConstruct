@@ -1,0 +1,45 @@
+package slimeknights.mantle.block.fluid;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FlowingFluid;
+import net.minecraft.world.level.material.MapColor;
+import slimeknights.mantle.registration.RegistrationHelper;
+
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+/** Liquid block setting the entity on fire */
+public class BurningLiquidBlock extends LiquidBlock {
+  /** Burn time in seconds. Lava uses 15 */
+  private final int burnTime;
+  /** Damage from being in the fluid, lava uses 4 */
+  private final float damage;
+  public BurningLiquidBlock(Supplier<? extends FlowingFluid> supplier, Properties properties, int burnTime, float damage) {
+    super(supplier.get(), properties);
+    this.burnTime = burnTime;
+    this.damage = damage;
+  }
+
+  @SuppressWarnings("deprecation")  // useless annotation on block methods
+  @Override
+  public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
+    // Forge tracked per-fluid-type submersion height; the vanilla equivalent is checking
+    // the fluid at the entity's feet matches this block's fluid.
+    if (!entity.fireImmune() && level.getFluidState(entity.blockPosition()).getType().isSame(state.getFluidState().getType())) {
+      entity.igniteForSeconds(burnTime);
+      if (entity.hurt(entity.damageSources().lava(), damage)) {
+        entity.playSound(SoundEvents.GENERIC_BURN, 0.4F, 2.0F + level.random.nextFloat() * 0.4F);
+      }
+    }
+  }
+
+  /** Creates a new block supplier */
+  public static Function<Supplier<? extends FlowingFluid>, LiquidBlock> createBurning(MapColor color, int lightLevel, int burnTime, float damage) {
+    return fluid -> new BurningLiquidBlock(fluid, RegistrationHelper.createFluidProperties(color, lightLevel), burnTime, damage);
+  }
+}

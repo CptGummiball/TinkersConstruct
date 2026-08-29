@@ -16,12 +16,10 @@ import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ToolActions;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureSupplier;
 import slimeknights.tconstruct.library.client.armor.texture.TintedArmorTexture;
+import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfo;
 import slimeknights.tconstruct.library.client.materials.MaterialRenderInfoLoader;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
@@ -108,18 +106,17 @@ public class CombatFishingHookRenderer extends EntityRenderer<CombatFishingHook>
 
       // render bobber
       PoseStack.Pose lastPose = poseStack.last();
-      Matrix4f pose = lastPose.pose();
-      Matrix3f normal = lastPose.normal();
-      texture.vertex(consumer, pose, normal, bobberLight, 0f, 0, 0, 1);
-      texture.vertex(consumer, pose, normal, bobberLight, 1f, 0, 1, 1);
-      texture.vertex(consumer, pose, normal, bobberLight, 1f, 1, 1, 0);
-      texture.vertex(consumer, pose, normal, bobberLight, 0f, 1, 0, 0);
+      texture.vertex(consumer, lastPose, bobberLight, 0f, 0, 0, 1);
+      texture.vertex(consumer, lastPose, bobberLight, 1f, 0, 1, 1);
+      texture.vertex(consumer, lastPose, bobberLight, 1f, 1, 1, 0);
+      texture.vertex(consumer, lastPose, bobberLight, 0f, 1, 0, 0);
       poseStack.popPose();
 
       // handle hand side
       int sideOffset = player.getMainArm() == HumanoidArm.RIGHT ? 1 : -1;
+      // Forge asked the stack directly; ModifierUtil covers both a Tinkers rod and a vanilla one
       ItemStack itemstack = player.getMainHandItem();
-      if (!itemstack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+      if (!ModifierUtil.canCastFishingRod(itemstack)) {
         sideOffset = -sideOffset;
       }
 
@@ -188,15 +185,19 @@ public class CombatFishingHookRenderer extends EntityRenderer<CombatFishingHook>
       return packedLight;
     }
 
-    /** Draws a vertex using this texture. */
-    public void vertex(VertexConsumer consumer, Matrix4f pose, Matrix3f normal, int lightmap, float pX, int pY, int pU, int pV) {
-      consumer.vertex(pose, pX - 0.5f, pY - 0.5f, 0f)
-        .color(red, green, blue, alpha)
-        .uv(pU, pV)
-        .overlayCoords(OverlayTexture.NO_OVERLAY)
-        .uv2(lightmap)
-        .normal(normal, 0.0F, 1.0F, 0.0F)
-        .endVertex();
+    /**
+     * Draws a vertex using this texture.
+     *
+     * <p>1.21 renamed the whole builder chain and dropped {@code endVertex}; it also takes the pose
+     * rather than a separate normal matrix, so the two are passed together now.
+     */
+    public void vertex(VertexConsumer consumer, PoseStack.Pose pose, int lightmap, float pX, int pY, int pU, int pV) {
+      consumer.addVertex(pose, pX - 0.5f, pY - 0.5f, 0f)
+        .setColor(red, green, blue, alpha)
+        .setUv(pU, pV)
+        .setOverlay(OverlayTexture.NO_OVERLAY)
+        .setLight(lightmap)
+        .setNormal(pose, 0.0F, 1.0F, 0.0F);
     }
   }
 }

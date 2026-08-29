@@ -230,7 +230,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
 
     // plate armor
     ModifierId dyed = TinkerModifiers.dyed.getId();
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       String root = "armor/plate/" + type.getName() + "/maille";
       String item = "plate/" + type.getName();
       tool(item).modifier(dyed, new MaterialHasFallbackModifierModel(1,
@@ -256,7 +256,7 @@ public class ModifierModelMapProvider extends AbstractModifierModelMapProvider {
     tool("travelers/goggles").customTrim("armor/travelers/goggles", null);
 
     // slimesuit
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
       tool("slime/" + type.getName()).trim(type);
     }
     tool("slime/wings").modifier(TinkerModifiers.trim.getId(), new TrimModifierModel.Custom(toolMaterial("armor/slime/wings/trim").texture(), null));

@@ -1,49 +1,48 @@
 package slimeknights.tconstruct.library.data.recipe;
 
 import com.google.gson.JsonObject;
-import net.minecraft.data.recipes.FinishedRecipe;
-import net.minecraft.nbt.CompoundTag;
+import com.mojang.serialization.JsonOps;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
-import net.minecraft.world.item.crafting.RecipeSerializer;
-import slimeknights.mantle.data.loadable.common.NBTLoadable;
+import net.minecraft.world.item.crafting.Recipe;
+import slimeknights.mantle.recipe.data.IConditionalRecipeOutput;
 
 import javax.annotation.Nullable;
-import java.util.function.Consumer;
 
-/** Helper to add NBT to vanilla recipes. Forge adds support but not the builders */
-public record CraftingNBTWrapper(FinishedRecipe recipe, CompoundTag nbt) implements FinishedRecipe {
-  @Override
-  public void serializeRecipeData(JsonObject json) {
-    recipe.serializeRecipeData(json);
-    JsonObject result = GsonHelper.getAsJsonObject(json, "result");
-    result.add("nbt", NBTLoadable.DISALLOW_STRING.serialize(nbt));
+/**
+ * Helper to add extra result components to vanilla recipes, whose builders take an item
+ * rather than a stack.
+ *
+ * <p>1.20 injected {@code nbt} into the serialized result; 1.21 replaced stack NBT with data
+ * components, so this now writes the {@code components} map the vanilla item stack codec
+ * reads. Component values that need registry context are fine: the wrapped patch is
+ * serialized with plain ops, which covers the simple components this is used for (names).
+ */
+public record CraftingNBTWrapper(IConditionalRecipeOutput parent, DataComponentPatch components) implements IConditionalRecipeOutput {
+
+  /** Creates a wrapped output, adding the given components to every result written through it */
+  public static RecipeOutput wrap(RecipeOutput base, DataComponentPatch components) {
+    return new CraftingNBTWrapper(IConditionalRecipeOutput.of(base), components);
   }
 
   @Override
-  public ResourceLocation getId() {
-    return recipe.getId();
+  public JsonObject serializeRecipe(Recipe<?> recipe) {
+    return parent.serializeRecipe(recipe);
   }
 
   @Override
-  public RecipeSerializer<?> getType() {
-    return recipe.getType();
+  public void acceptJson(ResourceLocation id, JsonObject recipe, @Nullable AdvancementHolder advancement) {
+    if (recipe.get("result") instanceof JsonObject result) {
+      result.add("components", DataComponentPatch.CODEC.encodeStart(JsonOps.INSTANCE, components).getOrThrow());
+    }
+    parent.acceptJson(id, recipe, advancement);
   }
 
-  @Nullable
   @Override
-  public JsonObject serializeAdvancement() {
-    return recipe.serializeAdvancement();
-  }
-
-  @Nullable
-  @Override
-  public ResourceLocation getAdvancementId() {
-    return recipe.getAdvancementId();
-  }
-
-  /** Creates a wrapped consumer, adding the given NBT */
-  public static Consumer<FinishedRecipe> wrap(Consumer<FinishedRecipe> base, CompoundTag nbt) {
-    return recipe -> base.accept(new CraftingNBTWrapper(recipe, nbt));
+  public Advancement.Builder advancement() {
+    return parent.advancement();
   }
 }

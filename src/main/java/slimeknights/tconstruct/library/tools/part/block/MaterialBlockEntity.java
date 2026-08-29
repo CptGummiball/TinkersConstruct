@@ -6,13 +6,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
+import slimeknights.mantle.client.model.data.ModelData;
 import slimeknights.mantle.util.RetexturedHelper;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
-import slimeknights.tconstruct.tools.TinkerToolParts;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -32,7 +32,7 @@ public class MaterialBlockEntity extends MantleBlockEntity {
 
   /** Constructor for our material blocks. */
   public MaterialBlockEntity(BlockPos pos, BlockState state) {
-    this(TinkerToolParts.materialBlock.get(), pos, state);
+    this(ContentLookups.materialBlockEntityType(), pos, state);
   }
 
   @Override
@@ -57,16 +57,16 @@ public class MaterialBlockEntity extends MantleBlockEntity {
   }
 
   @Override
-  protected void saveSynced(CompoundTag tags) {
-    super.saveSynced(tags);
+  protected void saveSynced(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(tags, registries);
     if (material != IMaterial.UNKNOWN_ID) {
       tags.putString(MATERIAL_TAG, material.toString());
     }
   }
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  public void loadAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(MATERIAL_TAG, Tag.TAG_STRING)) {
       material = Objects.requireNonNullElse(MaterialVariantId.tryParse(tags.getString(MATERIAL_TAG)), IMaterial.UNKNOWN_ID);
       RetexturedHelper.onTextureUpdated(this);

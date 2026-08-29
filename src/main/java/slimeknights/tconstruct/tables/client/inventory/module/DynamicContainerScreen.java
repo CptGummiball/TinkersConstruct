@@ -142,7 +142,7 @@ public class DynamicContainerScreen<P extends MultiModuleScreen<?>, C extends Ab
       return true;
     }
 
-    int index = slot.getSlotIndex();
+    int index = slot.getContainerSlot();
 
     return (this.firstSlotId <= index && this.lastSlotId > index); // inside visible area
     //|| indexStart > index || indexEnd <= index; // or not our concern
@@ -159,7 +159,7 @@ public class DynamicContainerScreen<P extends MultiModuleScreen<?>, C extends Ab
       for (Slot slot : this.container.slots) {
         if (this.shouldDrawSlot(slot)) {
           // calc position of the slot
-          int offset = slot.getSlotIndex() - this.firstSlotId;
+          int offset = slot.getContainerSlot() - this.firstSlotId;
           int x = (offset % this.columns) * DynamicContainerScreen.slot.w;
           int y = (offset / this.columns) * DynamicContainerScreen.slot.h;
 

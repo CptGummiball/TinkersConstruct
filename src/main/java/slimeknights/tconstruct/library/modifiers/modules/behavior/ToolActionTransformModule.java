@@ -12,7 +12,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.ToolAction;
+import slimeknights.mantle.item.ToolAction;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.primitive.BooleanLoadable;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
@@ -56,7 +56,7 @@ public record ToolActionTransformModule(ToolAction action, SoundEvent sound, boo
 
   @Override
   public boolean shouldHighlight(IToolStackView tool, ModifierEntry modifier, UseOnContext context, BlockPos offset, BlockState state) {
-    return condition.matches(tool, modifier) && state.getToolModifiedState(Util.offset(context, offset), action, true) != null;
+    return condition.matches(tool, modifier) && slimeknights.mantle.item.ToolActionTransforms.getToolModifiedState(state, Util.offset(context, offset), action, true) != null;
   }
 
   @Override
@@ -76,7 +76,7 @@ public record ToolActionTransformModule(ToolAction action, SoundEvent sound, boo
 
     // normal action transform
     Player player = context.getPlayer();
-    BlockState transformed = original.getToolModifiedState(context, action, false);
+    BlockState transformed = slimeknights.mantle.item.ToolActionTransforms.getToolModifiedState(original, context, action, false);
     if (transformed != null) {
       if (playSound) {
         level.playSound(player, pos, sound, SoundSource.BLOCKS, 1.0F, 1.0F);
