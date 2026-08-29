@@ -215,11 +215,22 @@ public class ItemTagProvider extends BuiltinRegistryTagProvider<Item> {
     copy(Tags.Blocks.GLASS_PANES_COLORLESS, Tags.Items.GLASS_PANES_COLORLESS);
     copy(Tags.Blocks.STAINED_GLASS, Tags.Items.STAINED_GLASS);
     copy(Tags.Blocks.STAINED_GLASS_PANES, Tags.Items.STAINED_GLASS_PANES);
+    // the c:glass and c:glass_panes parents came from the loader's own datagen on Forge; on
+    // Fabric nothing provides them, which left the tank, gauge and glass material recipes
+    // matching an empty tag. The fabric ecosystem's name for the block group is
+    // c:glass_blocks, so pull it in too — that way other mods' glass works in those recipes.
+    IntrinsicTagAppender<Item> glass = this.tag(Tags.Items.GLASS);
+    glass.addTag(Tags.Items.GLASS_COLORLESS).addTag(Tags.Items.GLASS_TINTED);
+    glass.addOptionalTag(commonResource("glass_blocks"));
+    IntrinsicTagAppender<Item> glassPanes = this.tag(Tags.Items.GLASS_PANES);
+    glassPanes.addTag(Tags.Items.GLASS_PANES_COLORLESS);
     for (DyeColor color : DyeColor.values()) {
       ResourceLocation name = commonResource("glass/" + color.getSerializedName());
       copy(TagKey.create(Registries.BLOCK, name), TagKey.create(Registries.ITEM, name));
+      glass.addTag(TagKey.create(Registries.ITEM, name));
       name = commonResource("glass_panes/" + color.getSerializedName());
       copy(TagKey.create(Registries.BLOCK, name), TagKey.create(Registries.ITEM, name));
+      glassPanes.addTag(TagKey.create(Registries.ITEM, name));
     }
 
     copy(TinkerTags.Blocks.WORKBENCHES, TinkerTags.Items.WORKBENCHES);

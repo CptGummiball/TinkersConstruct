@@ -2087,6 +2087,41 @@ Requested sweep of every place either dupe class could recur:
   they did on Forge, and the fallback shares `TransferUtil`'s unwrap so it cannot reintroduce
   the double bridge.
 
+### Maintenance round 24: the glass tag hole
+
+A pack report — "some recipes don't work", concretely the seared and scorched fuel gauges.
+Root cause found by walking the recipe's ingredients: on Forge the **loader's own datagen**
+shipped the `forge:glass`/`forge:glass_panes` parent tags and put vanilla glass into
+`glass/colorless`; the port migrated our sub-tag entries to `c:` but nothing on Fabric
+provides the parents or the vanilla entries. Result: `c:glass` resolved empty, and every
+recipe matching it could never craft — both fuel gauges, both ingot gauges, fuel tank,
+casting tank and the glass tool material, plus ten `glass/colorless` recipes (gauge, seared
+glass casting, the clear-glass beacon/daylight-detector/end-crystal conveniences) accepting
+only our clear glass instead of any colorless glass. Also the literal "blank squares in EMI"
+report: an empty-tag ingredient renders as an empty cell in the recipe view.
+
+Fix in the tag providers: vanilla glass and pane join the colorless sub-tags, and the item
+providers now emit the `c:glass` and `c:glass_panes` parents (colorless + tinted + the
+sixteen colours), with the fabric ecosystem's `#c:glass_blocks` pulled in optionally so
+other mods' glass works in those recipes too. Six generated tag files changed; the rest of
+the tree stayed byte-identical.
+
+On the way, the investigation hardened the harness permanently:
+
+- **GAUGE PASS** — the crafting station crafts a seared fuel gauge from vanilla glass
+  through the new parent tag, grid fully consumed.
+- **RECIPE PASS** — the shaped-material anvil recipe stays 3x3 with 9 ingredient slots and
+  3 custom ingredients on both server and client, guarding the network sync of custom
+  ingredients (verified healthy: Fabric's `-1` marker protocol carries them, and the client
+  evaluates material tags correctly).
+- **ITEMMODEL PASS** — every creative stack (5,279) must bake a visible model; guards the
+  reported "blank items" class. Clean in dev; if the pack still shows blanks with this
+  build, the cause is pack-side and needs the concrete item names.
+- The EMI log error `Exception thrown setting remainders ... anvil_material` (dev and pack)
+  is EMI tripping over the *dormant* fake-storage-block anvil recipes — their material
+  ingredient legitimately displays no stacks until a compat alloy without real storage
+  blocks is active. Cosmetic; the recipes behave correctly.
+
 - [x] **6 — Mod compat.** EMI, Jade, Trinkets, energy, plus cross-mod recipes for GummiCraft.
   **Unify is in the pack** (user note, 2026-08-20): it rewrites recipe *outputs* to the
   pack-preferred item per tag. Expected to just work, but must be verified against Tinkers,

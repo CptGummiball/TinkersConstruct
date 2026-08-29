@@ -167,6 +167,80 @@ public final class BlockRenderDevHarness {
         server.execute(() -> checkTankTransfer(server));
       }
     }
+    if (ticks == 212) {
+      // regression for the shaped-material recipes (tinkers anvil): both sides must agree on a
+      // 3x3 pattern with 9 ingredient slots — EMI indexes the ingredient list by grid position
+      // and a shorter list breaks both its display and, if server-side, the actual crafting
+      var id = net.minecraft.resources.ResourceLocation.parse("tconstruct:tables/tinkers_anvil_material");
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      boolean pass = true;
+      for (var side : java.util.List.of("server", "client")) {
+        var manager = side.equals("server") && server != null ? server.getRecipeManager() : minecraft.level.getRecipeManager();
+        var holder = manager.byKey(id).orElse(null);
+        if (holder == null || !(holder.value() instanceof net.minecraft.world.item.crafting.ShapedRecipe shaped)) {
+          TConstruct.LOG.error("[block harness] RECIPE FAIL: {} anvil recipe missing or not shaped: {}", side, holder);
+          pass = false;
+          continue;
+        }
+        var ingredients = shaped.getIngredients();
+        long empty = ingredients.stream().filter(net.minecraft.world.item.crafting.Ingredient::isEmpty).count();
+        long custom = ingredients.stream().filter(ing -> ing.getCustomIngredient() != null).count();
+        TConstruct.LOG.info("[block harness] {} anvil recipe: {} {}x{}, {} ingredients ({} empty, {} custom)",
+          side, shaped.getClass().getSimpleName(), shaped.getWidth(), shaped.getHeight(), ingredients.size(), empty, custom);
+        if (shaped.getWidth() != 3 || shaped.getHeight() != 3 || ingredients.size() != 9 || custom != 3) {
+          pass = false;
+        }
+      }
+      // and the client's copy of the material tags, via a tag that is filled without compat mods
+      TConstruct.LOG.info("[block harness] client material tag check: cobalt in nether tag = {}",
+        slimeknights.tconstruct.library.materials.MaterialRegistry.getInstance().isInTag(
+          slimeknights.tconstruct.tools.data.material.MaterialIds.cobalt,
+          slimeknights.tconstruct.common.TinkerTags.Materials.NETHER));
+      if (pass) {
+        TConstruct.LOG.info("[block harness] RECIPE PASS: anvil recipe is 3x3 with 9 ingredient slots on both sides");
+      } else {
+        TConstruct.LOG.error("[block harness] RECIPE FAIL: anvil recipe pattern mangled, see lines above");
+      }
+    }
+    if (ticks == 213) {
+      // blank-item scan: the pack reported empty-looking slots in EMI and creative. An item
+      // whose model bakes zero quads and has no custom renderer draws exactly nothing, so
+      // walk every creative stack and flag those.
+      net.minecraft.world.item.CreativeModeTabs.tryRebuildTabContents(minecraft.level.enabledFeatures(), true, minecraft.level.registryAccess());
+      var rand = net.minecraft.util.RandomSource.create(42);
+      java.util.Set<String> blank = new java.util.TreeSet<>();
+      int checked = 0;
+      for (var tab : net.minecraft.world.item.CreativeModeTabs.allTabs()) {
+        for (var stack : tab.getDisplayItems()) {
+          var id = net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem());
+          if (!"tconstruct".equals(id.getNamespace())) {
+            continue;
+          }
+          checked++;
+          var model = minecraft.getItemRenderer().getModel(stack, minecraft.level, null, 0);
+          if (model.isCustomRenderer()) {
+            continue; // drawn by a special renderer, quads say nothing
+          }
+          boolean hasQuads = !model.getQuads(null, null, rand).isEmpty();
+          if (!hasQuads) {
+            for (var dir : net.minecraft.core.Direction.values()) {
+              if (!model.getQuads(null, dir, rand).isEmpty()) {
+                hasQuads = true;
+                break;
+              }
+            }
+          }
+          if (!hasQuads) {
+            blank.add(id.toString());
+          }
+        }
+      }
+      if (blank.isEmpty()) {
+        TConstruct.LOG.info("[block harness] ITEMMODEL PASS: {} creative stacks all bake visible models", checked);
+      } else {
+        TConstruct.LOG.error("[block harness] ITEMMODEL FAIL: {} items bake no quads out of {} stacks: {}", blank.size(), checked, blank);
+      }
+    }
     if (ticks == 215) {
       // stand south of the smeltery at ground level looking at the controller wall
       minecraft.options.hideGui = true;
@@ -356,6 +430,39 @@ public final class BlockRenderDevHarness {
       TConstruct.LOG.info("[block harness] CRAFT PASS: one block crafted to exactly 9 ingots and was consumed");
     } else {
       TConstruct.LOG.error("[block harness] CRAFT FAIL: ingot delta {} (want 9), grid slot empty {}", total - baseline, gridEmpty);
+    }
+
+    // second craft, through the c:glass parent tag: the fuel gauge pattern with vanilla
+    // glass. Dead while the parent tag was empty — the pack's "recipes don't work" report.
+    var brick = TinkerSmeltery.searedBrick.get();
+    var gauge = TinkerSmeltery.searedTank.get(TankType.FUEL_GAUGE).asItem();
+    int gaugeBase = 0;
+    for (var slot : menu.slots) {
+      if (slot.getItem().is(gauge)) {
+        gaugeBase += slot.getItem().getCount();
+      }
+    }
+    for (int i = 0; i < 9; i++) {
+      boolean isBrick = i == 0 || i == 2 || i == 6 || i == 8;
+      menu.slots.get(i).set(new net.minecraft.world.item.ItemStack(isBrick ? brick : net.minecraft.world.item.Items.GLASS));
+    }
+    menu.clicked(9, 0, net.minecraft.world.inventory.ClickType.QUICK_MOVE, player);
+    int gaugeTotal = 0;
+    boolean gaugeGridEmpty = true;
+    for (int i = 0; i < 9; i++) {
+      if (!menu.slots.get(i).getItem().isEmpty()) {
+        gaugeGridEmpty = false;
+      }
+    }
+    for (var slot : menu.slots) {
+      if (slot.getItem().is(gauge)) {
+        gaugeTotal += slot.getItem().getCount();
+      }
+    }
+    if (gaugeTotal - gaugeBase == 1 && gaugeGridEmpty) {
+      TConstruct.LOG.info("[block harness] GAUGE PASS: seared fuel gauge crafted from vanilla glass, grid consumed");
+    } else {
+      TConstruct.LOG.error("[block harness] GAUGE FAIL: gauge delta {} (want 1), grid empty {}", gaugeTotal - gaugeBase, gaugeGridEmpty);
     }
     player.closeContainer();
   }
