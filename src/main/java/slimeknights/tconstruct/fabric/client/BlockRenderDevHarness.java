@@ -241,6 +241,14 @@ public final class BlockRenderDevHarness {
         TConstruct.LOG.error("[block harness] ITEMMODEL FAIL: {} items bake no quads out of {} stacks: {}", blank.size(), checked, blank);
       }
     }
+    if (ticks == 214) {
+      // A fluid-only recipe has an empty item view. RecipeInput#isEmpty must not make vanilla's
+      // lookup discard it before the casting recipe can inspect the fluid.
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> startCastlessCasting(server));
+      }
+    }
     if (ticks == 215) {
       // stand south of the smeltery at ground level looking at the controller wall
       minecraft.options.hideGui = true;
@@ -347,7 +355,13 @@ public final class BlockRenderDevHarness {
       Screenshot.grab(minecraft.gameDirectory, "blocks_smeltery.png", minecraft.getMainRenderTarget(),
                       message -> TConstruct.LOG.info("[block harness] {}", message.getString()));
     }
-    if (ticks > 265) {
+    if (ticks == 340) {
+      MinecraftServer server = minecraft.getSingleplayerServer();
+      if (server != null) {
+        server.execute(() -> checkCastlessCasting(server));
+      }
+    }
+    if (ticks > 350) {
       TConstruct.LOG.info("[block harness] done");
       minecraft.stop();
     }
@@ -581,6 +595,63 @@ public final class BlockRenderDevHarness {
     } else {
       TConstruct.LOG.error("[block harness] TANK FAIL: after refill, tank has {} mB, hand {} x{}",
         afterDrain.getAmount(), held, held.getCount());
+    }
+  }
+
+  /** Starts the reported cast-less recipe: 250 mb molten obsidian on an empty seared table. */
+  private static void startCastlessCasting(MinecraftServer server) {
+    ServerLevel level = server.overworld();
+    BlockPos pos = ORIGIN.offset(3, 0, 5);
+    level.setBlock(pos, TinkerSmeltery.searedTable.get().defaultBlockState(), 3);
+    if (level.getBlockEntity(pos) instanceof CastingBlockEntity table) {
+      var storage = net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage.SIDED.find(
+        level, pos, net.minecraft.core.Direction.UP);
+      if (storage == null) {
+        TConstruct.LOG.error("[block harness] CAST FAIL: casting table exposes no Fabric fluid storage");
+        return;
+      }
+      var resource = net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant.of(TinkerFluids.moltenObsidian.get());
+      long amount = FluidStack.toDroplets(FluidValues.GLASS_PANE);
+      // Foreign pipes probe with an aborting transaction before committing the real transfer.
+      try (var transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction.openOuter()) {
+        storage.insert(resource, amount, transaction);
+        transaction.abort();
+      }
+      if (!table.getTank().isEmpty()) {
+        TConstruct.LOG.error("[block harness] CAST FAIL: aborted insertion left {} in the table", table.getTank().getFluid());
+        return;
+      }
+      long inserted;
+      try (var transaction = net.fabricmc.fabric.api.transfer.v1.transaction.Transaction.openOuter()) {
+        inserted = storage.insert(resource, amount, transaction);
+        transaction.commit();
+      }
+      if (inserted == amount && table.getTank().getCapacity() == FluidValues.GLASS_PANE
+          && table.getTank().getFluid().getAmount() == FluidValues.GLASS_PANE) {
+        TConstruct.LOG.info("[block harness] CAST start: obsidian pane recipe accepted 250 mb without a cast");
+      } else {
+        TConstruct.LOG.error("[block harness] CAST FAIL: empty table accepted {} droplets; capacity {}, fluid {}",
+          inserted, table.getTank().getCapacity(), table.getTank().getFluid());
+      }
+    } else {
+      TConstruct.LOG.error("[block harness] CAST FAIL: no casting table block entity at {}", pos);
+    }
+  }
+
+  /** Verifies the cast-less recipe cooled into the requested item instead of stalling. */
+  private static void checkCastlessCasting(MinecraftServer server) {
+    ServerLevel level = server.overworld();
+    BlockPos pos = ORIGIN.offset(3, 0, 5);
+    if (level.getBlockEntity(pos) instanceof CastingBlockEntity table) {
+      var output = table.getItem(CastingBlockEntity.OUTPUT);
+      if (output.is(TinkerCommons.obsidianPane.get().asItem()) && table.getTank().isEmpty()) {
+        TConstruct.LOG.info("[block harness] CAST PASS: 250 mb molten obsidian cooled into an obsidian pane without a cast");
+      } else {
+        TConstruct.LOG.error("[block harness] CAST FAIL: output {}, tank {}, timer {}/{}",
+          output, table.getTank().getFluid(), table.getTimer(), table.getCoolingTime());
+      }
+    } else {
+      TConstruct.LOG.error("[block harness] CAST FAIL: casting table disappeared at {}", pos);
     }
   }
 

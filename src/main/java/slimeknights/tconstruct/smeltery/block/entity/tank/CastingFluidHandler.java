@@ -11,7 +11,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.transfer.fluid.IFluidHandler;
-import net.minecraft.core.registries.BuiltInRegistries;
 import slimeknights.tconstruct.smeltery.block.entity.CastingBlockEntity;
 
 import javax.annotation.Nonnull;
@@ -164,6 +163,15 @@ public class CastingFluidHandler implements IFluidHandler {
   @Override
   public boolean isFluidValid(int tank, FluidStack stack) {
     return tank == 0 && isFluidValid(stack);
+  }
+
+  /** Restores both the fluid and the recipe state after an aborted Fabric transfer. */
+  @Override
+  public void restoreSnapshot(java.util.List<FluidStack> snapshot) {
+    FluidStack restored = snapshot.isEmpty() ? FluidStack.EMPTY : snapshot.get(0).copy();
+    // updateFluidTo re-selects the recipe if an executed drain reset the table, and resets all
+    // recipe/filter state if an insertion into an empty table is rolled back.
+    tile.updateFluidTo(restored);
   }
 
   /* Tag */

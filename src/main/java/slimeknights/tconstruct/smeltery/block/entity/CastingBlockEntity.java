@@ -348,13 +348,17 @@ public abstract class CastingBlockEntity extends TableBlockEntity implements Wor
     if (this.lastCastingRecipe != null && this.lastCastingRecipe.matches(castingInventory, level)) {
       return this.lastCastingRecipe;
     }
-    ICastingRecipe castingRecipe = level.getRecipeManager()
-      .getRecipeFor(this.castingType, new slimeknights.mantle.recipe.container.ContainerRecipeInput<>(castingInventory), level)
-      .map(net.minecraft.world.item.crafting.RecipeHolder::value).orElse(null);
-    if (castingRecipe != null) {
-      this.lastCastingRecipe = castingRecipe;
+    // A cast-less recipe has an empty item view; its actual input is the fluid carried beside
+    // RecipeInput. Match the original casting container directly so vanilla's item-oriented
+    // 1.21 lookup cannot discard recipes such as the obsidian pane before they inspect fluid.
+    for (var holder : level.getRecipeManager().getAllRecipesFor(this.castingType)) {
+      ICastingRecipe castingRecipe = holder.value();
+      if (castingRecipe.matches(castingInventory, level)) {
+        this.lastCastingRecipe = castingRecipe;
+        return castingRecipe;
+      }
     }
-    return castingRecipe;
+    return null;
   }
 
 
