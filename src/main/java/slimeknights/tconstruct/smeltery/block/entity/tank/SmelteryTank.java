@@ -269,6 +269,70 @@ public class SmelteryTank<T extends MantleBlockEntity & ISmelteryTankHandler> im
     return FluidStack.EMPTY;
   }
 
+  /* Fabric transaction snapshots */
+
+  /**
+   * Captures only the real fluid layers. {@link #getTanks()} also exposes a virtual empty
+   * layer while the smeltery has spare capacity, which must not become part of the restored
+   * contents.
+   */
+  @Override
+  public List<FluidStack> createSnapshot() {
+    List<FluidStack> snapshot = Lists.newArrayListWithCapacity(fluids.size());
+    for (FluidStack fluid : fluids) {
+      snapshot.add(fluid.copy());
+    }
+    return snapshot;
+  }
+
+  /** Restores the state captured before an aborted Fabric transfer transaction. */
+  @Override
+  public void restoreSnapshot(List<FluidStack> snapshot) {
+    FluidStack oldFirst = getFluidInTank(0).copy();
+    int oldTankCount = getTanks();
+
+    FluidStack added = FluidStack.EMPTY;
+    for (FluidStack restored : snapshot) {
+      if (!restored.isEmpty() && fluids.stream().noneMatch(restored::isFluidEqual)) {
+        added = restored;
+        break;
+      }
+    }
+    FluidStack removed = FluidStack.EMPTY;
+    for (FluidStack current : fluids) {
+      if (snapshot.stream().noneMatch(current::isFluidEqual)) {
+        removed = current.copy();
+        break;
+      }
+    }
+
+    fluids.clear();
+    contained = 0;
+    for (FluidStack fluid : snapshot) {
+      if (!fluid.isEmpty()) {
+        FluidStack copy = fluid.copy();
+        fluids.add(copy);
+        contained += copy.getAmount();
+      }
+    }
+
+    FluidStack newFirst = getFluidInTank(0);
+    if (!added.isEmpty()) {
+      parent.notifyFluidsChanged(FluidChange.ADDED, added);
+    }
+    if (!removed.isEmpty()) {
+      parent.notifyFluidsChanged(FluidChange.REMOVED, removed);
+    }
+    if (!oldFirst.isFluidEqual(newFirst)) {
+      parent.notifyFluidsChanged(FluidChange.ORDER_CHANGED, newFirst);
+    } else if (added.isEmpty() && removed.isEmpty()) {
+      parent.notifyFluidsChanged(FluidChange.CHANGED, newFirst);
+    }
+    if (!added.isEmpty() || !removed.isEmpty() || oldTankCount != getTanks()) {
+      tankListChange.run();
+    }
+  }
+
   /* Saving and loading */
 
   private static final String TAG_FLUIDS = "fluids";
