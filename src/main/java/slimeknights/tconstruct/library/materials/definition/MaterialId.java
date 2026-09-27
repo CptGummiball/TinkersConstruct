@@ -26,8 +26,8 @@ public final class MaterialId extends ResourceId implements MaterialVariantId {
     super(location);
   }
 
-  private MaterialId(String namespace, String path, @Nullable Dummy pDummy) {
-    super(namespace, path, pDummy);
+  private MaterialId(String namespace, String path, @Nullable Object legacyDummy) {
+    this(namespace, path);
   }
 
   /** Checks if this ID matches the given material */

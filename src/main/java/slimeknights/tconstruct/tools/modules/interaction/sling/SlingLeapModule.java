@@ -24,7 +24,6 @@ import slimeknights.tconstruct.library.modifiers.modules.util.ModifierCondition;
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.helper.ToolDamageUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
-import slimeknights.tconstruct.library.utils.SlimeBounceHandler;
 import slimeknights.tconstruct.tools.TinkerToolActions;
 
 /**
@@ -86,7 +85,7 @@ public record SlingLeapModule(LevelingValue forceMultiplier, boolean leaveGround
         }
 
         // after sling callback
-        SlimeBounceHandler.addBounceHandler(entity);
+        // PORT (event layer): SlimeBounceHandler.addBounceHandler(entity);
         SlingLaunchModifierHook.afterSlingLaunch(tool, entity, entity, modifier, force, multiplier, angle);
 
         if (!level.isClientSide) {
@@ -101,7 +100,7 @@ public record SlingLeapModule(LevelingValue forceMultiplier, boolean leaveGround
           }
           // if supported, perform drill attack if the modifier is available
           if (ModifierManager.isInTag(modifier.getId(), TinkerTags.Modifiers.DRILL_ATTACKS) && ModifierUtil.canPerformAction(tool, TinkerToolActions.DRILL_ATTACK)) {
-            player.startAutoSpinAttack(20);
+            player.startAutoSpinAttack(20, 0, net.minecraft.world.item.ItemStack.EMPTY);
           }
         }
         return;

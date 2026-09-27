@@ -12,15 +12,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.items.IItemHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.item.IItemHandler;
 import slimeknights.mantle.util.RetexturedHelper;
 import slimeknights.tconstruct.TConstruct;
-import slimeknights.tconstruct.library.client.model.ModelProperties;
 import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 import slimeknights.tconstruct.smeltery.block.entity.component.SmelteryInputOutputBlockEntity.SmelteryFluidIO;
 import slimeknights.tconstruct.smeltery.block.entity.inventory.DuctItemHandler;
@@ -33,6 +31,8 @@ import javax.annotation.Nullable;
 /**
  * Filtered drain tile entity
  */
+import slimeknights.mantle.client.model.data.ModelData;
+import slimeknights.tconstruct.library.client.model.ModelProperties;
 public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
   private static final String TAG_ITEM = "item";
   private static final Component TITLE = TConstruct.makeTranslation("gui", "duct");
@@ -86,10 +86,11 @@ public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
     return LazyOptional.of(() -> new DuctTankWrapper(capability.orElse(emptyInstance), itemHandler));
   }
 
-  @Nonnull
   @Override
   public ModelData getModelData() {
-    return RetexturedHelper.getModelDataBuilder(getTexture()).with(ModelProperties.FLUID_STACK, itemHandler.getFluid().copy()).build();
+    return RetexturedHelper.getModelDataBuilder(getTexture())
+                           .with(ModelProperties.FLUID_STACK, itemHandler.getFluid())
+                           .build();
   }
 
   /** Updates the fluid in model data */
@@ -109,24 +110,21 @@ public class DuctBlockEntity extends SmelteryFluidIO implements MenuProvider {
   }
 
   @Override
-  public void load(CompoundTag tags) {
-    super.load(tags);
+  public void loadAdditional(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.loadAdditional(tags, registries);
     if (tags.contains(TAG_ITEM, Tag.TAG_COMPOUND)) {
-      itemHandler.readFromNBT(tags.getCompound(TAG_ITEM));
+      itemHandler.readFromNBT(tags.getCompound(TAG_ITEM), registries);
     }
-  }
-
-  @Override
-  public void handleUpdateTag(CompoundTag tag) {
-    super.handleUpdateTag(tag);
+    // 1.21 removed handleUpdateTag; the client applies sync tags through this method,
+    // so the display-fluid refresh moved here (level is null during initial chunk load)
     if (level != null && level.isClientSide) {
       updateFluid();
     }
   }
 
   @Override
-  public void saveSynced(CompoundTag tags) {
-    super.saveSynced(tags);
-    tags.put(TAG_ITEM, itemHandler.writeToNBT());
+  public void saveSynced(CompoundTag tags, net.minecraft.core.HolderLookup.Provider registries) {
+    super.saveSynced(tags, registries);
+    tags.put(TAG_ITEM, itemHandler.writeToNBT(registries));
   }
 }

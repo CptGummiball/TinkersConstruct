@@ -2,28 +2,22 @@ package slimeknights.tconstruct.smeltery.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider.Context;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
 import slimeknights.mantle.client.render.FluidCuboid;
 import slimeknights.mantle.client.render.FluidRenderer;
 import slimeknights.mantle.client.render.MantleRenderTypes;
 import slimeknights.mantle.client.render.RenderingHelper;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.smeltery.block.FaucetBlock;
 import slimeknights.tconstruct.smeltery.block.entity.FaucetBlockEntity;
 
 import java.util.List;
-import java.util.function.Function;
 
 public class FaucetBlockEntityRenderer implements BlockEntityRenderer<FaucetBlockEntity> {
   public FaucetBlockEntityRenderer(Context context) {}
@@ -49,14 +43,17 @@ public class FaucetBlockEntityRenderer implements BlockEntityRenderer<FaucetBloc
       Direction direction = state.getValue(FaucetBlock.FACING);
       boolean isRotated = RenderingHelper.applyRotation(matrices, direction);
 
-      // fluid props
-      IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(renderFluid.getFluid());
-      int color = attributes.getTintColor(renderFluid);
-      Function<ResourceLocation, TextureAtlasSprite> spriteGetter = Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS);
-      TextureAtlasSprite still = spriteGetter.apply(attributes.getStillTexture(renderFluid));
-      TextureAtlasSprite flowing = spriteGetter.apply(attributes.getFlowingTexture(renderFluid));
-      FluidType fluidType = renderFluid.getFluid().getFluidType();
-      combinedLightIn = FluidRenderer.withBlockLight(combinedLightIn, fluidType.getLightLevel(renderFluid));
+      // fluid props; Forge read these off IClientFluidTypeExtensions, Fabric off the fluid variant
+      TextureAtlasSprite still = FluidRenderer.getStillSprite(renderFluid);
+      if (still == null) {
+        if (isRotated) {
+          matrices.popPose();
+        }
+        return;
+      }
+      TextureAtlasSprite flowing = FluidRenderer.getFlowingSprite(renderFluid);
+      int color = FluidRenderer.getColor(renderFluid);
+      combinedLightIn = FluidRenderer.withBlockLight(combinedLightIn, FluidRenderer.getLuminosity(renderFluid));
 
       // render all cubes in the model
       VertexConsumer buffer = bufferIn.getBuffer(MantleRenderTypes.FLUID);

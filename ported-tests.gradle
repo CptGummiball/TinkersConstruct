@@ -1,0 +1,4 @@
+# Port gate for src/test — same mechanism as ported.gradle.
+#
+# Empty on purpose: the existing tests target the Forge/1.20.1 tree and are ported
+# alongside the modules they cover. Add a pattern here when a module's tests are ported.

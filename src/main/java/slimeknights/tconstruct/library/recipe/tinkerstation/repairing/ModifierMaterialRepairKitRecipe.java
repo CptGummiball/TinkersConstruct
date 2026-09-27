@@ -2,8 +2,8 @@ package slimeknights.tconstruct.library.recipe.tinkerstation.repairing;
 
 import lombok.Getter;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.Level;
 import slimeknights.mantle.data.loadable.field.ContextKey;
@@ -18,7 +18,7 @@ import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.library.tools.part.IMaterialItem;
 import slimeknights.tconstruct.tables.recipe.CraftingTableRepairKitRecipe;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 /** @deprecated use {@link slimeknights.tconstruct.library.modifiers.modules.behavior.MaterialRepairModule} */
 @Deprecated(forRemoval = true)
@@ -35,7 +35,8 @@ public class ModifierMaterialRepairKitRecipe extends CraftingTableRepairKitRecip
   @Getter
   private final MaterialStatsId statType;
   public ModifierMaterialRepairKitRecipe(ResourceLocation id, ModifierId modifier, MaterialId repairMaterial, MaterialStatsId statType) {
-    super(id);
+    // id no longer stored by vanilla recipes; the loadable still provides it
+    super();
     this.modifier = modifier;
     this.repairMaterial = repairMaterial;
     this.statType = statType;
@@ -47,7 +48,7 @@ public class ModifierMaterialRepairKitRecipe extends CraftingTableRepairKitRecip
   }
 
   @Override
-  public boolean matches(CraftingContainer inv, Level worldIn) {
+  public boolean matches(CraftingInput inv, Level worldIn) {
     ToolRepair inputs = getRelevantInputs(inv);
     if (inputs == null || !repairMaterial.equals(IMaterialItem.getMaterialFromStack(inputs.repairKit()).getId())) {
       return false;
@@ -65,6 +66,6 @@ public class ModifierMaterialRepairKitRecipe extends CraftingTableRepairKitRecip
   @SuppressWarnings("removal")
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.craftingModifierMaterialRepair.get();
+    return ContentLookups.recipeSerializer("crafting_modifier_material_repair");
   }
 }

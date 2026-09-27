@@ -3,17 +3,20 @@ package slimeknights.tconstruct.library.recipe.material;
 import com.google.gson.JsonObject;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.data.recipes.FinishedRecipe;
+import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.data.recipes.RecipeOutput;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.crafting.RecipeSerializer;
+import net.minecraft.world.item.crafting.Recipe;
 import slimeknights.mantle.recipe.data.ConsumerWrapperBuilder;
+import slimeknights.mantle.recipe.data.IConditionalRecipeOutput;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.tables.TinkerTables;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 
 /** Special variant of {@link ConsumerWrapperBuilder} for {@link ShapedMaterialsRecipe} and {@link ShapelessMaterialsRecipe} */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
@@ -45,44 +48,43 @@ public class MaterialsConsumerBuilder {
   }
 
   /** Builds the wrapped consumer */
-  public Consumer<FinishedRecipe> build(Consumer<FinishedRecipe> consumer) {
-    return (recipe) -> consumer.accept(new Wrapped(recipe, materials, parts, partCount));
+  public RecipeOutput build(RecipeOutput consumer) {
+    return new Wrapped(IConditionalRecipeOutput.of(consumer), materials, parts, partCount);
   }
 
-  private record Wrapped(FinishedRecipe original, List<MaterialVariantId> materials, String parts, int partCount) implements FinishedRecipe {
+  /**
+   * Rewrites a vanilla shaped/shapeless recipe into the materials variant at the JSON level:
+   * swaps the type, injects the parts selector and extra materials, and moves the result back
+   * to the {@code {"item": ...}} shape the materials serializers kept from 1.20.
+   */
+  private record Wrapped(IConditionalRecipeOutput parent, List<MaterialVariantId> materials, String parts, int partCount) implements IConditionalRecipeOutput {
     @Override
-    public ResourceLocation getId() {
-      return original.getId();
+    public JsonObject serializeRecipe(Recipe<?> recipe) {
+      return parent.serializeRecipe(recipe);
     }
 
     @Override
-    public RecipeSerializer<?> getType() {
-      return partCount > 0 ? TinkerTables.shapelessMaterialsRecipeSerializer.get() : TinkerTables.shapedMaterialsRecipeSerializer.get();
-    }
-
-    @Override
-    public void serializeRecipeData(JsonObject json) {
-      original.serializeRecipeData(json);
+    public void acceptJson(ResourceLocation id, JsonObject json, @Nullable AdvancementHolder advancement) {
+      json.addProperty("type", BuiltInRegistries.RECIPE_SERIALIZER.getKey(
+        partCount > 0 ? TinkerTables.shapelessMaterialsRecipeSerializer.get() : TinkerTables.shapedMaterialsRecipeSerializer.get()).toString());
       if (!materials.isEmpty()) {
-        json.add(ShapedMaterialsRecipe.Serializer.MATERIAL_FIELD.key(), ShapedMaterialsRecipe.Serializer.EXTRA_MATERIALS.serialize(materials));
+        json.add("extra_materials", ShapedMaterialsRecipe.Serializer.EXTRA_MATERIALS.serialize(materials));
       }
       if (!parts.isEmpty()) {
         json.addProperty("parts", parts);
       } else {
         json.addProperty("parts", partCount);
       }
+      // the materials serializers read the result under "item" (1.20 shape), vanilla wrote "id"
+      if (json.get("result") instanceof JsonObject result && result.has("id")) {
+        result.add("item", result.remove("id"));
+      }
+      parent.acceptJson(id, json, advancement);
     }
 
-    @Nullable
     @Override
-    public JsonObject serializeAdvancement() {
-      return original.serializeAdvancement();
-    }
-
-    @Nullable
-    @Override
-    public ResourceLocation getAdvancementId() {
-      return original.getAdvancementId();
+    public Advancement.Builder advancement() {
+      return parent.advancement();
     }
   }
 }

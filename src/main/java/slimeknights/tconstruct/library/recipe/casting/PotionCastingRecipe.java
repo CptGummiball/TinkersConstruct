@@ -7,13 +7,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import net.minecraft.core.registries.BuiltInRegistries;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.common.IngredientLoadable;
 import slimeknights.mantle.data.loadable.field.ContextKey;
@@ -40,6 +39,9 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<Display
     Loadables.ITEM.requiredField("result", r -> r.result),
     COOLING_TIME_FIELD,
     PotionCastingRecipe::new);
+
+  /** NBT key on potion fluids, formerly PotionUtils.TAG_POTION (removed in 1.20.5) */
+  protected static final String TAG_POTION = "Potion";
 
   @Getter
   protected final TypeAwareRecipeSerializer<?> serializer;
@@ -97,10 +99,11 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<Display
     return coolingTime;
   }
 
-  @Override
-  public ItemStack assemble(ICastingContainer inv, RegistryAccess access) {
+  public ItemStack assemble(ICastingContainer inv, net.minecraft.core.HolderLookup.Provider access) {
+    // the fluid carries the legacy {Potion: id} tag; the bottle item wants the 1.21 component
     ItemStack result = new ItemStack(this.result);
-    result.setTag(inv.getFluidTag());
+    slimeknights.tconstruct.fluids.fluids.PotionFluidType.getPotion(inv.getFluidTag())
+      .ifPresent(potion -> result.set(net.minecraft.core.component.DataComponents.POTION_CONTENTS, new PotionContents(potion)));
     return result;
   }
 
@@ -113,12 +116,14 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<Display
     if (displayRecipes == null) {
       // create a subrecipe for every potion variant
       List<ItemStack> bottles = List.of(bottle.getItems());
-      displayRecipes = ForgeRegistries.POTIONS.getValues().stream()
-        .filter(potion -> potion != Potions.EMPTY)
+      displayRecipes = BuiltInRegistries.POTION.holders()
         .map(potion -> {
-          ItemStack result = PotionUtils.setPotion(new ItemStack(this.result), potion);
+          ItemStack result = PotionContents.createItemStack(this.result, potion);
+          // fluid display keeps the legacy {Potion: id} tag the potion fluid renders from
+          net.minecraft.nbt.CompoundTag potionTag = new net.minecraft.nbt.CompoundTag();
+          potionTag.putString("Potion", potion.key().location().toString());
           return new DisplayCastingRecipe(getId(), getType(), bottles, fluid.getFluids().stream()
-                                                              .map(fluid -> new FluidStack(fluid.getFluid(), fluid.getAmount(), result.getTag()))
+                                                              .map(fluid -> new FluidStack(fluid.getFluid(), fluid.getAmount(), potionTag))
                                                               .toList(),
                                           result, coolingTime, true);
         }).toList();
@@ -137,7 +142,7 @@ public class PotionCastingRecipe implements ICastingRecipe, IMultiRecipe<Display
   /** @deprecated use {@link #assemble(Container, RegistryAccess)} */
   @Deprecated
   @Override
-  public ItemStack getResultItem(RegistryAccess access) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider access) {
     return new ItemStack(this.result);
   }
 }

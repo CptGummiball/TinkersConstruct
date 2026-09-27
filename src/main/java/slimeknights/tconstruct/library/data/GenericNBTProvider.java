@@ -4,7 +4,6 @@ import com.google.common.hash.Hashing;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.Util;
 import net.minecraft.data.CachedOutput;
-import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider;
 import net.minecraft.data.PackOutput;
 import net.minecraft.data.PackOutput.Target;
@@ -29,10 +28,8 @@ public abstract class GenericNBTProvider implements DataProvider {
   public GenericNBTProvider(PackOutput output, Target type, String folder) {
     this(output.createPathProvider(type, folder), folder);
   }
-
-  public GenericNBTProvider(DataGenerator generator, Target type, String folder) {
-    this(generator.getPackOutput(), type, folder);
-  }
+  // PORT: the DataGenerator convenience constructor is gone; 1.21's DataGenerator no longer
+  // exposes its PackOutput, and every caller has one anyway
 
   /** Localizes the given resource to the folder */
   public ResourceLocation localize(ResourceLocation name) {

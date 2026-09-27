@@ -1,0 +1,85 @@
+{
+  "type": "forge:conditional",
+  "conditions": [
+    {
+      "type": "mantle:tag_combination_filled",
+      "match": [
+        "c:ores/nickel",
+        "c:ore_rates/sparse"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "conditions": [
+        {
+          "type": "mantle:tag_filled",
+          "tag": "c:ingots/platinum"
+        }
+      ],
+      "recipe": {
+        "type": "tconstruct:ore_melting",
+        "byproducts": [
+          {
+            "amount": 90,
+            "rate": "metal",
+            "tag": "c:molten_platinum"
+          }
+        ],
+        "ingredient": {
+          "fabric:type": "fabric:all",
+          "ingredients": [
+            {
+              "tag": "c:ores/nickel"
+            },
+            {
+              "tag": "c:ore_rates/sparse"
+            }
+          ]
+        },
+        "rate": "metal",
+        "result": {
+          "amount": 90,
+          "tag": "c:molten_nickel"
+        },
+        "temperature": 950,
+        "time": 97
+      }
+    },
+    {
+      "conditions": [
+        {
+          "type": "forge:true"
+        }
+      ],
+      "recipe": {
+        "type": "tconstruct:ore_melting",
+        "byproducts": [
+          {
+            "amount": 90,
+            "rate": "metal",
+            "tag": "c:molten_iron"
+          }
+        ],
+        "ingredient": {
+          "fabric:type": "fabric:all",
+          "ingredients": [
+            {
+              "tag": "c:ores/nickel"
+            },
+            {
+              "tag": "c:ore_rates/sparse"
+            }
+          ]
+        },
+        "rate": "metal",
+        "result": {
+          "amount": 90,
+          "tag": "c:molten_nickel"
+        },
+        "temperature": 950,
+        "time": 97
+      }
+    }
+  ]
+}

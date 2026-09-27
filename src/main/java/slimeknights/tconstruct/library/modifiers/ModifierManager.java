@@ -23,20 +23,12 @@ import net.minecraft.tags.TagLoader;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.crafting.CraftingHelper;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.ICondition.IContext;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.OnDatapackSyncEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.fml.ModContainer;
-import net.minecraftforge.fml.ModLoader;
-import net.minecraftforge.fml.event.IModBusEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLLoader;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
+import slimeknights.mantle.recipe.condition.ICondition;
+import slimeknights.mantle.recipe.condition.ICondition.IContext;
+import slimeknights.mantle.event.Event;
+import slimeknights.mantle.event.EventPriority;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.mantle.util.RegistryHelper;
@@ -54,6 +46,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -66,7 +59,7 @@ import java.util.stream.Stream;
 
 /** Modifier registry and JSON loader */
 @Log4j2
-public class ModifierManager extends SimpleJsonResourceReloadListener {
+public class ModifierManager extends SimpleJsonResourceReloadListener implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   /** Location of dynamic modifiers */
   public static final String FOLDER = "tinkering/modifiers";
   /** Location of modifier tags */
@@ -110,6 +103,12 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
   private Map<TagKey<Enchantment>, Modifier> enchantmentTagMap = Collections.emptyMap();
   /** Mapping from enchantment to modifiers, for conversions */
   private Map<Enchantment,Modifier> enchantmentMap = Collections.emptyMap();
+  /** Enchantment ids parsed from JSON; 1.21 enchantments are a datapack registry, so they resolve once the server registries exist */
+  private final List<PendingEnchantment> pendingEnchantments = new ArrayList<>();
+  /** Registry names of resolved enchantments, kept for sorted display */
+  private Map<Enchantment,ResourceLocation> enchantmentKeys = Collections.emptyMap();
+  /** Marks tag expansion done for the current data load */
+  private boolean enchantmentsResolved = false;
 
   /** If true, dynamic modifiers have been loaded from datapacks, so its safe to fetch dynamic modifiers */
   @Getter
@@ -126,22 +125,30 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
 
   /** For internal use only */
   public void init() {
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, FMLCommonSetupEvent.class, e -> e.enqueueWork(this::fireRegistryEvent));
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, AddReloadListenerEvent.class, this::addDataPackListeners);
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, OnDatapackSyncEvent.class, e -> JsonUtils.syncPackets(e, new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap)));
+    // Fabric bootstrap runs at what Forge called common setup, so the registration event
+    // fires immediately; addons in this jar listen on the shim bus.
+    fireRegistryEvent();
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.SERVER_DATA).registerReloadListener(this);
+    this.conditionContext = slimeknights.mantle.util.DataLoadedConditionContext.INSTANCE;
+    net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+      resolveEnchantmentMappings(server.registryAccess());
+      JsonUtils.syncPackets(server, handler.getPlayer(), new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap));
+    });
+    net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STARTED.register(server -> resolveEnchantmentMappings(server.registryAccess()));
+    net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.END_DATA_PACK_RELOAD.register((server, resources, success) -> {
+      if (success) {
+        resolveEnchantmentMappings(server.registryAccess());
+        JsonUtils.syncPackets(server, null, new UpdateModifiersPacket(this.dynamicModifiers, this.tags, this.enchantmentMap, this.enchantmentTagMap));
+      }
+    });
   }
 
   /** Fires the modifier registry event */
   private void fireRegistryEvent() {
-    ModLoader.get().runEventGenerator(ModifierRegistrationEvent::new);
+    MinecraftForge.EVENT_BUS.post(new ModifierRegistrationEvent(null));
     modifiersRegistered = true;
   }
 
-  /** Adds the managers as datapack listeners */
-  private void addDataPackListeners(final AddReloadListenerEvent event) {
-    event.addListener(this);
-    conditionContext = event.getConditionContext();
-  }
 
   @SuppressWarnings("removal")
   @Override
@@ -177,7 +184,7 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
     }
     for (ModifierId id : staticModifiers.keySet()) {
       if (dynamicModifiers.containsKey(id)) {
-        if (FMLLoader.isProduction()) {
+        if (!net.fabricmc.loader.api.FabricLoader.getInstance().isDevelopmentEnvironment()) {
           log.warn("Dynamic modifier {} is replacing static modifier with the same ID. The ability to do this may be removed in a future version, so if this is intentional please open an issue report with reasoning..", id);
         } else {
           log.error("Dynamic modifier {} is replacing static modifier with the same ID. This is likely a bug with your mod, but on the chance its intentional this error does become just a warning at runtime.", id);
@@ -208,6 +215,8 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
     // load modifier to enchantment mapping
     enchantmentMap = new HashMap<>();
     this.enchantmentTagMap = new LinkedHashMap<>();
+    this.pendingEnchantments.clear();
+    this.enchantmentsResolved = false;
     for (Resource resource : pResourceManager.getResourceStack(ENCHANTMENT_MAP)) {
       JsonObject enchantmentJson = JsonHelper.getJson(resource, ENCHANTMENT_MAP);
       if (enchantmentJson != null) {
@@ -245,15 +254,12 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
               if (optional) {
                 key = key.substring(0, key.length() - 1);
               }
-              Enchantment enchantment = BuiltInRegistries.ENCHANTMENT.get(new ResourceLocation(key));
-              if (enchantment == null) {
-                if (optional) {
-                  TConstruct.LOG.debug("Skipping modifier " + modifierId + " due to unknown optional enchantment " + key);
-                  continue;
-                }
+              ResourceLocation enchantmentId = ResourceLocation.tryParse(key);
+              if (enchantmentId == null) {
                 throw new JsonSyntaxException("Invalid enchantment ID " + key + " for modifier " + modifierId);
               }
-              enchantmentMap.put(enchantment, modifier);
+              // enchantments are a datapack registry in 1.21; resolve once server registries exist
+              pendingEnchantments.add(new PendingEnchantment(enchantmentId, optional, modifier, key));
             }
           } catch (RuntimeException e) {
             log.info("Invalid enchantment to modifier mapping", e);
@@ -268,7 +274,13 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
 
   /** Creates context for modifier parsing */
   public static TypedMapBuilder contextBuilder(ResourceLocation modifier) {
-    return TypedMapBuilder.builder().put(ContextKey.ID, modifier).put(ContextKey.DEBUG, "Modifier " + modifier);
+    TypedMapBuilder builder = TypedMapBuilder.builder().put(ContextKey.ID, modifier).put(ContextKey.DEBUG, "Modifier " + modifier);
+    // datapack-registry loadables (enchantments) cannot resolve without registry access
+    net.minecraft.core.HolderLookup.Provider registries = slimeknights.mantle.data.DatapackRegistries.current();
+    if (registries != null) {
+      builder.put(ContextKey.REGISTRY_ACCESS, registries);
+    }
+    return builder;
   }
 
   /** @deprecated use {@link #contextBuilder(ResourceLocation)} */
@@ -297,7 +309,7 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
       }
 
       // conditions
-      if (json.has("condition") && !CraftingHelper.getCondition(GsonHelper.getAsJsonObject(json, "condition")).test(conditionContext)) {
+      if (json.has("condition") && !ConditionHelper.getCondition(GsonHelper.getAsJsonObject(json, "condition")).test(conditionContext)) {
         return null;
       }
 
@@ -359,18 +371,49 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
   @SuppressWarnings("deprecation")  // eventually it won't be if we move away from forge
   @Nullable
   public Modifier get(Enchantment enchantment) {
-    // if we saw it before, return the last value
-    if (enchantmentMap.containsKey(enchantment)) {
-      return enchantmentMap.get(enchantment);
+    // tag mappings expand into the map on resolve, so a plain lookup covers both
+    return enchantmentMap.get(enchantment);
+  }
+
+  /** Resolves parsed enchantment mappings against the world enchantment registry; runs once per data load */
+  private void resolveEnchantmentMappings(net.minecraft.core.RegistryAccess registryAccess) {
+    if (enchantmentsResolved) {
+      return;
     }
-    // did not find, check the tags
-    for (Entry<TagKey<Enchantment>,Modifier> mapping : enchantmentTagMap.entrySet()) {
-      if (RegistryHelper.contains(BuiltInRegistries.ENCHANTMENT, mapping.getKey(), enchantment)) {
-        return mapping.getValue();
+    enchantmentsResolved = true;
+    Registry<Enchantment> registry = registryAccess.registryOrThrow(Registries.ENCHANTMENT);
+    for (PendingEnchantment pending : pendingEnchantments) {
+      Enchantment enchantment = registry.get(pending.id());
+      if (enchantment == null) {
+        if (pending.optional()) {
+          TConstruct.LOG.debug("Skipping unknown optional enchantment {} for modifier mapping", pending.debugKey());
+        } else {
+          log.error("Invalid enchantment ID {} in modifier mapping", pending.debugKey());
+        }
+      } else {
+        enchantmentMap.put(enchantment, pending.modifier());
       }
     }
-    return null;
+    pendingEnchantments.clear();
+    // expand tag mappings so gameplay queries need no registry access; explicit entries win
+    for (Entry<TagKey<Enchantment>,Modifier> mapping : enchantmentTagMap.entrySet()) {
+      for (net.minecraft.core.Holder<Enchantment> holder : registry.getTagOrEmpty(mapping.getKey())) {
+        enchantmentMap.putIfAbsent(holder.value(), mapping.getValue());
+      }
+    }
+    // capture names for sorted display
+    Map<Enchantment,ResourceLocation> keys = new java.util.IdentityHashMap<>();
+    for (Enchantment enchantment : enchantmentMap.keySet()) {
+      ResourceLocation id = registry.getKey(enchantment);
+      if (id != null) {
+        keys.put(enchantment, id);
+      }
+    }
+    this.enchantmentKeys = keys;
   }
+
+  /** Enchantment mapping waiting on the datapack registry */
+  private record PendingEnchantment(ResourceLocation id, boolean optional, Modifier modifier, String debugKey) {}
 
   /** Checks if the given modifier has an enchantment equivelent */
   public boolean hasEnchantment(Modifier modifier) {
@@ -381,10 +424,9 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
   @SuppressWarnings("deprecation")  // eventually it won't be if we move away from forge
   public Stream<Enchantment> getEquivalentEnchantments(Predicate<ModifierId> modifiers) {
     Predicate<Entry<?,Modifier>> predicate = entry -> modifiers.test(entry.getValue().getId());
-    return Stream.concat(
-      enchantmentMap.entrySet().stream().filter(predicate).map(Entry::getKey),
-      enchantmentTagMap.entrySet().stream().filter(predicate).flatMap(entry -> RegistryHelper.getTagValueStream(BuiltInRegistries.ENCHANTMENT, entry.getKey()))
-    ).distinct().sorted(Comparator.comparing(enchantment -> Objects.requireNonNull(BuiltInRegistries.ENCHANTMENT.getKey(enchantment))));
+    // tag mappings are expanded into the map on resolve, so the map is the full set
+    return enchantmentMap.entrySet().stream().filter(predicate).map(Entry::getKey)
+      .distinct().sorted(Comparator.comparing(enchantment -> enchantmentKeys.getOrDefault(enchantment, EMPTY)));
   }
 
   /** Gets a list of all modifier IDs */
@@ -458,15 +500,20 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
 
   /** Event for registering modifiers */
   @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-  public class ModifierRegistrationEvent extends Event implements IModBusEvent {
-    /** Container receiving this event */
-    private final ModContainer container;
+  public class ModifierRegistrationEvent extends Event {
+    /** Container receiving this event; null on Fabric where registration is a single broadcast */
+    @Nullable
+    private final Object container;
 
     /** Validates the namespace of the container registering */
     private void checkModNamespace(ResourceLocation name) {
       // check mod container, should be the active mod
       // don't want mods registering stuff in Tinkers namespace, or Minecraft
-      String activeMod = container.getNamespace();
+      // Fabric has no active-mod context on the shim bus, so the event may carry null
+      if (container == null) {
+        return;
+      }
+      String activeMod = container.toString();
       if (!name.getNamespace().equals(activeMod)) {
         TConstruct.LOG.warn("Potentially Dangerous alternative prefix for name `{}`, expected `{}`. This could be a intended override, but in most cases indicates a broken mod.", name, activeMod);
       }
@@ -518,5 +565,10 @@ public class ModifierManager extends SimpleJsonResourceReloadListener {
     public boolean shouldDisplay(boolean advanced) {
       return false;
     }
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("modifiers");
   }
 }

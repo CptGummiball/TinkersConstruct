@@ -29,7 +29,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ToolActions;
+import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.mantle.util.CombatHelper;
 import slimeknights.tconstruct.common.TinkerDamageTypes;
 import slimeknights.tconstruct.common.TinkerTags;
@@ -105,11 +105,11 @@ public class CombatFishingHook extends FishingHook implements ProjectileWithKnoc
   }
 
   @Override
-  protected void defineSynchedData() {
-    super.defineSynchedData();
-    this.entityData.define(GRAPPLE, (byte) GrappleType.NONE.ordinal());
-    this.entityData.define(COLLECTING, false);
-    this.entityData.define(MATERIAL, IMaterial.UNKNOWN_ID);
+  protected void defineSynchedData(SynchedEntityData.Builder builder) {
+    super.defineSynchedData(builder);
+    builder.define(GRAPPLE, (byte) GrappleType.NONE.ordinal());
+    builder.define(COLLECTING, false);
+    builder.define(MATERIAL, IMaterial.UNKNOWN_ID);
   }
 
   /** Gets the currently displayed material */
@@ -175,9 +175,9 @@ public class CombatFishingHook extends FishingHook implements ProjectileWithKnoc
       ItemStack stack = living.getMainHandItem();
       InteractionHand hand = InteractionHand.MAIN_HAND;
       // must be able to cast
-      if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+      if (!ModifierUtil.canCastFishingRod(stack)) {
         stack = living.getOffhandItem();
-        if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+        if (!ModifierUtil.canCastFishingRod(stack)) {
           return;
         }
         hand = InteractionHand.OFF_HAND;
@@ -238,17 +238,18 @@ public class CombatFishingHook extends FishingHook implements ProjectileWithKnoc
         float oldHealth = targetLiving != null ? targetLiving.getHealth() : 0;
         if (target.hurt(source, damage)) {
           if (!this.level().isClientSide && owner instanceof LivingEntity ownerLiving) {
-            if (targetLiving != null) {
-              EnchantmentHelper.doPostHurtEffects(targetLiving, owner);
+            if (targetLiving != null && this.level() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+              // 1.21 folded post-hurt enchantment responses (thorns etc.) into doPostAttackEffects
+              EnchantmentHelper.doPostAttackEffects(serverLevel, targetLiving, source);
             }
 
             // run modifier hook
             modifierHook: {
               // find out which stack was used
               ItemStack stack = ownerLiving.getMainHandItem();
-              if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+              if (!ModifierUtil.canCastFishingRod(stack)) {
                 stack = ownerLiving.getOffhandItem();
-                if (!stack.canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+                if (!ModifierUtil.canCastFishingRod(stack)) {
                   break modifierHook;
                 }
               }
@@ -297,7 +298,8 @@ public class CombatFishingHook extends FishingHook implements ProjectileWithKnoc
     knockback = knockback.scale(GRAPPLE_STRENGTH * Math.pow(knockback.lengthSqr(), -0.25f));
     owner.push(knockback.x, knockback.y, knockback.z);
     if (isDrill() && owner instanceof Player player) {
-      player.startAutoSpinAttack(20);
+      // 1.21 spin attacks carry their damage and stack; the drill's damage comes from our own hit logic
+      player.startAutoSpinAttack(20, 0, ItemStack.EMPTY);
     }
     if (owner instanceof ServerPlayer player) {
       player.connection.send(new ClientboundSetEntityMotionPacket(player.getId(), player.getDeltaMovement()));

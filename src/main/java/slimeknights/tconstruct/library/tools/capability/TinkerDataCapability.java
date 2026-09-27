@@ -2,93 +2,46 @@ package slimeknights.tconstruct.library.tools.capability;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import slimeknights.mantle.registration.object.IdAwareObject;
-import slimeknights.tconstruct.TConstruct;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * Capability to make it easy for Tinkers to store common data on the player, primarily used for armor
- * Data stored in this capability is not saved to NBT, most often its filled by the relevant equipment events
+ * Runtime data store for living entities, primarily used for armor modifiers.
+ *
+ * <p>Data here is deliberately <b>not</b> saved to NBT: it is filled by the equipment-change
+ * events whenever gear changes, respawns or dimension travel happen. On Forge that made it a
+ * non-serializing capability; on Fabric the same contract needs no attachment machinery at
+ * all — a weak map keyed by entity identity is equivalent. Entries vanish with their entity,
+ * and new entity instances (respawn, cross-dimension) start empty exactly like the Forge
+ * provider did, with the equipment events refilling them.
  */
 public class TinkerDataCapability {
+
   private TinkerDataCapability() {}
 
-  /** Capability ID */
-  private static final ResourceLocation ID = TConstruct.getResource("modifier_data");
-  /** Capability type */
-  public static final Capability<Holder> CAPABILITY = CapabilityManager.get(new CapabilityToken<>() {});
+  /** Runtime store; weak keys so entries die with their entity. */
+  private static final Map<LivingEntity, Holder> DATA = Collections.synchronizedMap(new WeakHashMap<>());
 
-  /** Registers this capability */
-  public static void register() {
-    FMLJavaModLoadingContext.get().getModEventBus().addListener(EventPriority.NORMAL, false, RegisterCapabilitiesEvent.class, TinkerDataCapability::register);
-    MinecraftForge.EVENT_BUS.addGenericListener(Entity.class, TinkerDataCapability::attachCapability);
+  /** Kept for bootstrap symmetry with the Forge build; the weak map needs no registration. */
+  public static void register() {}
+
+  /** Gets the data holder for an entity, creating it if missing. */
+  public static Holder getData(LivingEntity entity) {
+    return DATA.computeIfAbsent(entity, e -> new Holder());
   }
 
-  /** Registers the capability with the event bus */
-  private static void register(RegisterCapabilitiesEvent event) {
-    event.register(Holder.class);
-  }
-
-  /** Event listener to attach the capability */
-  private static void attachCapability(AttachCapabilitiesEvent<Entity> event) {
-    if (event.getObject() instanceof LivingEntity) {
-      Provider provider = new Provider();
-      event.addCapability(ID, provider);
-      event.addListener(provider);
-    }
-  }
-
-  /** Gets the data capability from an entity, or null if missing */
-  @SuppressWarnings("DataFlowIssue")
-  @Nullable
-  public static TinkerDataCapability.Holder getData(LivingEntity entity) {
-    return entity.getCapability(CAPABILITY).orElse(null);
-  }
-
-
-  /* Required methods */
-
-  /** Capability provider instance */
-  private static class Provider implements ICapabilityProvider, Runnable {
-    private LazyOptional<Holder> data;
-    private Provider() {
-      this.data = LazyOptional.of(Holder::new);
-    }
-
-    @Nonnull
-    @Override
-    public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
-      return CAPABILITY.orEmpty(cap, data);
-    }
-
-    @Override
-    public void run() {
-      // called when capabilities invalidate, just invalidate but preserve the old data
-      // (as if they revive the equipment change event does not fire again, see dimension change)
-      Holder oldData = data.orElse(new Holder());
-      data.invalidate();
-      data = LazyOptional.of(() -> oldData);
-    }
+  /** Runs the given action on the entity's data holder. Mirrors the old capability's ifPresent shape. */
+  public static void run(LivingEntity entity, java.util.function.Consumer<Holder> action) {
+    action.accept(getData(entity));
   }
 
   /** Class for generic keys */

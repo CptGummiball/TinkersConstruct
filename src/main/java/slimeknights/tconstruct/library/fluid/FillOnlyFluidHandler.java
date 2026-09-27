@@ -1,11 +1,11 @@
 package slimeknights.tconstruct.library.fluid;
 
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
 
 import javax.annotation.Nonnull;
 
-import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import slimeknights.mantle.transfer.fluid.IFluidHandler.FluidAction;
 
 /**
  * Fluid handler wrapper that only allows filling

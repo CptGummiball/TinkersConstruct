@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.library.modifiers.util;
 
 import lombok.RequiredArgsConstructor;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.IEventBus;
+import slimeknights.mantle.event.EventBus;
+import slimeknights.mantle.event.EventPriority;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 import slimeknights.tconstruct.library.modifiers.ModifierManager.ModifierRegistrationEvent;
@@ -27,8 +27,8 @@ public class ModifierDeferredRegister {
   /** If true, the registration event has been seen, so its now too late to register new modifiers */
   private boolean seenRegisterEvent = false;
 
-  /** Registers the deferred register with the relevant forge event busses */
-  public void register(IEventBus bus) {
+  /** Registers the deferred register with the relevant event bus (the shim bus posts ModifierRegistrationEvent) */
+  public void register(EventBus bus) {
     bus.addListener(EventPriority.NORMAL, false, ModifierRegistrationEvent.class, this::handleEvent);
   }
 

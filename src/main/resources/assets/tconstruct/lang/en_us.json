@@ -537,6 +537,10 @@
   "fluid.tconstruct.beetroot_soup": "Beetroot Soup",
   "fluid.tconstruct.flowing_beetroot_soup": "Flowing Beetroot Soup",
   "item.tconstruct.beetroot_soup_bucket": "Beetroot Soup Bucket",
+  "block.tconstruct.molten_cheese_fluid": "Molten Cheese",
+  "fluid.tconstruct.molten_cheese": "Molten Cheese",
+  "fluid.tconstruct.flowing_molten_cheese": "Flowing Molten Cheese",
+  "item.tconstruct.molten_cheese_bucket": "Molten Cheese Bucket",
   "fluid.tconstruct.beetroot_soup.fluid_effect": "Beetroot soup is an easily farmable slurpable food option.",
 
   "block.tconstruct.mushroom_stew_fluid": "Mushroom Stew",
@@ -4218,6 +4222,20 @@
   "advancements.tconstruct.world.piggybackpack.title": "Pig Piggyback",
   "advancements.tconstruct.world.piggybackpack.description": "Pick up a pig with a piggybackpack",
   "advancements.tconstruct.world.ancient_tools.title": "Archeologists",
-  "advancements.tconstruct.world.ancient_tools.description": "Discover all original types of ancient tool"
-}
+  "advancements.tconstruct.world.ancient_tools.description": "Discover all original types of ancient tool",
 
+  "_comment.emi": "category titles for the EMI integration",
+  "emi.category.tconstruct.casting_table": "Casting Table",
+  "emi.category.tconstruct.casting_basin": "Casting Basin",
+  "emi.category.tconstruct.melting": "Melting",
+  "emi.category.tconstruct.foundry": "Foundry",
+  "emi.category.tconstruct.alloy": "Alloying",
+  "emi.category.tconstruct.entity_melting": "Entity Melting",
+  "emi.category.tconstruct.molding": "Molding",
+  "emi.category.tconstruct.modifiers": "Modifiers",
+  "emi.category.tconstruct.modifier_worktable": "Modifier Worktable",
+  "emi.category.tconstruct.tool_building": "Tool Building",
+  "emi.category.tconstruct.part_builder": "Part Builder",
+  "emi.category.tconstruct.severing": "Severing",
+  "fluid.tconstruct.milk": "Milk"
+}

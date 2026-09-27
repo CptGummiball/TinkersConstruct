@@ -5,14 +5,14 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.common.util.NonNullConsumer;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fluids.capability.templates.EmptyFluidHandler;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemHandlerHelper;
+import slimeknights.mantle.event.ForgeHooks;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.cap.NonNullConsumer;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.EmptyFluidHandler;
+import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 import slimeknights.mantle.inventory.EmptyItemHandler;
 import slimeknights.mantle.util.WeakConsumerWrapper;
@@ -42,17 +42,10 @@ public class SolidFuelModule extends FuelModule {
 
   @Override
   protected void resetHandler(@Nullable LazyOptional<?> source) {
-    // if the source is either of our handlers, clear both listeners to ensure cleanest refetc
+    // if the source is either of our handlers, clear both listeners to ensure cleanest refetch;
+    // the upstream listener-removal optimization was Forge-only, and the shimmed LazyOptional
+    // drops its listeners on invalidate anyway
     if (source == null || source == itemHandler || source == fluidHandler) {
-      // remove listeners for efficiency, but we have to skip removing the listener that caused this
-      if (Util.isForge()) {
-        if (itemHandler != null && itemHandler != source) {
-          itemHandler.removeListener(itemListener);
-        }
-        if (fluidHandler != null && fluidHandler != source) {
-          fluidHandler.removeListener(fluidListener);
-        }
-      }
       itemHandler = null;
       fluidHandler = null;
     }
@@ -81,7 +74,7 @@ public class SolidFuelModule extends FuelModule {
             rate = solid.getRate();
             parent.setChangedFast();
             // return the container
-            ItemStack container = extracted.getCraftingRemainingItem();
+            ItemStack container = extracted.getRecipeRemainder();
             if (!container.isEmpty()) {
               // if we cannot insert the container back, spit it on the ground
               ItemStack notInserted = ItemHandlerHelper.insertItem(handler, container, false);
@@ -115,11 +108,11 @@ public class SolidFuelModule extends FuelModule {
     if (te != null) {
       // first, identify a capability that has what we need
       // on the chance both are present, we prioritize fluid; we don't expect that to change
-      fluidHandler = te.getCapability(ForgeCapabilities.FLUID_HANDLER);
+      fluidHandler = slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.FLUID_HANDLER);
       if (fluidHandler.isPresent()) {
         fluidHandler.addListener(fluidListener);
       }
-      itemHandler = te.getCapability(ForgeCapabilities.ITEM_HANDLER);
+      itemHandler = slimeknights.mantle.transfer.cap.CapabilityHelper.get(te, ForgeCapabilities.ITEM_HANDLER);
       if (itemHandler.isPresent()) {
         itemHandler.addListener(itemListener);
       }

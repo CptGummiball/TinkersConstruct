@@ -8,7 +8,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
 import slimeknights.mantle.data.listener.ResourceValidator;
 import slimeknights.tconstruct.common.config.Config;
 
@@ -21,7 +23,7 @@ import java.util.function.Predicate;
  * Logic to handle dynamic texture scans. Really just logging missing textures at this point.
  */
 @Log4j2
-public class DynamicTextureLoader extends ResourceValidator {
+public class DynamicTextureLoader extends ResourceValidator implements IdentifiableResourceReloadListener {
   /** Instance to register with the loader */
   private static final DynamicTextureLoader INSTANCE = new DynamicTextureLoader();
 
@@ -42,9 +44,19 @@ public class DynamicTextureLoader extends ResourceValidator {
     return super.reload(stage, resourceManager, preparationsProfiler, reloadProfiler, backgroundExecutor, gameExecutor).thenRunAsync(this::clear);
   }
 
-  /** Registers this manager */
-  public static void init(RegisterClientReloadListenersEvent event) {
-    event.registerReloadListener(INSTANCE);
+  /**
+   * Registers this manager.
+   *
+   * <p>Fabric port: Forge registered through {@code RegisterClientReloadListenersEvent} on the mod
+   * bus; the Fabric equivalent registers directly and needs an id for reload ordering.
+   */
+  public static void init() {
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("dynamic_textures");
   }
 
   /**

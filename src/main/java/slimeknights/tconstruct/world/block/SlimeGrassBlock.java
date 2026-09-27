@@ -32,7 +32,7 @@ public class SlimeGrassBlock extends SnowyDirtBlock implements BonemealableBlock
   /* Bonemeal interactions */
 
   @Override
-  public boolean isValidBonemealTarget(LevelReader world, BlockPos pos, BlockState state, boolean isClient) {
+  public boolean isValidBonemealTarget(LevelReader world, BlockPos pos, BlockState state) {
     return world.getBlockState(pos.above()).isAir();
   }
 
@@ -110,7 +110,7 @@ public class SlimeGrassBlock extends SnowyDirtBlock implements BonemealableBlock
   public void randomTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random) {
     // based on vanilla logic, reimplemented to remove dirt hardcode
     // prevent loading unloaded chunks
-    if (!world.isAreaLoaded(pos, 3)) return;
+    if (!world.hasChunksAt(pos.offset(-3, -3, -3), pos.offset(3, 3, 3))) return;
 
     // if this is no longer valid grass, destroy
     if (!isValidPos(state, world, pos)) {

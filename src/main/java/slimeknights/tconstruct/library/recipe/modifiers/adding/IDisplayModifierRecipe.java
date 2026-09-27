@@ -143,7 +143,7 @@ public interface IDisplayModifierRecipe extends IModifierRecipe {
   /* Gets a copy of the stack with the given modifiers */
   static ItemStack withModifiers(ItemStack stack, int maxSize, List<ModifierEntry> modifierList, Consumer<ModDataNBT> persistentDataConsumer) {
     ItemStack output = stack.copyWithCount(Math.min(stack.getMaxStackSize(), maxSize));
-    CompoundTag nbt = output.getOrCreateTag();
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(output);
 
     // build modifiers list
     // go through the builder to ensure they are merged properly

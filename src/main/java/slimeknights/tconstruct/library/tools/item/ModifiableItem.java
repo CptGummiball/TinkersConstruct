@@ -31,12 +31,10 @@ import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.common.ToolAction;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
+import slimeknights.mantle.item.ToolAction;
 import slimeknights.mantle.client.SafeClientAccess;
+import slimeknights.mantle.util.CombatHelper;
 import slimeknights.tconstruct.common.TinkerTags;
-import slimeknights.tconstruct.library.client.item.ModifiableItemClientExtension;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
 import slimeknights.tconstruct.library.modifiers.hook.behavior.AttributesModifierHook;
@@ -50,7 +48,6 @@ import slimeknights.tconstruct.library.modifiers.hook.interaction.SlotStackModif
 import slimeknights.tconstruct.library.modifiers.hook.interaction.UsingToolModifierHook;
 import slimeknights.tconstruct.library.modifiers.modules.build.RarityModule;
 import slimeknights.tconstruct.library.tools.IndestructibleItemEntity;
-import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider;
 import slimeknights.tconstruct.library.tools.definition.ToolDefinition;
 import slimeknights.tconstruct.library.tools.definition.module.display.ToolNameHook;
 import slimeknights.tconstruct.library.tools.definition.module.mining.IsEffectiveToolHook;
@@ -96,20 +93,15 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     this.maxStackSize = maxStackSize;
   }
 
-  @Override
   public int getMaxStackSize(ItemStack stack) {
     return stack.isDamaged() ? 1 : maxStackSize;
   }
 
   /* Basic properties */
 
-  @Override
-  public boolean isNotReplaceableByPickAction(ItemStack stack, Player player, int inventorySlot) {
-    return true;
-  }
+  // isNotReplaceableByPickAction was a Forge hook with no Fabric counterpart
 
   @Nullable
-  @Override
   public EquipmentSlot getEquipmentSlot(ItemStack stack) {
     if (stack.is(TinkerTags.Items.HELD_ARMOR)) {
       return EquipmentSlot.OFFHAND;
@@ -124,39 +116,29 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return false;
   }
 
-  @Override
   public boolean isBookEnchantable(ItemStack stack, ItemStack book) {
     return false;
   }
 
-  @Override
-  public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
-    return enchantment.isCurse() && super.canApplyAtEnchantingTable(stack, enchantment);
+  public boolean canApplyAtEnchantingTable(ItemStack stack, net.minecraft.core.Holder<Enchantment> enchantment) {
+    // 1.21 marks curses by tag rather than a method
+    return enchantment.is(net.minecraft.tags.EnchantmentTags.CURSE);
   }
 
-  @Override
-  public int getEnchantmentLevel(ItemStack stack, Enchantment enchantment) {
+  public int getEnchantmentLevel(ItemStack stack, net.minecraft.core.Holder<Enchantment> enchantment) {
     return EnchantmentModifierHook.getEnchantmentLevel(stack, enchantment);
   }
 
-  @Override
-  public Map<Enchantment,Integer> getAllEnchantments(ItemStack stack) {
+  public Map<net.minecraft.core.Holder<Enchantment>,Integer> getAllEnchantments(ItemStack stack) {
     return EnchantmentModifierHook.getAllEnchantments(stack);
   }
 
 
   /* Loading */
 
-  @Nullable
-  @Override
-  public ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
-    return new ToolCapabilityProvider(stack);
-  }
-
-  @Override
-  public void verifyTagAfterLoad(CompoundTag nbt) {
-    ToolStack.verifyTag(this, nbt, getToolDefinition());
-  }
+  // Forge attach points removed: item capabilities (fluid/inventory on tools) register
+  // through the Fabric storage APIs in the capability step, and verifyTagAfterLoad's
+  // load-time fixup moves into ToolStack's component handling.
 
   @Override
   public void onCraftedBy(ItemStack stack, Level worldIn, Player playerIn) {
@@ -173,7 +155,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return ModifierUtil.checkVolatileFlag(stack, SHINY);
   }
 
-  @Override
   public Rarity getRarity(ItemStack stack) {
     return RarityModule.getRarity(stack);
   }
@@ -181,13 +162,11 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   /* Indestructible items */
 
-  @Override
   public boolean hasCustomEntity(ItemStack stack) {
     return IndestructibleItemEntity.hasCustomEntity(stack);
   }
 
   @Nullable
-  @Override
   public Entity createEntity(Level world, Entity original, ItemStack stack) {
     return IndestructibleItemEntity.createFrom(world, original, stack);
   }
@@ -195,7 +174,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   /* Damage/Durability */
 
-  @Override
   public boolean isRepairable(ItemStack stack) {
     // handle in the tinker station
     return false;
@@ -206,17 +184,14 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return false;
   }
 
-  @Override
   public boolean canBeDepleted() {
     return true;
   }
 
-  @Override
   public int getMaxDamage(ItemStack stack) {
     return ToolDamageUtil.getFakeMaxDamage(stack);
   }
 
-  @Override
   public int getDamage(ItemStack stack) {
     if (!canBeDepleted()) {
       return 0;
@@ -224,14 +199,12 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return ToolStack.from(stack).getDamage();
   }
 
-  @Override
   public void setDamage(ItemStack stack, int damage) {
     if (canBeDepleted()) {
       ToolStack.from(stack).setDamage(damage);
     }
   }
 
-  @Override
   public <T extends LivingEntity> int damageItem(ItemStack stack, int amount, T damager, Consumer<T> onBroken) {
     ToolDamageUtil.handleDamageItem(stack, amount, damager, onBroken);
     return 0;
@@ -258,26 +231,23 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
 
   /* Attacking */
 
-  @Override
   public boolean onLeftClickEntity(ItemStack stack, Player player, Entity target) {
     return stack.getCount() > 1 || EntityInteractionModifierHook.leftClickEntity(stack, player, target);
   }
 
   @Override
-  public Multimap<Attribute,AttributeModifier> getAttributeModifiers(IToolStackView tool, EquipmentSlot slot) {
+  public Multimap<net.minecraft.core.Holder<Attribute>,AttributeModifier> getAttributeModifiers(IToolStackView tool, EquipmentSlot slot) {
     return AttributesModifierHook.getHeldAttributeModifiers(tool, slot);
   }
 
-  @Override
-  public Multimap<Attribute, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
-    CompoundTag nbt = stack.getTag();
+  public Multimap<net.minecraft.core.Holder<Attribute>, AttributeModifier> getAttributeModifiers(EquipmentSlot slot, ItemStack stack) {
+    CompoundTag nbt = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     if (nbt == null || slot.getType() != Type.HAND) {
       return ImmutableMultimap.of();
     }
     return getAttributeModifiers(ToolStack.from(stack), slot);
   }
 
-  @Override
   public boolean canDisableShield(ItemStack stack, ItemStack shield, LivingEntity entity, LivingEntity attacker) {
     return canPerformAction(stack, TinkerToolActions.SHIELD_DISABLE);
   }
@@ -300,7 +270,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return stack.getCount() == 1 ? MiningSpeedToolHook.getDestroySpeed(stack, state) : 0;
   }
 
-  @Override
   public boolean onBlockStartBreak(ItemStack stack, BlockPos pos, Player player) {
     return stack.getCount() > 1 || ToolHarvestLogic.handleBlockBreak(stack, pos, player);
   }
@@ -340,7 +309,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return player == null || !volatileData.getBoolean(DEFER_OFFHAND) || player.getOffhandItem().isEmpty();
   }
   
-  @Override
   public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
     if (stack.getCount() == 1) {
       ToolStack tool = ToolStack.from(stack);
@@ -421,14 +389,13 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     hook.onUsingTick(tool, activeModifier, entityLiving, timeLeft);
   }
 
-  @Override
   public boolean canContinueUsing(ItemStack oldStack, ItemStack newStack) {
-    if (super.canContinueUsing(oldStack, newStack)) {
-      if (oldStack != newStack) {
-        GeneralInteractionModifierHook.finishUsing(ToolStack.from(oldStack));
-      }
+    // Forge's default: continue while the item stays the same
+    boolean canContinue = ItemStack.isSameItem(oldStack, newStack);
+    if (canContinue && oldStack != newStack) {
+      GeneralInteractionModifierHook.finishUsing(ToolStack.from(oldStack));
     }
-    return super.canContinueUsing(oldStack, newStack);
+    return canContinue;
   }
 
   @Override
@@ -456,7 +423,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     hook.onStoppedUsing(tool, activeModifier, entityLiving, timeLeft);
   }
 
-  @Override
   public void onStopUsing(ItemStack stack, LivingEntity entity, int timeLeft) {
     // triggers on scroll away and all that
     ToolStack tool = ToolStack.from(stack);
@@ -465,7 +431,7 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public int getUseDuration(ItemStack stack) {
+  public int getUseDuration(ItemStack stack, LivingEntity entity) {
     ToolStack tool = ToolStack.from(stack);
     ModifierEntry activeModifier = GeneralInteractionModifierHook.getActiveModifier(tool);
     if (activeModifier != ModifierEntry.EMPTY) {
@@ -484,7 +450,6 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return UseAnim.NONE;
   }
 
-  @Override
   public boolean canPerformAction(ItemStack stack, ToolAction toolAction) {
     return stack.getCount() == 1 && ModifierUtil.canPerformAction(ToolStack.from(stack), toolAction);
   }
@@ -498,14 +463,11 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-    TooltipUtil.addInformation(this, stack, level, tooltip, SafeClientAccess.getTooltipKey(), flag);
+  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+    TooltipUtil.addInformation(this, stack, SafeClientAccess.getPlayer(), tooltip, SafeClientAccess.getTooltipKey(), flag);
   }
 
-  @Override
-  public int getDefaultTooltipHideFlags(ItemStack stack) {
-    return TooltipUtil.getModifierHideFlags(getToolDefinition());
-  }
+  // getDefaultTooltipHideFlags is gone: 1.21 removed the tooltip hide-flag bitmask
   
 
   /* Display */
@@ -518,10 +480,8 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return toolForRendering;
   }
 
-  @Override
-  public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-    consumer.accept(ModifiableItemClientExtension.INSTANCE);
-  }
+  // initializeClient (Forge client extensions: custom BEWLR renderer hooks) returns with
+  // the client module in phase 5 via Fabric's rendering APIs.
 
 
   /* Misc */
@@ -555,12 +515,12 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     }
 
     // if the attributes changed, reequip
-    Multimap<Attribute,AttributeModifier> attributesNew = newStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
-    Multimap<Attribute, AttributeModifier> attributesOld = oldStack.getAttributeModifiers(EquipmentSlot.MAINHAND);
+    Multimap<net.minecraft.core.Holder<Attribute>,AttributeModifier> attributesNew = CombatHelper.getAllStackModifiers(newStack, EquipmentSlot.MAINHAND);
+    Multimap<net.minecraft.core.Holder<Attribute>, AttributeModifier> attributesOld = CombatHelper.getAllStackModifiers(oldStack, EquipmentSlot.MAINHAND);
     if (attributesNew.size() != attributesOld.size()) {
       return true;
     }
-    for (Attribute attribute : attributesOld.keySet()) {
+    for (net.minecraft.core.Holder<Attribute> attribute : attributesOld.keySet()) {
       if (!attributesNew.containsKey(attribute)) {
         return true;
       }
@@ -576,14 +536,25 @@ public class ModifiableItem extends TieredItem implements IModifiableDisplay {
     return false;
   }
 
-  @Override
   public boolean shouldCauseBlockBreakReset(ItemStack oldStack, ItemStack newStack) {
     return shouldCauseReequipAnimation(oldStack, newStack, false);
   }
 
-  @Override
   public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
     return shouldCauseReequip(oldStack, newStack, slotChanged);
+  }
+
+
+  /* Fabric hooks */
+
+  @Override
+  public boolean allowComponentsUpdateAnimation(Player player, InteractionHand hand, ItemStack oldStack, ItemStack newStack) {
+    return shouldCauseReequipAnimation(oldStack, newStack, false);
+  }
+
+  @Override
+  public boolean allowContinuingBlockBreaking(Player player, ItemStack oldStack, ItemStack newStack) {
+    return !shouldCauseBlockBreakReset(oldStack, newStack);
   }
 
 

@@ -18,8 +18,6 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraftforge.client.model.data.ModelData;
 import org.joml.Quaternionf;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.client.TinkerRenderTypes;
@@ -56,7 +54,11 @@ public class HeatingStructureBlockEntityRenderer implements BlockEntityRenderer<
         if ((dx * dx + dz * dz) < 512) {
           // color will be yellow if the structure is valid (expanding), red if invalid
           VertexConsumer vertexBuilder = buffer.getBuffer(highlightError ? TinkerRenderTypes.ERROR_BLOCK : RenderType.LINES);
-          LevelRenderer.renderShape(matrices, vertexBuilder, Shapes.block(), errorPos.getX() - pos.getX(), errorPos.getY() - pos.getY(), errorPos.getZ() - pos.getZ(), 1f, structureValid ? 1f : 0f, 0f, 0.5f);
+          // 1.21 made LevelRenderer.renderShape private; renderLineBox draws the same edges for a full block
+          int errorX = errorPos.getX() - pos.getX();
+          int errorY = errorPos.getY() - pos.getY();
+          int errorZ = errorPos.getZ() - pos.getZ();
+          LevelRenderer.renderLineBox(matrices, vertexBuilder, errorX, errorY, errorZ, errorX + 1, errorY + 1, errorZ + 1, 1f, structureValid ? 1f : 0f, 0f, 0.5f);
         }
       }
     }
@@ -115,11 +117,12 @@ public class HeatingStructureBlockEntityRenderer implements BlockEntityRenderer<
               quadsRendered += 100;
             } else {
               RandomSource random = smeltery.getLevel().getRandom();
-              // not setting the seed on the random and ignoring the forge layered model stuff means this is just an estimate, but since this is for the sake of performance its not a huge deal for it to be exact
+              // not setting the seed on the random means this is just an estimate, but since this is for the sake of performance its not a huge deal for it to be exact
+              // 1.21 dropped the Forge model data and render type arguments from getQuads
               for (Direction direction : Direction.values()) {
-                quadsRendered += model.getQuads(null, direction, random, ModelData.EMPTY, null).size();
+                quadsRendered += model.getQuads(null, direction, random).size();
               }
-              quadsRendered += model.getQuads(null, null, random, ModelData.EMPTY, null).size();
+              quadsRendered += model.getQuads(null, null, random).size();
             }
             if (quadsRendered > max) {
               break;

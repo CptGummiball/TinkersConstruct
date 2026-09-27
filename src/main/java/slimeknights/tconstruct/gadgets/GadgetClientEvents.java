@@ -1,37 +1,37 @@
 package slimeknights.tconstruct.gadgets;
 
-import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin;
+import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
-import net.minecraft.world.entity.projectile.ThrowableItemProjectile;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.ModelEvent.RegisterAdditional;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
 import slimeknights.tconstruct.gadgets.client.FancyItemFrameRenderer;
-import slimeknights.tconstruct.gadgets.entity.shuriken.ShurikenEntityBase;
+import slimeknights.tconstruct.gadgets.entity.FancyItemFrameEntity;
+import slimeknights.tconstruct.gadgets.entity.shuriken.FlintShurikenEntity;
+import slimeknights.tconstruct.gadgets.entity.shuriken.QuartzShurikenEntity;
 import slimeknights.tconstruct.tools.client.material.ThrownShurikenRenderer;
 
+/**
+ * Client-side setup for the gadgets module.
+ *
+ * <p>Fabric port: Forge ran this from the {@code Register*Event} hooks on the mod bus; on Fabric
+ * {@link #init()} is called from {@code TConstructClientBootstrap}. The additional model
+ * registration became a {@link ModelLoadingPlugin}, the renderers a
+ * {@link EntityRendererRegistry} call each.
+ */
 @SuppressWarnings("unused")
-@EventBusSubscriber(modid=TConstruct.MOD_ID, value=Dist.CLIENT, bus=Bus.MOD)
 public class GadgetClientEvents extends ClientEventBase {
-  @SubscribeEvent
-  static void registerModels(RegisterAdditional event) {
-    FancyItemFrameRenderer.LOCATIONS_MODEL.values().forEach(event::register);
-    FancyItemFrameRenderer.LOCATIONS_MODEL_MAP.values().forEach(event::register);
-  }
+  /** Registers the gadget entity renderers and the models they draw with */
+  public static void init() {
+    // the frame models belong to no blockstate or item, so they need registering to get baked
+    ModelLoadingPlugin.register(context -> {
+      context.addModels(FancyItemFrameRenderer.LOCATIONS_MODEL.values());
+      context.addModels(FancyItemFrameRenderer.LOCATIONS_MODEL_MAP.values());
+    });
 
-  @SubscribeEvent
-  static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-    event.registerEntityRenderer(TinkerGadgets.itemFrameEntity.get(), FancyItemFrameRenderer::new);
-    EntityRendererProvider<ThrowableItemProjectile> throwable = ThrownItemRenderer::new;
-    event.registerEntityRenderer(TinkerGadgets.glowBallEntity.get(), throwable);
-    event.registerEntityRenderer(TinkerGadgets.eflnEntity.get(), throwable);
-    EntityRendererProvider<ShurikenEntityBase> shuriken = ThrownShurikenRenderer::new;
-    event.registerEntityRenderer(TinkerGadgets.quartzShurikenEntity.get(), shuriken);
-    event.registerEntityRenderer(TinkerGadgets.flintShurikenEntity.get(), shuriken);
+    EntityRendererRegistry.<FancyItemFrameEntity>register(TinkerGadgets.itemFrameEntity.get(), FancyItemFrameRenderer::new);
+    EntityRendererRegistry.register(TinkerGadgets.glowBallEntity.get(), ThrownItemRenderer::new);
+    EntityRendererRegistry.register(TinkerGadgets.eflnEntity.get(), ThrownItemRenderer::new);
+    EntityRendererRegistry.<QuartzShurikenEntity>register(TinkerGadgets.quartzShurikenEntity.get(), ThrownShurikenRenderer::new);
+    EntityRendererRegistry.<FlintShurikenEntity>register(TinkerGadgets.flintShurikenEntity.get(), ThrownShurikenRenderer::new);
   }
 }

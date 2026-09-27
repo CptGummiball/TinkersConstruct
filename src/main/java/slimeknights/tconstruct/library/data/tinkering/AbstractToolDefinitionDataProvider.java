@@ -100,7 +100,7 @@ public abstract class AbstractToolDefinitionDataProvider extends GenericDataProv
       this.name = armorMaterial.getId();
       this.builders = new ToolDefinitionDataBuilder[4];
       ImmutableList.Builder<ArmorItem.Type> slotTypes = ImmutableList.builder();
-      for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+      for (ArmorItem.Type slotType : new ArmorItem.Type[] {ArmorItem.Type.BOOTS, ArmorItem.Type.LEGGINGS, ArmorItem.Type.CHESTPLATE, ArmorItem.Type.HELMET} /* PORT: 1.21 added BODY animal armor, tinkers gear has no piece for it */) {
         ToolDefinition definition = armorMaterial.getArmorDefinition(slotType);
         if (definition != null) {
           this.builders[slotType.ordinal()] = define(definition);

@@ -58,21 +58,19 @@ public class EFLNExplosion extends CustomExplosion {
             float strength = this.radius * (1f - distance / (radius));
             BlockState blockstate = this.level.getBlockState(blockpos);
 
+            // 1.21: the per-entity Forge resistance hooks are gone; the damage calculator
+            // carries the same entity-aware behavior (vanilla wraps the source entity in one)
             FluidState fluid = this.level.getFluidState(blockpos);
-            float power = Math.max(blockstate.getExplosionResistance(this.level, blockpos, this), fluid.getExplosionResistance(this.level, blockpos, this));
-            if (this.source != null) {
-              power = this.source.getBlockExplosionResistance(this, this.level, blockpos, blockstate, fluid, power);
-            }
-
+            float power = this.damageCalculator.getBlockExplosionResistance(this, this.level, blockpos, blockstate, fluid).orElse(0f);
             strength -= (power + 0.3F) * 0.3F;
 
-            if (strength > 0.0F && (this.source == null || this.source.shouldBlockExplode(this, this.level, blockpos, blockstate, strength))) {
+            if (strength > 0.0F && this.damageCalculator.shouldBlockExplode(this, this.level, blockpos, blockstate, strength)) {
               set.add(blockpos);
             }
           }
         }
       }
     }
-    this.toBlow.addAll(set);
+    this.getToBlow().addAll(set);
   }
 }

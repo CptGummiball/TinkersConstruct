@@ -26,8 +26,8 @@ public class MaterialStatsId extends ResourceId {
     super(location);
   }
 
-  private MaterialStatsId(String namespace, String path, @Nullable Dummy pDummy) {
-    super(namespace, path, pDummy);
+  private MaterialStatsId(String namespace, String path, @Nullable Object legacyDummy) {
+    this(namespace, path);
   }
 
   /** Checks if the given material can be used */

@@ -2,23 +2,22 @@ package slimeknights.tconstruct.library.tools.capability;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.IEnergyStorage;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.modules.ModifierModule;
 import slimeknights.tconstruct.library.modifiers.modules.build.ModifierTraitModule;
-import slimeknights.tconstruct.library.tools.capability.ToolCapabilityProvider.IToolCapabilityProvider;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.stat.CapacityStat;
 import slimeknights.tconstruct.library.tools.stat.ToolStatId;
 import slimeknights.tconstruct.tools.TinkerModifiers;
 
-import java.util.function.Supplier;
-
-/** Standard implementation of energy capability on a tool. Not currently used in the mod directly, but should help addons have more unity. */
-public record ToolEnergyCapability(Supplier<? extends IToolStackView> tool) implements IEnergyStorage {
+/**
+ * Energy storage on a tool.
+ *
+ * <p>These helpers are Tinkers' own API and stay integer-based, unchanged from the Forge
+ * build. The outward face lives in {@link ToolEnergyStorage} instead, so this class carries
+ * no reference to the energy API and the mod still loads when no energy mod is installed.
+ */
+public class ToolEnergyCapability {
   /** Format string to display energy amounts, used internally by the stat */
   public static final String ENERGY_FORMAT = TConstruct.makeDescriptionId("tool_stat", "energy");
   /** Stat marking the max capacity */
@@ -72,73 +71,4 @@ public record ToolEnergyCapability(Supplier<? extends IToolStackView> tool) impl
     }
   }
 
-  @Override
-  public int receiveEnergy(int maxReceive, boolean simulate) {
-    if (maxReceive <= 0) {
-      return 0;
-    }
-    IToolStackView tool = this.tool.get();
-    int current = getEnergy(tool);
-    int filled = Math.min(getMaxEnergy(tool) - current, maxReceive);
-    if (!simulate) {
-      setEnergyRaw(tool, current + filled);
-    }
-    return filled;
-  }
-
-  @Override
-  public int extractEnergy(int maxExtract, boolean simulate) {
-    if (maxExtract <= 0) {
-      return 0;
-    }
-    IToolStackView tool = this.tool.get();
-    int current = getEnergy(tool);
-    if (current <= 0) {
-      return 0;
-    }
-    int drained = maxExtract;
-    if (current < drained) {
-      drained = current;
-    }
-    if (!simulate) {
-      setEnergyRaw(tool, current - drained);
-    }
-    return drained;
-  }
-
-  @Override
-  public int getEnergyStored() {
-    return getEnergy(tool.get());
-  }
-
-  @Override
-  public int getMaxEnergyStored() {
-    return getMaxEnergy(tool.get());
-  }
-
-  @Override
-  public boolean canExtract() {
-    return true;
-  }
-
-  @Override
-  public boolean canReceive() {
-    return true;
-  }
-
-  /** Provider instance for a fluid cap */
-  public static class Provider implements IToolCapabilityProvider {
-    private final LazyOptional<IEnergyStorage> energyCap;
-    public Provider(Supplier<? extends IToolStackView> toolStack) {
-      this.energyCap = LazyOptional.of(() -> new ToolEnergyCapability(toolStack));
-    }
-
-    @Override
-    public <T> LazyOptional<T> getCapability(IToolStackView tool, Capability<T> cap) {
-      if (cap == ForgeCapabilities.ENERGY && tool.getStats().getInt(MAX_STAT) > 0) {
-        return energyCap.cast();
-      }
-      return LazyOptional.empty();
-    }
-  }
 }

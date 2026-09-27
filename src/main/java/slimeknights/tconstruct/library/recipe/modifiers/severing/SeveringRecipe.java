@@ -18,7 +18,7 @@ import slimeknights.mantle.recipe.container.IEmptyContainer;
 import slimeknights.mantle.recipe.helper.ItemOutput;
 import slimeknights.mantle.recipe.ingredient.EntityIngredient;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 /**
  * Recipe to convert an entity into a head or other item for the severing modifier
@@ -82,7 +82,7 @@ public class SeveringRecipe implements ICustomOutputRecipe<IEmptyContainer> {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.severingSerializer.get();
+    return ContentLookups.recipeSerializer("severing");
   }
 
   @Override

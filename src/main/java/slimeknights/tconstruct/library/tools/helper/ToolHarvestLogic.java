@@ -20,8 +20,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LevelEvent;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.ForgeHooks;
-import net.minecraftforge.common.ToolActions;
+import slimeknights.mantle.event.ForgeHooks;
+import slimeknights.mantle.item.ToolActions;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.network.TinkerNetwork;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
@@ -94,7 +94,9 @@ public class ToolHarvestLogic {
     ServerLevel world = context.getWorld();
     BlockPos pos = context.getPos();
     if (removed == null) {
-      removed = state.onDestroyedByPlayer(world, pos, context.getPlayer(), context.canHarvest(), world.getFluidState(pos));
+      // Forge's onDestroyedByPlayer, inlined: notify the block, then swap in the fluid state
+      state.getBlock().playerWillDestroy(world, pos, state, context.getPlayer());
+      removed = world.setBlock(pos, world.getFluidState(pos).createLegacyBlock(), world.isClientSide ? 11 : 3);
     }
     // if removed by anything, finally destroy it
     if (removed) {
@@ -233,7 +235,7 @@ public class ToolHarvestLogic {
 
       this.switchItemsInHands(player);
       // remember, off is in the mainhand now
-      CompoundNBT tag = off.getOrCreateTag();
+      CompoundNBT tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getOrCreateTag(off);
       tag.putLong(TAG_SWITCHED_HAND_HAX, player.getEntityWorld().getGameTime());
       off.setTag(tag);
     }*/
@@ -252,7 +254,7 @@ public class ToolHarvestLogic {
       // no harvest context
       player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
       ToolHarvestContext context = new ToolHarvestContext(world, serverPlayer, state, pos, sideHit,
-        !player.isCreative() && state.canHarvestBlock(world, pos, player), false);
+        !player.isCreative() && player.hasCorrectToolForDrops(state), false);
       breakBlock(tool, ItemStack.EMPTY, context, true);
       player.setItemInHand(InteractionHand.MAIN_HAND, stack);
     } else {
@@ -278,7 +280,7 @@ public class ToolHarvestLogic {
     // add in harvest info
     // must not be broken, and the tool definition must be effective
     ToolHarvestContext context = new ToolHarvestContext(world, player, projectile, state, pos, sideHit,
-                                                        !player.isCreative() && state.canHarvestBlock(world, pos, player),
+                                                        !player.isCreative() && player.hasCorrectToolForDrops(state),
                                                         IsEffectiveToolHook.isEffective(tool, state));
     // tell modifiers we are about to harvest, lets them add for instance modifiers conditioned on harvesting
     for (ModifierEntry entry : tool.getModifierList()) {
@@ -286,7 +288,7 @@ public class ToolHarvestLogic {
     }
     // let armor change enchantments
     // TODO: should we have a hook for non-enchantment armor responses?
-    ListTag originalEnchantments = HarvestEnchantmentsModifierHook.updateHarvestEnchantments(tool, stack, context);
+    net.minecraft.world.item.enchantment.ItemEnchantments originalEnchantments = HarvestEnchantmentsModifierHook.updateHarvestEnchantments(tool, stack, context);
     // need to calculate the iterator before we break the block, as we need the reference hardness from the center
     UseOnContext useContext = new UseOnContext(world, player, InteractionHand.MAIN_HAND, stack, Util.createTraceResult(pos, sideHit, false));
     Iterable<BlockPos> extraBlocks = context.isEffective() ? tool.getHook(ToolHooks.AOE_ITERATOR).getBlocks(tool, useContext, state, AOEMatchType.BREAKING) : Collections.emptyList();

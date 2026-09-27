@@ -20,19 +20,16 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent.LoggingOut;
-import net.minecraftforge.client.event.ComputeFovModifierEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.level.saveddata.maps.MapId;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Component;
+import slimeknights.mantle.event.MinecraftForge;
 import org.joml.Matrix4f;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
 import slimeknights.tconstruct.common.config.Config;
 import slimeknights.tconstruct.library.client.Icons;
@@ -59,14 +56,26 @@ import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Modifier event hooks that run client side */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.FORGE)
+/**
+ * Modifier event hooks that run client side.
+ *
+ * <p>Fabric port: the tooltip, disconnect and HUD hooks have direct Fabric callbacks; the hand
+ * renderer and the field of view have none, so {@code ItemInHandRendererMixin} and
+ * {@code AbstractClientPlayerFovMixin} call into the two methods below.
+ */
 public class ModifierClientEvents {
-  @SubscribeEvent
-  static void onTooltipEvent(ItemTooltipEvent event) {
+  /** Registers the hooks that Fabric offers a callback for */
+  public static void init() {
+    ItemTooltipCallback.EVENT.register((stack, context, flag, tooltip) -> onTooltip(stack, tooltip));
+    ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> playerLoggedOut());
+    MinecraftForge.EVENT_BUS.addListener(ToolEquipmentChangeEvent.class, ModifierClientEvents::equipmentChange);
+    HudRenderCallback.EVENT.register(ModifierClientEvents::renderHotbar);
+  }
+
+  static void onTooltip(ItemStack stack, List<Component> tooltip) {
     // suppress durability from advanced, we display our own
-    if (event.getItemStack().getItem() instanceof IModifiableDisplay) {
-      event.getToolTip().removeIf(text -> {
+    if (stack.getItem() instanceof IModifiableDisplay) {
+      tooltip.removeIf(text -> {
 
         if (text.getContents() instanceof TranslatableContents translatable) {
           return translatable.getKey().equals("item.durability");
@@ -76,25 +85,26 @@ public class ModifierClientEvents {
     }
   }
 
-  /** Determines whether to render the given hand based on modifiers */
-  @SubscribeEvent
-  static void renderHand(RenderHandEvent event) {
+  /**
+   * Determines whether to render the given hand based on modifiers.
+   *
+   * @return true if the hand should not be rendered normally
+   */
+  public static boolean renderHand(InteractionHand hand, PoseStack matrices, MultiBufferSource buffer, int packedLight, float equipProgress, float swingProgress) {
     Player player = Minecraft.getInstance().player;
     if (player == null) {
-      return;
+      return false;
     }
     // when firing your melee weapon with ballista, don't render it in the other hand; makes it look like you duplicated your weapon
-    InteractionHand hand = event.getHand();
     ItemStack held = player.getItemInHand(hand);
     ItemStack opposite = player.getItemInHand(Util.getOpposite(hand));
     if (!held.isEmpty() && !opposite.isEmpty() && opposite.is(TinkerTags.Items.BALLISTAS) && ModifierUtil.getPersistentInt(opposite, ModifiableBowItem.KEY_BALLISTA, 0) == ModifiableBowItem.FLAG_BALLISTA_HELD) {
-      event.setCanceled(true);
-      return;
+      return true;
     }
 
     // the remainder of this listener renders the hand when it wouldn't normally, so skip if invisible
     if (player.isInvisible()) {
-      return;
+      return false;
     }
 
     boolean showHand;
@@ -106,25 +116,30 @@ public class ModifierClientEvents {
       showHand = held.is(TinkerTags.Items.SHOW_HAND);
     }
     if (showHand) {
-      PoseStack matrices = event.getPoseStack();
       matrices.pushPose();
       HumanoidArm side = player.getMainArm();
       if (hand == InteractionHand.OFF_HAND) {
         side = side.getOpposite();
       }
-      Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer().renderPlayerArm(matrices, event.getMultiBufferSource(), event.getPackedLight(), event.getEquipProgress(), event.getSwingProgress(), side);
+      Minecraft.getInstance().getEntityRenderDispatcher().getItemInHandRenderer().renderPlayerArm(matrices, buffer, packedLight, equipProgress, swingProgress, side);
       matrices.popPose();
-      if (held.isEmpty()) {
-        event.setCanceled(true);
-      }
+      // an empty hand has nothing else to draw, a filled one still needs its item
+      return held.isEmpty();
     }
+    return false;
   }
 
-  /** Handles the zoom modifier zooming */
-  @SubscribeEvent
-  static void handleZoom(ComputeFovModifierEvent event) {
-    event.getPlayer().getCapability(TinkerDataCapability.CAPABILITY).ifPresent(data -> {
-      float newFov = event.getNewFovModifier();
+  /**
+   * Handles the zoom modifier zooming.
+   *
+   * @param base      Field of view modifier before any of ours
+   * @param current   Modifier as it stands, in case another mod already changed it
+   * @return  Modifier to use
+   */
+  public static float handleZoom(Player player, float base, float current) {
+    float[] result = {current};
+    java.util.Optional.ofNullable(TinkerDataCapability.getData(player)).ifPresent(data -> {
+      float newFov = result[0];
 
       // scaled effects only apply if we have FOV scaling, nothing to do if 0
       float effectScale = Minecraft.getInstance().options.fovEffectScale().get().floatValue();
@@ -137,7 +152,7 @@ public class ModifierClientEvents {
           } else {
             // unlerp the fov before multiplitying to make sure we apply the proper amount
             // we could use the original FOV, but someone else may have modified it
-            float original = event.getFovModifier();
+            float original = base;
             newFov *= Mth.lerp(effectScale, 1.0F, scaledZoom.getValue() * original) / original;
           }
         }
@@ -148,8 +163,9 @@ public class ModifierClientEvents {
       if (constZoom != null) {
         newFov *= constZoom.getValue();
       }
-      event.setNewFovModifier(newFov);
+      result[0] = newFov;
     });
+    return result[0];
   }
 
 
@@ -170,14 +186,12 @@ public class ModifierClientEvents {
   /** Items to render for the item frame modifier */
   private static final List<ItemStack> itemFrames = new ArrayList<>();
 
-  @SubscribeEvent
-  static void playerLoggedOut(LoggingOut event) {
+  static void playerLoggedOut() {
     nextOffhand = ItemStack.EMPTY;
     itemFrames.clear();
   }
 
   /** Update the slot in the first shield slot */
-  @SubscribeEvent
   static void equipmentChange(ToolEquipmentChangeEvent event) {
     if (event.getEntity() != Minecraft.getInstance().player) {
       return;
@@ -228,8 +242,10 @@ public class ModifierClientEvents {
   private static int getEffectOffset(Player player) {
     boolean hasBeneficial = false;
     for (MobEffectInstance instance : player.getActiveEffects()) {
-      if (instance.showIcon() && IClientMobEffectExtensions.of(instance).isVisibleInGui(instance)) {
-        if (instance.getEffect().isBeneficial()) {
+      // Forge let a mod hide its effect from the GUI through a client extension; vanilla only has
+      // the flag on the instance, so that is the whole condition here
+      if (instance.showIcon()) {
+        if (instance.getEffect().value().isBeneficial()) {
           hasBeneficial = true;
         } else {
           // negative effects means offset two rows
@@ -242,11 +258,12 @@ public class ModifierClientEvents {
   }
 
   /** Render the item in the first shield slot */
-  @SubscribeEvent
-  public static void renderHotbar(RenderGuiOverlayEvent.Post event) {
+  public static void renderHotbar(GuiGraphics graphics, DeltaTracker deltaTracker) {
     Minecraft mc = Minecraft.getInstance();
     Player player = mc.player;
-    if (mc.options.hideGui || event.getOverlay() != VanillaGuiOverlay.HOTBAR.type() || player == null || player != mc.getCameraEntity()) {
+    // Forge hooked the hotbar overlay specifically, drawing straight after it; Fabric's callback runs
+    // after the whole HUD, which puts these above the rest of it rather than only above the hotbar
+    if (mc.options.hideGui || player == null || player != mc.getCameraEntity()) {
       return;
     }
     boolean renderShield = Config.CLIENT.renderShieldSlotItem.get() && !nextOffhand.isEmpty();
@@ -271,8 +288,6 @@ public class ModifierClientEvents {
 
       int scaledWidth = mc.getWindow().getGuiScaledWidth();
       int scaledHeight = mc.getWindow().getGuiScaledHeight();
-      GuiGraphics graphics = event.getGuiGraphics();
-      float partialTicks = event.getPartialTick();
 
       // want just above the normal offhand item
       boolean emptyOffhand = player.getOffhandItem().isEmpty();
@@ -281,14 +296,14 @@ public class ModifierClientEvents {
         int x = scaledWidth / 2 + (rightHanded ? -117 : 101);
         int y = scaledHeight - 38;
         graphics.blit(Icons.ICONS, x - 3, y - 3, emptyOffhand ? 211 : 189, 0, SLOT_BACKGROUND_SIZE, SLOT_BACKGROUND_SIZE, 256, 256);
-        mc.gui.renderSlot(graphics, x, y, partialTicks, player, nextOffhand, 11);
+        mc.gui.renderSlot(graphics, x, y, deltaTracker, player, nextOffhand, 11);
       }
       // want to the side above the normal offhand item
       if (renderSleeves) {
         int x = scaledWidth / 2 + (rightHanded ? -136 : 120);
         int y = scaledHeight - 19;
         graphics.blit(Icons.ICONS, x - 3, y - 3, emptyOffhand ? 211 : rightHanded ? 145 : 123, 0, SLOT_BACKGROUND_SIZE, SLOT_BACKGROUND_SIZE, 256, 256);
-        mc.gui.renderSlot(graphics, x, y, partialTicks, player, currentSleeve, 11);
+        mc.gui.renderSlot(graphics, x, y, deltaTracker, player, currentSleeve, 11);
       }
 
       // TODO: cannot remember why this was needed before. Reconfirm if bug still exists.
@@ -302,7 +317,8 @@ public class ModifierClientEvents {
       int mapOffset = 0;
       if (!map.isEmpty() && mc.level != null) {
         MapItemSavedData data = MapItem.getSavedData(map, mc.level);
-        Integer index = MapItem.getMapId(map);
+        // 1.21 moved the map id onto a component and gave it its own type
+        MapId index = map.get(DataComponents.MAP_ID);
 
         // determine placement of the map
         mapLocation = Config.CLIENT.mapLocation.get();
@@ -331,10 +347,11 @@ public class ModifierClientEvents {
         MultiBufferSource buffer = graphics.bufferSource();
         VertexConsumer consumer = buffer.getBuffer(data == null ? ItemInHandRenderer.MAP_BACKGROUND : ItemInHandRenderer.MAP_BACKGROUND_CHECKERBOARD);
         Matrix4f matrix = poseStack.last().pose();
-        consumer.vertex(matrix,  -7, 135, 0).color(255, 255, 255, 255).uv(0, 1).uv2(light).endVertex();
-        consumer.vertex(matrix, 135, 135, 0).color(255, 255, 255, 255).uv(1, 1).uv2(light).endVertex();
-        consumer.vertex(matrix, 135,  -7, 0).color(255, 255, 255, 255).uv(1, 0).uv2(light).endVertex();
-        consumer.vertex(matrix,  -7,  -7, 0).color(255, 255, 255, 255).uv(0, 0).uv2(light).endVertex();
+        // 1.21 renamed the whole builder chain and made endVertex implicit
+        consumer.addVertex(matrix,  -7, 135, 0).setColor(255, 255, 255, 255).setUv(0, 1).setLight(light);
+        consumer.addVertex(matrix, 135, 135, 0).setColor(255, 255, 255, 255).setUv(1, 1).setLight(light);
+        consumer.addVertex(matrix, 135,  -7, 0).setColor(255, 255, 255, 255).setUv(1, 0).setLight(light);
+        consumer.addVertex(matrix,  -7,  -7, 0).setColor(255, 255, 255, 255).setUv(0, 0).setLight(light);
 
         // draw map if present
         if (data != null && index != null) {
@@ -395,13 +412,13 @@ public class ModifierClientEvents {
         xStart += 3; yStart += 3; // offset from item start instead of frame start
         for (int r = 0; r < lastRow; r++) {
           for (int c = 0; c < columns; c++) {
-            mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE, yStart + r * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
+            mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE, yStart + r * SLOT_BACKGROUND_SIZE, deltaTracker, player, itemFrames.get(i), i);
             i++;
           }
         }
         // align last row
         for (int c = 0; c < inLastRow; c++) {
-          mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE + lastRowOffset, yStart + lastRow * SLOT_BACKGROUND_SIZE, partialTicks, player, itemFrames.get(i), i);
+          mc.gui.renderSlot(graphics, xStart + c * SLOT_BACKGROUND_SIZE + lastRowOffset, yStart + lastRow * SLOT_BACKGROUND_SIZE, deltaTracker, player, itemFrames.get(i), i);
           i++;
         }
       }

@@ -1,17 +1,24 @@
 package slimeknights.tconstruct.library.recipe.ingredient;
 
-import it.unimi.dsi.fastutil.ints.IntList;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import net.fabricmc.fabric.api.recipe.v1.ingredient.CustomIngredient;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraftforge.common.crafting.AbstractIngredient;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
+import java.util.List;
 
-/** Ingredient that contains another ingredient nested inside */
+/**
+ * Ingredient that contains another ingredient nested inside.
+ *
+ * <p>Fabric port of the Forge {@code AbstractIngredient} base: implements Fabric's
+ * {@link CustomIngredient}, deferring the stack test and display list to the nested vanilla
+ * ingredient.
+ */
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-public abstract class NestedIngredient extends AbstractIngredient {
+public abstract class NestedIngredient implements CustomIngredient {
   protected final Ingredient nested;
 
 
@@ -23,28 +30,14 @@ public abstract class NestedIngredient extends AbstractIngredient {
   }
 
   @Override
-  public ItemStack[] getItems() {
-    return nested.getItems();
+  public List<ItemStack> getMatchingStacks() {
+    return Arrays.asList(nested.getItems());
   }
 
   @Override
-  public IntList getStackingIds() {
-    return nested.getStackingIds();
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return nested.isEmpty();
-  }
-
-  @Override
-  protected void invalidate() {
-    super.invalidate();
-    nested.checkInvalidation();
-  }
-
-  @Override
-  public boolean isSimple() {
-    return nested.isSimple();
+  public boolean requiresTesting() {
+    // custom ingredients wrapping a plain item list still add semantics (e.g. container
+    // checks), so default to testing; subclasses relax this where matching is item-level
+    return true;
   }
 }

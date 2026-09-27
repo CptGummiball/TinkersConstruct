@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.shared.block;
 
 import lombok.Getter;
-import net.minecraft.tags.ItemTags;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Item;
@@ -51,7 +51,7 @@ public enum SlimeType implements StringRepresentable {
     this.nether = nether;
     this.lightLevel = lightLevel;
     // tags
-    slimeballTag = ItemTags.create(commonResource("slimeball/" + this.getSerializedName()));
+    slimeballTag = TagKey.create(Registries.ITEM, commonResource("slimeball/" + this.getSerializedName()));
   }
 
   SlimeType(int color, MapColor mapColor, boolean nether) {

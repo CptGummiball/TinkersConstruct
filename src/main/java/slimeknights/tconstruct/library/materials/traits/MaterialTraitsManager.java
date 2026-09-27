@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
  * So if your mods name is "foobar", the location for your mads material stats is "data/foobar/materials/traits".
  */
 @Log4j2
-public class MaterialTraitsManager extends MergingJsonDataLoader<MaterialTraits.Builder> {
+public class MaterialTraitsManager extends MergingJsonDataLoader<MaterialTraits.Builder> implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   public static final String FOLDER = "tinkering/materials/traits";
   public static final Gson GSON = (new GsonBuilder())
     .registerTypeAdapter(ResourceLocation.class, new ResourceLocation.Serializer())
@@ -164,5 +164,10 @@ public class MaterialTraitsManager extends MergingJsonDataLoader<MaterialTraits.
     log.info("{} traits loaded for {} materials in {} ms",
              materialTraits.values().stream().mapToInt(traits -> traits.getTraitsPerStats().size() + (traits.getDefaultTraits().isEmpty() ? 0 : 1)).sum(),
              materialTraits.size(), (System.nanoTime() - time) / 1000000f);
+  }
+
+  @Override
+  public net.minecraft.resources.ResourceLocation getFabricId() {
+    return slimeknights.tconstruct.TConstruct.getResource("material_traits");
   }
 }

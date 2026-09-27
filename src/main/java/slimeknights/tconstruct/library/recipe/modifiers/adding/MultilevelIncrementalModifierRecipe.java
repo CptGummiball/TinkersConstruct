@@ -18,7 +18,7 @@ import slimeknights.tconstruct.library.recipe.tinkerstation.ITinkerStationContai
 import slimeknights.tconstruct.library.tools.SlotType.SlotCount;
 import slimeknights.tconstruct.library.tools.nbt.LazyToolStack;
 import slimeknights.tconstruct.library.tools.nbt.ToolStack;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.List;
 import java.util.stream.Stream;
@@ -95,7 +95,7 @@ public class MultilevelIncrementalModifierRecipe extends IncrementalModifierReci
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.multilevelIncrementalModifierSerializer.get();
+    return ContentLookups.recipeSerializer("multilevel_incremental_modifier");
   }
 
 

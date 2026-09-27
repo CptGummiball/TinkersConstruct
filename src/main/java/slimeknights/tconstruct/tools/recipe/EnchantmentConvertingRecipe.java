@@ -11,7 +11,7 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.BooleanLoadable;
 import slimeknights.mantle.data.loadable.primitive.StringLoadable;
@@ -82,9 +82,16 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
     this.modifierPredicate = modifierPredicate;
   }
 
-  /** Gets the enchantment map from the given stack */
-  private Map<Enchantment,Integer> getEnchantments(ItemStack stack) {
-    return EnchantmentHelper.deserializeEnchantments(matchBook ? EnchantedBookItem.getEnchantments(stack) : stack.getEnchantmentTags());
+  /** Gets the enchantment map from the given stack; 1.21 stores enchantments in components */
+  private Map<net.minecraft.core.Holder<Enchantment>,Integer> getEnchantments(ItemStack stack) {
+    net.minecraft.world.item.enchantment.ItemEnchantments enchantments = stack.getOrDefault(
+      matchBook ? net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS : net.minecraft.core.component.DataComponents.ENCHANTMENTS,
+      net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+    Map<net.minecraft.core.Holder<Enchantment>,Integer> map = new java.util.LinkedHashMap<>();
+    for (var entry : enchantments.entrySet()) {
+      map.put(entry.getKey(), entry.getIntValue());
+    }
+    return map;
   }
 
 
@@ -94,7 +101,7 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
   public Component getDescription(@Nullable ITinkerableContainer inv) {
     // ensure we have at least one supported enchantment
     if (inv != null && getEnchantments(inv.getTinkerableStack()).entrySet().stream().noneMatch(entry -> {
-      Modifier modifier = ModifierManager.INSTANCE.get(entry.getKey());
+      Modifier modifier = ModifierManager.INSTANCE.get(entry.getKey().value());
       return modifier != null && modifierPredicate.matches(modifier.getId());
     })) {
       return NO_ENCHANTMENT;
@@ -132,7 +139,7 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
     if (inv != null) {
       // map all enchantments to an equal level modifier
       return getEnchantments(inv.getTinkerableStack()).entrySet().stream().map(entry -> {
-        Modifier modifier = ModifierManager.INSTANCE.get(entry.getKey());
+        Modifier modifier = ModifierManager.INSTANCE.get(entry.getKey().value());
         if (modifier != null && modifierPredicate.matches(modifier.getId())) {
           return new ModifierEntry(modifier, returnInput ? 1 : entry.getValue());
         }
@@ -195,10 +202,10 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
       ItemStack current = inv.getTinkerableStack();
       // returnInput drops just 1 level of the enchantment
       // worth noting, its possible multiple match, if thats the case we just extract the first we find
-      Map<Enchantment,Integer> enchantments = getEnchantments(current);
-      for (Entry<Enchantment,Integer> entry : enchantments.entrySet()) {
-        Enchantment enchantment = entry.getKey();
-        Modifier enchantmentModifier = ModifierManager.INSTANCE.get(enchantment);
+      Map<net.minecraft.core.Holder<Enchantment>,Integer> enchantments = getEnchantments(current);
+      for (Entry<net.minecraft.core.Holder<Enchantment>,Integer> entry : enchantments.entrySet()) {
+        net.minecraft.core.Holder<Enchantment> enchantment = entry.getKey();
+        Modifier enchantmentModifier = ModifierManager.INSTANCE.get(enchantment.value());
         if (enchantmentModifier != null && enchantmentModifier.getId().equals(modifier)) {
           int newLevel = entry.getValue() - 1;
           if (newLevel <= 0) {
@@ -213,16 +220,15 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
       ItemStack unenchanted;
       if (matchBook && enchantments.isEmpty()) {
         unenchanted = new ItemStack(Items.BOOK);
-        if (current.hasCustomHoverName()) {
-          unenchanted.setHoverName(current.getHoverName());
+        if (current.has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)) {
+          unenchanted.set(net.minecraft.core.component.DataComponents.CUSTOM_NAME, current.getHoverName());
         }
       } else {
         unenchanted = current.copy();
-        if (matchBook) {
-          // for some dumb reason setEnchantments for a book just adds them instead of setting them
-          unenchanted.removeTagKey("StoredEnchantments");
-        }
-        EnchantmentHelper.setEnchantments(enchantments, unenchanted);
+        // 1.21: setEnchantments replaces the component wholesale, picking stored enchantments for books
+        net.minecraft.world.item.enchantment.ItemEnchantments.Mutable mutable = new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        enchantments.forEach(mutable::set);
+        EnchantmentHelper.setEnchantments(unenchanted, mutable.toImmutable());
       }
       inv.giveItem(unenchanted);
     }
@@ -261,9 +267,17 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
     if (tools == null) {
       // don't use the cached value from getModifierOptions as that is going to contain some redundant listings
       Set<ModifierId> modifiers = getMatchingModifiers().stream().map(ModifierEntry::getId).collect(Collectors.toSet());
+      // 1.21: enchantment instances need holders, which need live registry access; this path only runs for JEI display
+      net.minecraft.core.RegistryAccess access = slimeknights.mantle.client.SafeClientAccess.getRegistryAccess();
       tools = ModifierManager.INSTANCE.getEquivalentEnchantments(modifiers::contains)
-        .flatMap(enchantment -> IntStream.rangeClosed(1, enchantment.getMaxLevel())
-          .mapToObj(level -> EnchantedBookItem.createForEnchantment(new EnchantmentInstance(enchantment, level))))
+        .flatMap(enchantment -> {
+          if (access == null) {
+            return java.util.stream.Stream.<ItemStack>empty();
+          }
+          net.minecraft.core.Holder<Enchantment> holder = access.registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).wrapAsHolder(enchantment);
+          return IntStream.rangeClosed(1, enchantment.getMaxLevel())
+            .mapToObj(level -> EnchantedBookItem.createForEnchantment(new EnchantmentInstance(holder, level)));
+        })
         .toList();
     }
     return tools;
@@ -278,7 +292,7 @@ public class EnchantmentConvertingRecipe extends AbstractWorktableRecipe {
   /** Gets a list of all enchantable tools. This is expensive, but only needs to be done once fortunately. */
   private static List<ItemStack> getAllEnchantableTools() {
     if (ALL_ENCHANTABLE_TOOLS == null) {
-      ALL_ENCHANTABLE_TOOLS = ForgeRegistries.ITEMS.getValues().stream().map(item -> {
+      ALL_ENCHANTABLE_TOOLS = BuiltInRegistries.ITEM.stream().map(item -> {
         if (item != Items.BOOK) {
           ItemStack stack = new ItemStack(item);
           if (stack.isEnchantable()) {

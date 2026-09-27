@@ -11,7 +11,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.tags.TagEntry;
 import net.minecraft.tags.TagFile;
-import net.minecraft.tags.TagManager;
 import slimeknights.mantle.Mantle;
 import slimeknights.mantle.command.GeneratePackHelper;
 import slimeknights.mantle.command.MantleCommand;
@@ -49,7 +48,7 @@ public class GenerateHiddenFluidsCommand {
 
     // fetch existing tag, if it exists
     ResourceLocation tag = Fluids.HIDDEN_IN_RECIPE_VIEWERS.location();
-    Path tagPath = pack.resolve(PackType.SERVER_DATA.getDirectory() + '/' + tag.getNamespace() + '/' + TagManager.getTagDir(Registries.FLUID) + '/' + tag.getPath() + ".json");
+    Path tagPath = pack.resolve(PackType.SERVER_DATA.getDirectory() + '/' + tag.getNamespace() + '/' + net.minecraft.core.registries.Registries.tagsDirPath(Registries.FLUID) + '/' + tag.getPath() + ".json");
 
     // load in existing tag from the path, not using resource managers as we are just modifying locally
     List<TagEntry> add = new ArrayList<>();
@@ -64,7 +63,7 @@ public class GenerateHiddenFluidsCommand {
       }
     }
     // save the new tag
-    saveTag(tagPath, tag, new TagFile(add, false, List.of()));
+    saveTag(tagPath, tag, new TagFile(add, false));
 
     // success
     source.sendSuccess(() -> Component.translatable(

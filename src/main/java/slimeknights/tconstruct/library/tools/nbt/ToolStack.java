@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.items.ItemHandlerHelper;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
@@ -120,11 +120,22 @@ public class ToolStack implements IToolStackView {
   @Nullable
   private IModDataView volatileModData;
 
+  /** Stack this tool writes back into. On 1.20 {@link #nbt} was the stack's live tag; on 1.21 it is a working copy of the custom_data component, so every mutation flushes back here. */
+  @Nullable
+  private ItemStack boundStack;
+
   /* Creating */
   private ToolStack(Item item, ToolDefinition definition, CompoundTag nbt) {
     this.item = item;
     this.definition = definition;
     this.nbt = nbt;
+  }
+
+  /** Writes the current NBT into the bound stack's component; no-op for unbound tools (parsers, copies) */
+  protected void writeBack() {
+    if (boundStack != null) {
+      TagCompat.setTag(boundStack, nbt);
+    }
   }
 
 
@@ -150,29 +161,25 @@ public class ToolStack implements IToolStackView {
     ToolDefinition definition = item instanceof IModifiable mod
                                 ? mod.getToolDefinition()
                                 : ToolDefinition.EMPTY;
-    CompoundTag nbt = stack.getTag();
+    CompoundTag nbt = TagCompat.getTag(stack);
     if (nbt == null) {
       nbt = new CompoundTag();
-      if (!copyNbt) {
-        // only a wrongly made tool will have an empty definition. check preferred to a tag check as tags may not be loaded when this is first called
-        if (definition != ToolDefinition.EMPTY) {
-          // bypass the setter as vanilla insists on setting damage values there, along with verifying the tag
-          // both are things we will do later, doing so now causes us to recursively call this method (though not infinite)
-          stack.tag = nbt;
-          // no need to set the damage value, if the tool wanted it set the stack would have had a tag already
-        } else {
-          switch (Config.COMMON.logInvalidToolStack.get()) {
-            case STACKTRACE ->
-              TConstruct.LOG.warn("Tool stack constructed using non-modifiable tool, this may cause issues as it has no NBT. Stacktrace can be disabled in config.", new Exception("Stack trace"));
-            case WARNING ->
-              TConstruct.LOG.warn("Tool stack constructed using non-modifiable tool, this may cause issues as it has no NBT. To debug this issue or disable the warning, use logInvalidToolStack in the config.");
-          }
+      if (!copyNbt && definition == ToolDefinition.EMPTY) {
+        switch (Config.COMMON.logInvalidToolStack.get()) {
+          case STACKTRACE ->
+            TConstruct.LOG.warn("Tool stack constructed using non-modifiable tool, this may cause issues as it has no NBT. Stacktrace can be disabled in config.", new Exception("Stack trace"));
+          case WARNING ->
+            TConstruct.LOG.warn("Tool stack constructed using non-modifiable tool, this may cause issues as it has no NBT. To debug this issue or disable the warning, use logInvalidToolStack in the config.");
         }
       }
-    } else if (copyNbt) {
-      nbt = nbt.copy();
     }
-    return from(item, definition, nbt);
+    // note the component copy already detached us from the stack, so the copyNbt flag only
+    // decides whether mutations flow back: a bound tool flushes into the component on write
+    ToolStack tool = from(item, definition, nbt);
+    if (!copyNbt) {
+      tool.boundStack = stack;
+    }
+    return tool;
   }
 
   /**
@@ -245,20 +252,20 @@ public class ToolStack implements IToolStackView {
   /** Updates the tool stack instance to match the given item stack */
   @Internal
   public void refreshTag(ItemStack stack) {
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = TagCompat.getTag(stack);
     if (tag == null) {
       tag = new CompoundTag();
-      stack.setTag(tag);
     }
     this.nbt = tag;
+    this.boundStack = stack;
     clearCache();
   }
 
   /** Creates an item stack from this tool stack */
   public ItemStack createStack(int size) {
     ItemStack stack = new ItemStack(item, size);
-    // set the raw tag to avoid going through verifyTagAfterLoad and rebuilding stats again
-    stack.tag = nbt;
+    // writes the component directly; there is no verifyTagAfterLoad on Fabric to bypass
+    TagCompat.setTag(stack, nbt);
     // damage value is already enforced via the stack creation above
     return stack;
   }
@@ -287,17 +294,13 @@ public class ToolStack implements IToolStackView {
     if (stack.getItem() != item) {
       throw new IllegalArgumentException("Wrong item in stack");
     }
-    // set the raw tag to avoid going through verifyTagAfterLoad and rebuilding stats again
     // TODO: is there any reason we copy NBT here? might be worth never copying
-    if (copyNBT) {
-      stack.tag = nbt.copy();
-    } else {
-      stack.tag = nbt;
+    CompoundTag newTag = copyNBT ? nbt.copy() : nbt;
+    // ensure the damage value is set on the stack for the sake of stacking
+    if (!newTag.contains(TAG_DAMAGE, Tag.TAG_ANY_NUMERIC) && stack.isDamageableItem()) {
+      newTag.putInt(TAG_DAMAGE, 0);
     }
-    // ensure the damage value is set on the stack for the sake of stacking, since bypassing the vanilla setter skips that
-    if (!stack.tag.contains(TAG_DAMAGE, Tag.TAG_ANY_NUMERIC) && stack.getItem().isDamageable(stack)) {
-      stack.tag.putInt(TAG_DAMAGE, 0);
-    }
+    TagCompat.setTag(stack, newTag);
     return stack;
   }
 
@@ -326,7 +329,7 @@ public class ToolStack implements IToolStackView {
   public boolean isSameStack(ItemStack stack) {
     // tool stacks share NBT with their stack instance unless copied so changes are mirrored
     // item check allows empty as empty stacks change their item to air. This won't false positive with ItemStack#EMPTY as the NBT won't match.
-    return nbt == stack.getTag() && (stack.isEmpty() || stack.getItem() == item);
+    return nbt == slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack) && (stack.isEmpty() || stack.getItem() == item);
   }
 
 
@@ -356,6 +359,7 @@ public class ToolStack implements IToolStackView {
   protected void setBrokenRaw(boolean broken) {
     this.broken = broken;
     nbt.putBoolean(TAG_BROKEN, broken);
+    writeBack();
   }
 
   /**
@@ -419,6 +423,7 @@ public class ToolStack implements IToolStackView {
     }
     this.damage = damage;
     nbt.putInt(TAG_DAMAGE, damage);
+    writeBack();
   }
 
   /* Stats */
@@ -442,6 +447,7 @@ public class ToolStack implements IToolStackView {
   protected void setStats(StatsNBT stats) {
     this.stats = stats;
     nbt.put(TAG_STATS, stats.serializeToNBT());
+    writeBack();
     // if we no longer have enough durability, decrease the damage and mark it broken
     int newMax = getStats().getInt(ToolStats.DURABILITY);
     if (getDamageRaw() >= newMax) {
@@ -469,6 +475,7 @@ public class ToolStack implements IToolStackView {
       this.multipliers = multipliers;
       nbt.put(TAG_MULTIPLIERS, multipliers.serializeToNBT());
     }
+    writeBack();
   }
 
 
@@ -496,6 +503,7 @@ public class ToolStack implements IToolStackView {
     } else {
       this.nbt.put(TAG_MATERIALS, materials.serializeToNBT());
     }
+    writeBack();
   }
 
   /**
@@ -547,7 +555,7 @@ public class ToolStack implements IToolStackView {
    * Updates the upgrades list on the tool
    * @param modifiers  New upgrades
    */
-  public void setUpgrades(ModifierNBT modifiers) {
+  public void setUpgrades(ModifierNBT modifiers) {  // write-back happens via rebuildStats -> setModifiers
     this.upgrades = modifiers;
     nbt.put(TAG_UPGRADES, modifiers.serializeToNBT());
     rebuildStats();
@@ -592,6 +600,7 @@ public class ToolStack implements IToolStackView {
     ModifierNBT newModifiers = getUpgrades().withoutModifier(modifier, level);
     this.upgrades = newModifiers;
     nbt.put(TAG_UPGRADES, newModifiers.serializeToNBT());
+    writeBack();
     rebuildStats();
   }
 
@@ -607,9 +616,10 @@ public class ToolStack implements IToolStackView {
    * Updates the list of all modifiers in NBT, called in {@link #rebuildStats()}
    * @param modifiers  New modifiers
    */
-  protected void setModifiers(ModifierNBT modifiers) {
+  protected void setModifiers(ModifierNBT modifiers) {  // called from rebuildStats, the final write of every rebuild
     this.modifiers = modifiers;
     nbt.put(TAG_MODIFIERS, this.modifiers.serializeToNBT());
+    writeBack();
   }
 
 
@@ -620,12 +630,12 @@ public class ToolStack implements IToolStackView {
     if (persistentModData == null) {
       // parse if the tag already exists
       if (nbt.contains(TAG_PERSISTENT_MOD_DATA, Tag.TAG_COMPOUND)) {
-        persistentModData = ToolDataNBT.readFromNBT(nbt.getCompound(TAG_PERSISTENT_MOD_DATA));
+        persistentModData = new WriteThroughToolData(nbt.getCompound(TAG_PERSISTENT_MOD_DATA), this);
       } else {
         // if no tag exists, create it
         CompoundTag tag = new CompoundTag();
         nbt.put(TAG_PERSISTENT_MOD_DATA, tag);
-        persistentModData = ToolDataNBT.readFromNBT(tag);
+        persistentModData = new WriteThroughToolData(tag, this);
       }
     }
     return persistentModData;
@@ -658,6 +668,7 @@ public class ToolStack implements IToolStackView {
       volatileModData = modData;
       nbt.put(TAG_VOLATILE_MOD_DATA, data);
     }
+    writeBack();
   }
 
 
@@ -786,7 +797,7 @@ public class ToolStack implements IToolStackView {
    * @return  True if initialized
    */
   public static boolean isInitialized(ItemStack stack) {
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     return tag != null && isInitialized(tag);
   }
 
@@ -819,7 +830,7 @@ public class ToolStack implements IToolStackView {
     if (!toolDefinition.isDataLoaded()) {
       return;
     }
-    CompoundTag tag = stack.getTag();
+    CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
     // already initialized? nothing to do
     if (tag != null && isInitialized(tag)) {
       return;
@@ -853,6 +864,64 @@ public class ToolStack implements IToolStackView {
     // only rebuild stats if we either have materials, or we don't need materials
     if (definition.isDataLoaded() && (hasMaterials || !definition.hasMaterials())) {
       ToolStack.from(item, definition, tag).rebuildStats();
+    }
+  }
+
+  /** Persistent data view that flushes the tool into its bound stack after each write */
+  private static class WriteThroughToolData extends ToolDataNBT {
+    private final ToolStack tool;
+
+    WriteThroughToolData(CompoundTag nbt, ToolStack tool) {
+      super(nbt);
+      this.tool = tool;
+    }
+
+    @Override
+    public void put(net.minecraft.resources.ResourceLocation name, Tag value) {
+      super.put(name, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void putInt(net.minecraft.resources.ResourceLocation name, int value) {
+      super.putInt(name, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void putBoolean(net.minecraft.resources.ResourceLocation name, boolean value) {
+      super.putBoolean(name, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void putFloat(net.minecraft.resources.ResourceLocation name, float value) {
+      super.putFloat(name, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void putString(net.minecraft.resources.ResourceLocation name, String value) {
+      super.putString(name, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void remove(net.minecraft.resources.ResourceLocation name) {
+      super.remove(name);
+      tool.writeBack();
+    }
+
+    @Override
+    public void setSlots(slimeknights.tconstruct.library.tools.SlotType type, int value) {
+      super.setSlots(type, value);
+      tool.writeBack();
+    }
+
+    @Override
+    public void addSlots(slimeknights.tconstruct.library.tools.SlotType type, int add) {
+      super.addSlots(type, add);
+      tool.writeBack();
     }
   }
 }

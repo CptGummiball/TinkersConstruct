@@ -9,13 +9,15 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.client.model.QuadTransformers;
-import net.minecraftforge.client.model.SimpleModelState;
-import net.minecraftforge.client.model.geometry.UnbakedGeometryHelper;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.client.extensions.IClientFluidTypeExtensions;
+import slimeknights.mantle.client.model.QuadTransformers;
+import slimeknights.mantle.client.model.SimpleModelState;
+import slimeknights.mantle.client.model.geometry.UnbakedGeometryHelper;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import org.joml.Vector3f;
 import slimeknights.mantle.client.model.util.ColoredBlockModel;
+import slimeknights.mantle.client.model.util.ModelHelper;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.ItemLayerPixels;
 import slimeknights.tconstruct.TConstruct;
@@ -92,10 +94,10 @@ public record FluidModifierModel(Material small, @Nullable Material large, ToolT
     // build fluid like the forge dynamic container model
     List<BlockElement> unbaked = UnbakedGeometryHelper.createUnbakedItemMaskElements(-1, spriteGetter.apply(template).contents()); // Use template as mask
     // TODO: is there anything that can be done about the fluid? to prevent weird offsets?
-    List<BakedQuad> fluidQuads = UnbakedGeometryHelper.bakeElements(unbaked, mat -> fluidSprite, new SimpleModelState(transforms.applyOrigin(ORIGIN).compose(FluidContainerModel.FLUID_TRANSFORM), false), BAKE_LOCATION); // Bake with fluid texture
+    List<BakedQuad> fluidQuads = UnbakedGeometryHelper.bakeElements(unbaked, mat -> fluidSprite, new SimpleModelState(ModelHelper.applyOrigin(transforms, ORIGIN).compose(FluidContainerModel.FLUID_TRANSFORM), false), BAKE_LOCATION); // Bake with fluid texture
 
     // apply brightness and color
-    int luminosity = fluid.getFluid().getFluidType().getLightLevel(fluid);
+    int luminosity = FluidType.of(fluid.getFluid()).getLightLevel();
     if (luminosity > 0) {
       QuadTransformers.settingEmissivity(luminosity).processInPlace(fluidQuads);
     }

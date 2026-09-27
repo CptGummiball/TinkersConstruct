@@ -7,8 +7,9 @@ import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.ParticleRenderType;
 import net.minecraft.client.particle.TextureSheetParticle;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.client.extensions.IClientFluidTypeExtensions;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.mantle.client.render.FluidRenderer;
 import slimeknights.tconstruct.shared.particle.FluidParticleData;
 
@@ -60,7 +61,7 @@ public class FluidParticle extends TextureSheetParticle {
 
   @Override
   public int getLightColor(float partialTick) {
-    return FluidRenderer.withBlockLight(super.getLightColor(partialTick), fluid.getFluid().getFluidType().getLightLevel(fluid));
+    return FluidRenderer.withBlockLight(super.getLightColor(partialTick), FluidType.of(fluid.getFluid()).getLightLevel());
   }
 
   /** Factory to create a fluid particle */

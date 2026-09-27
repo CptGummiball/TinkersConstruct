@@ -48,7 +48,7 @@ public class DisplayPartRecipe implements IDisplayPartBuilderRecipe {
   }
 
   @Override
-  public ItemStack getResultItem(RegistryAccess pRegistryAccess) {
+  public ItemStack getResultItem(net.minecraft.core.HolderLookup.Provider pRegistryAccess) {
     throw new UnsupportedOperationException();
   }
 

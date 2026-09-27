@@ -6,8 +6,8 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.modifiers.Modifier;
-import slimeknights.tconstruct.library.recipe.worktable.ModifierSetWorktableRecipe;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 
 /**
@@ -60,18 +60,19 @@ public enum InteractionSource {
    * @return  Proper interaction source
    */
   public static InteractionSource fromEquipmentSlot(EquipmentSlot slot) {
+    // 1.21 split the ARMOR slot type into HUMANOID_ARMOR and ANIMAL_ARMOR
     return switch (slot.getType()) {
-      case ARMOR -> ARMOR;
+      case HUMANOID_ARMOR, ANIMAL_ARMOR -> ARMOR;
       case HAND -> RIGHT_CLICK;
     };
   }
 
   /** Adds the format string to the modifier name */
   public static Component formatModifierName(IToolStackView tool, Modifier modifier, Component originalName) {
-    if (ModifierSetWorktableRecipe.isInSet(tool.getPersistentData(), InteractionSource.LEFT_CLICK.getKey(), modifier.getId())) {
+    if (ContentLookups.isInWorktableSet(tool.getPersistentData(), InteractionSource.LEFT_CLICK.getKey(), modifier.getId())) {
       return modifier.applyStyle(Component.translatable(ATTACK_FORMAT, originalName));
     }
-    if (ModifierSetWorktableRecipe.isInSet(tool.getPersistentData(), InteractionSource.RIGHT_CLICK.getKey(), modifier.getId())) {
+    if (ContentLookups.isInWorktableSet(tool.getPersistentData(), InteractionSource.RIGHT_CLICK.getKey(), modifier.getId())) {
       return modifier.applyStyle(Component.translatable(INTERACT_FORMAT, originalName));
     }
     return originalName;

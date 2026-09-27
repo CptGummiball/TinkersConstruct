@@ -1,9 +1,6 @@
 package slimeknights.tconstruct.world.item;
 
 import net.minecraft.core.Direction;
-import net.minecraft.world.entity.monster.EnderMan;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.StandingAndWallBlockItem;
 import net.minecraft.world.level.block.Block;
 
@@ -13,8 +10,6 @@ public class EndermanHeadItem extends StandingAndWallBlockItem {
     super(pBlock, pWallBlock, pProperties, pAttachmentDirection);
   }
 
-  @Override
-  public boolean isEnderMask(ItemStack stack, Player player, EnderMan endermanEntity) {
-    return true;
-  }
+  // Forge's isEnderMask hook has no Fabric equivalent; the ender-mask behavior returns
+  // with an EnderMan.isLookingAtMe mixin in the event-layer step
 }

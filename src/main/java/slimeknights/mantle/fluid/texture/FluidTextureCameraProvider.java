@@ -1,0 +1,45 @@
+package slimeknights.mantle.fluid.texture;
+
+import net.minecraft.data.PackOutput;
+import net.minecraft.resources.ResourceLocation;
+import slimeknights.mantle.data.ExistingFileHelper;
+import net.minecraft.resources.ResourceLocation;
+import slimeknights.mantle.data.client.DeanimateTextureGenerator;
+
+import java.util.Map.Entry;
+import java.util.Set;
+
+/** Generates fluid camera textures using the first frame of the still texture */
+public class FluidTextureCameraProvider extends DeanimateTextureGenerator {
+  private final AbstractFluidTextureProvider provider;
+  /** Fluids from the provider to ignore */
+  private final Set<ResourceLocation> skip;
+
+  public FluidTextureCameraProvider(PackOutput packOutput, ExistingFileHelper existingFileHelper, AbstractFluidTextureProvider provider, Set<ResourceLocation> skip) {
+    super(packOutput, existingFileHelper);
+    this.provider = provider;
+    this.skip = skip;
+  }
+
+  public FluidTextureCameraProvider(PackOutput packOutput, ExistingFileHelper existingFileHelper, AbstractFluidTextureProvider provider) {
+    this(packOutput, existingFileHelper, provider, Set.of());
+  }
+
+  @Override
+  protected void addTextures() {
+    for (Entry<ResourceLocation, FluidTexture.Builder> entry : provider.getAllTextures().entrySet()) {
+      if (!skip.contains(entry.getKey())) {
+        FluidTexture.Builder builder = entry.getValue();
+        ResourceLocation camera = builder.getCamera();
+        if (camera != null) {
+          deanimate(builder.getStill(), camera);
+        }
+      }
+    }
+  }
+
+  @Override
+  public String getName() {
+    return "Fluid texture camera provider";
+  }
+}

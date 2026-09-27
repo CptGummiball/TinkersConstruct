@@ -7,8 +7,8 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.living.MobEffectEvent;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.MobEffectEvent;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerEffect;
 import slimeknights.tconstruct.library.events.teleport.ReturningTeleportEvent;
@@ -20,28 +20,30 @@ public class ReturningEffect extends TinkerEffect {
   private static final ResourceLocation KEY = TConstruct.getResource("returning");
   public ReturningEffect() {
     super(MobEffectCategory.NEUTRAL, 0xa92dff, true);
-    MinecraftForge.EVENT_BUS.addListener(this::onEffectAdded);
+    MinecraftForge.EVENT_BUS.addListener(MobEffectEvent.Added.class, this::onEffectAdded);
   }
 
   /** Called to set the return position when the effect is added */
   private void onEffectAdded(MobEffectEvent.Added event) {
     // store entity's current position when the effect is added
     LivingEntity entity = event.getEntity();
-    if (!entity.level().isClientSide() && event.getOldEffectInstance() == null && event.getEffectInstance().getEffect() == this) {
+    if (!entity.level().isClientSide() && event.getOldEffectInstance() == null && event.getEffectInstance().getEffect().value() == this) {
       ModDataNBT data = PersistentDataCapability.getOrWarn(entity);
-      CompoundTag pos = NbtUtils.writeBlockPos(entity.blockPosition());
+      // 1.21 stores block positions as int arrays, so wrap it with the dimension in a compound
+      CompoundTag pos = new CompoundTag();
+      pos.put("pos", NbtUtils.writeBlockPos(entity.blockPosition()));
       pos.putString("dimension", entity.level().dimension().location().toString());
       data.put(KEY, pos);
     }
   }
 
   @Override
-  public boolean isDurationEffectTick(int duration, int amplifier) {
+  public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
     return duration == 1;
   }
 
   @Override
-  public void applyEffectTick(LivingEntity living, int amplifier) {
+  public boolean applyEffectTick(LivingEntity living, int amplifier) {
     ModDataNBT data = PersistentDataCapability.getOrWarn(living);
     if (data.contains(KEY, Tag.TAG_COMPOUND)) {
       CompoundTag tag = data.getCompound(KEY);
@@ -49,9 +51,10 @@ public class ReturningEffect extends TinkerEffect {
       // no teleporting if you switched dimensions
       // TODO: look into cross dimensional teleport, its doable with entity#teleportTo
       if (dimension != null && dimension.equals(living.level().dimension().location())) {
-        BlockPos pos = NbtUtils.readBlockPos(tag);
-        TeleportHelper.tryTeleport(new ReturningTeleportEvent(living, pos.getX(), pos.getY(), pos.getZ()));
+        NbtUtils.readBlockPos(tag, "pos").ifPresent(pos ->
+          TeleportHelper.tryTeleport(new ReturningTeleportEvent(living, pos.getX(), pos.getY(), pos.getZ())));
       }
     }
+    return true;
   }
 }

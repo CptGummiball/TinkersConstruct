@@ -11,8 +11,10 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.world.entity.ArmoredSlimeEntity;
 
 public class TinkerSlimeRenderer extends SlimeRenderer {
-  public static final Factory SKY_SLIME_FACTORY = new Factory(TConstruct.getResource("textures/entity/sky_slime.png"), TConstruct.getResource("textures/entity/steel_slime.png"));
-  public static final Factory ENDER_SLIME_FACTORY = new Factory(TConstruct.getResource("textures/entity/ender_slime.png"), TConstruct.getResource("textures/entity/knightmetal_slime.png"));
+  // typed as the interface rather than the private record: Forge's event took the provider without
+  // the caller ever naming the type, Fabric's registry needs it in a method reference
+  public static final EntityRendererProvider<Slime> SKY_SLIME_FACTORY = new Factory(TConstruct.getResource("textures/entity/sky_slime.png"), TConstruct.getResource("textures/entity/steel_slime.png"));
+  public static final EntityRendererProvider<Slime> ENDER_SLIME_FACTORY = new Factory(TConstruct.getResource("textures/entity/ender_slime.png"), TConstruct.getResource("textures/entity/knightmetal_slime.png"));
 
   private final ResourceLocation slime, metal;
   public TinkerSlimeRenderer(EntityRendererProvider.Context context, ResourceLocation slime, ResourceLocation metal) {

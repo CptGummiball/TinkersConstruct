@@ -1,0 +1,26 @@
+{
+  "values": [
+    "#c:glass/colorless",
+    "#c:glass/tinted",
+    {
+      "id": "#c:glass_blocks",
+      "required": false
+    },
+    "#c:glass/white",
+    "#c:glass/orange",
+    "#c:glass/magenta",
+    "#c:glass/light_blue",
+    "#c:glass/yellow",
+    "#c:glass/lime",
+    "#c:glass/pink",
+    "#c:glass/gray",
+    "#c:glass/light_gray",
+    "#c:glass/cyan",
+    "#c:glass/purple",
+    "#c:glass/blue",
+    "#c:glass/brown",
+    "#c:glass/green",
+    "#c:glass/red",
+    "#c:glass/black"
+  ]
+}

@@ -3,7 +3,6 @@ package slimeknights.tconstruct.tables.client.inventory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import net.minecraft.client.gui.screens.inventory.SmithingScreen;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag.Default;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import slimeknights.mantle.client.SafeClientAccess;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.client.GuiUtil;
@@ -42,6 +42,15 @@ public abstract class ToolTableScreen<T extends BlockEntity, C extends TabbedCon
   private static final Component TRAITS_TEXT = TConstruct.makeTranslation("gui", "tinker_station.traits");
 
   private static final ResourceLocation ICON_TEXTURE = TConstruct.getResource("textures/gui/icons.png");
+
+  /**
+   * Base rotation of the armor stand preview.
+   *
+   * <p>1.21 made SmithingScreen.ARMOR_STAND_ANGLE private, so its values are inlined here along
+   * with the zero translation vanilla passes for the smithing table.
+   */
+  private static final Quaternionf ARMOR_STAND_ANGLE = new Quaternionf().rotationXYZ(0.43633232F, 0.0F, (float)Math.PI);
+  private static final Vector3f ARMOR_STAND_TRANSLATION = new Vector3f();
 
   /** Side panels, for tools and modifiers */
   protected final InfoPanelScreen<ToolTableScreen<T,C>,C> tinkerInfo;
@@ -95,8 +104,9 @@ public abstract class ToolTableScreen<T extends BlockEntity, C extends TabbedCon
   protected void renderArmorStand(GuiGraphics graphics) {
     if (this.armorStandPreview != null) {
       Quaternionf pose = new Quaternionf();
-      SmithingScreen.ARMOR_STAND_ANGLE.rotateY(this.armorStandAngle, pose);
-      InventoryScreen.renderEntityInInventory(graphics, this.armorStandX, this.armorStandY, this.armorStandScale, pose, null, this.armorStandPreview);
+      ARMOR_STAND_ANGLE.rotateY(this.armorStandAngle, pose);
+      // 1.21 added a translation vector and made the position/scale arguments floats
+      InventoryScreen.renderEntityInInventory(graphics, this.armorStandX, this.armorStandY, this.armorStandScale, ARMOR_STAND_TRANSLATION, pose, null, this.armorStandPreview);
 
       graphics.blit(ICON_TEXTURE, armorStandX - 16, armorStandY - 16, 0, 184, 32, 32);
     }
@@ -145,7 +155,8 @@ public abstract class ToolTableScreen<T extends BlockEntity, C extends TabbedCon
       ItemStack result = lazyToolStack.getStack();
       tinkerInfo.setCaption(result.getHoverName());
       List<Component> list = new ArrayList<>();
-      result.getItem().appendHoverText(result, Minecraft.getInstance().level, list, Default.NORMAL);
+      // 1.21 replaced the Level parameter with a TooltipContext
+      result.getItem().appendHoverText(result, Item.TooltipContext.of(Minecraft.getInstance().level), list, Default.NORMAL);
       tinkerInfo.setText(list);
     }
   }

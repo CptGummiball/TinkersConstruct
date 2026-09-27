@@ -12,8 +12,10 @@ import slimeknights.tconstruct.shared.TinkerCommons;
 import java.util.function.BiConsumer;
 
 public class AdvancementLootTableProvider implements LootTableSubProvider {
+  public AdvancementLootTableProvider(net.minecraft.core.HolderLookup.Provider registries) {}
+
   @Override
-  public void generate(BiConsumer<ResourceLocation, LootTable.Builder> consumer) {
-    consumer.accept(TConstruct.getResource("gameplay/starting_book"), LootTable.lootTable().withPool(LootPool.lootPool().setRolls(ConstantValue.exactly(1.0F)).add(LootItem.lootTableItem(TinkerCommons.materialsAndYou))));
+  public void generate(BiConsumer<net.minecraft.resources.ResourceKey<LootTable>, LootTable.Builder> consumer) {
+    consumer.accept(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, TConstruct.getResource("gameplay/starting_book")), LootTable.lootTable().withPool(LootPool.lootPool().setRolls(ConstantValue.exactly(1.0F)).add(LootItem.lootTableItem(TinkerCommons.materialsAndYou))));
   }
 }

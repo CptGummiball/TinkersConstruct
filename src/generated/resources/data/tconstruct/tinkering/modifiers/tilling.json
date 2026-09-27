@@ -5,7 +5,7 @@
       "type": "tconstruct:tool_action_transform",
       "require_ground": false,
       "sound": "minecraft:item.hoe.till",
-      "tool_action": "till"
+      "tool_action": "hoe_till"
     },
     {
       "type": "tconstruct:tool_action_walk_transform",
@@ -14,7 +14,7 @@
         "flat": 0.5
       },
       "sound": "minecraft:item.hoe.till",
-      "tool_action": "till"
+      "tool_action": "hoe_till"
     },
     {
       "type": "tconstruct:show_offhand",

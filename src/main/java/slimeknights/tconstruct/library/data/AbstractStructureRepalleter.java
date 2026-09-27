@@ -17,7 +17,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import slimeknights.mantle.data.GenericDataProvider;
 import slimeknights.tconstruct.TConstruct;
 
@@ -40,7 +40,7 @@ public abstract class AbstractStructureRepalleter extends GenericNBTProvider {
   private final ExistingFileHelper existingFileHelper;
   private final String modId;
   public AbstractStructureRepalleter(PackOutput packOutput, ExistingFileHelper existingFileHelper, String modId) {
-    super(packOutput, Target.DATA_PACK, "structures");
+    super(packOutput, Target.DATA_PACK, "structure"); // 1.21 renamed the structures data folder
     this.existingFileHelper = existingFileHelper;
     this.modId = modId;
   }
@@ -67,8 +67,8 @@ public abstract class AbstractStructureRepalleter extends GenericNBTProvider {
     for (Entry<ResourceLocation,Collection<RepaletteTask>> entry : structures.asMap().entrySet()) {
       ResourceLocation original = entry.getKey();
 
-      try (InputStream io = existingFileHelper.getResource(original, PackType.SERVER_DATA, ".nbt", "structures").open()) {
-        CompoundTag inputNBT = NbtIo.readCompressed(io);
+      try (InputStream io = existingFileHelper.getResource(original, PackType.SERVER_DATA, ".nbt", "structure").open()) {
+        CompoundTag inputNBT = NbtIo.readCompressed(io, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
         for (RepaletteTask task : entry.getValue()) {
           // start by fetching the palette, we assume its not randomized
           CompoundTag newStructure = inputNBT.copy();
@@ -92,7 +92,7 @@ public abstract class AbstractStructureRepalleter extends GenericNBTProvider {
             template.load(BuiltInRegistries.BLOCK.asLookup(), newStructure);
             newStructure = template.save(new CompoundTag());
           }
-          tasks.add(saveNBT(cache, new ResourceLocation(modId, task.location), newStructure));
+          tasks.add(saveNBT(cache, ResourceLocation.fromNamespaceAndPath(modId, task.location), newStructure));
         }
       }
       catch (IOException e) {

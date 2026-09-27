@@ -2,9 +2,9 @@ package slimeknights.tconstruct.library.client.model;
 
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.vertex.PoseStack;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.client.renderer.block.model.ItemOverrides;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.Material;
@@ -14,10 +14,10 @@ import net.minecraft.client.resources.model.UnbakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.minecraftforge.client.model.BakedModelWrapper;
-import net.minecraftforge.client.model.geometry.IGeometryBakingContext;
-import net.minecraftforge.client.model.geometry.IGeometryLoader;
-import net.minecraftforge.client.model.geometry.IUnbakedGeometry;
+import slimeknights.mantle.client.model.BakedModelWrapper;
+import slimeknights.mantle.client.model.geometry.IGeometryBakingContext;
+import slimeknights.mantle.client.model.geometry.IGeometryLoader;
+import slimeknights.mantle.client.model.geometry.IUnbakedGeometry;
 import slimeknights.mantle.client.model.util.SimpleBlockModel;
 
 import java.util.function.Function;
@@ -46,7 +46,11 @@ public class UniqueGuiModel implements IUnbakedGeometry<UniqueGuiModel> {
   }
 
   /**
-   * Wrapper that swaps the model for the GUI
+   * Wrapper that swaps the model for the GUI.
+   *
+   * <p>Fabric port: Forge routed every item render through {@code IForgeBakedModel.applyTransform};
+   * vanilla applies {@link ItemTransforms} inline in {@code ItemRenderer.render} with no hook of its
+   * own, so {@code ItemRendererModelSwapMixin} calls {@link #getModelForContext} there instead.
    */
   public static class Baked extends BakedModelWrapper<BakedModel> {
     private final BakedModel gui;
@@ -57,11 +61,8 @@ public class UniqueGuiModel implements IUnbakedGeometry<UniqueGuiModel> {
     }
 
     @Override
-    public BakedModel applyTransform(ItemDisplayContext itemDisplay, PoseStack mat, boolean applyLeftHandTransform) {
-      if (itemDisplay == ItemDisplayContext.GUI) {
-        return gui.applyTransform(itemDisplay, mat, applyLeftHandTransform);
-      }
-      return originalModel.applyTransform(itemDisplay, mat, applyLeftHandTransform);
+    public BakedModel getModelForContext(ItemDisplayContext itemDisplay, boolean leftHand) {
+      return itemDisplay == ItemDisplayContext.GUI ? gui : originalModel;
     }
   }
 

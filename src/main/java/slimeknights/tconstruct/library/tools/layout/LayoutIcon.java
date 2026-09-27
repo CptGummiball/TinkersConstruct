@@ -13,10 +13,10 @@ import io.netty.handler.codec.DecoderException;
 import lombok.RequiredArgsConstructor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.crafting.CraftingHelper;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.library.recipe.partbuilder.Pattern;
 
@@ -36,7 +36,7 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.EMPTY);
     }
 
@@ -61,12 +61,12 @@ public abstract class LayoutIcon {
   public abstract <T> T getValue(Class<T> clazz);
 
   /** Reads the button icon from the buffer */
-  public static LayoutIcon read(FriendlyByteBuf buffer) {
+  public static LayoutIcon read(RegistryFriendlyByteBuf buffer) {
     Type type = buffer.readEnum(Type.class);
     switch (type) {
       case EMPTY: return EMPTY;
       case ITEM: {
-        ItemStack stack = buffer.readItem();
+        ItemStack stack = ItemStack.OPTIONAL_STREAM_CODEC.decode(buffer);
         return new ItemStackIcon(stack);
       }
       case PATTERN: {
@@ -78,7 +78,7 @@ public abstract class LayoutIcon {
   }
 
   /** Writes this to the packet buffer */
-  public abstract void write(FriendlyByteBuf buffer);
+  public abstract void write(RegistryFriendlyByteBuf buffer);
 
   /** Writes this object to json */
   public abstract JsonObject toJson();
@@ -98,16 +98,16 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.ITEM);
-      buffer.writeItem(stack);
+      ItemStack.OPTIONAL_STREAM_CODEC.encode(buffer, stack);
     }
 
     @Override
     public JsonObject toJson() {
       JsonObject json = new JsonObject();
       json.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
-      CompoundTag tag = stack.getTag();
+      CompoundTag tag = slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack);
       if (tag != null) {
         json.addProperty("nbt", tag.toString());
       }
@@ -130,7 +130,7 @@ public abstract class LayoutIcon {
     }
 
     @Override
-    public void write(FriendlyByteBuf buffer) {
+    public void write(RegistryFriendlyByteBuf buffer) {
       buffer.writeEnum(Type.PATTERN);
       buffer.writeResourceLocation(pattern);
     }
@@ -159,8 +159,19 @@ public abstract class LayoutIcon {
         Pattern pattern = new Pattern(JsonHelper.getResourceLocation(object, "pattern"));
         return new PatternIcon(pattern);
       }
+      // 1.21's stack codec spells the item "id" and takes components; the shipped layouts still use
+      // 1.20's {"item", "nbt"} pair, and the nbt they carry is a tool's own data — so it is read
+      // directly and routed through TagCompat, exactly as a real tool carries it.
+      if (object.has("id")) {
+        ItemStack stack = net.minecraft.world.item.ItemStack.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, object).getOrThrow(com.google.gson.JsonSyntaxException::new);
+        return new ItemStackIcon(stack);
+      }
       if (object.has("item")) {
-        ItemStack stack = CraftingHelper.getItemStack(object, true);
+        ItemStack stack = new ItemStack(slimeknights.mantle.data.loadable.Loadables.ITEM.getIfPresent(object, "item"));
+        if (object.has("nbt")) {
+          slimeknights.tconstruct.library.tools.nbt.TagCompat.setTag(
+            stack, slimeknights.mantle.data.loadable.common.NBTLoadable.ALLOW_STRING.convert(object.get("nbt"), "nbt", slimeknights.mantle.util.typed.TypedMap.empty()));
+        }
         return new ItemStackIcon(stack);
       }
       // not sure why this would be needed, but might as well

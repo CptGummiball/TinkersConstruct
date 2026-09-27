@@ -1,39 +1,29 @@
 package slimeknights.tconstruct.fluids;
 
-import net.minecraft.world.item.ItemStack;
+import net.fabricmc.fabric.api.registry.FuelRegistry;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.fluid.base.FullItemFluidStorage;
 import net.minecraft.world.item.Items;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.furnace.FurnaceFuelBurnTimeEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import slimeknights.tconstruct.TConstruct;
-import slimeknights.tconstruct.fluids.util.ConstantFluidContainerWrapper;
 
 /**
- * Event subscriber for modifier events
- * Note the way the subscribers are set up, technically works on anything that has the tic_modifiers tag
+ * Fluid-related hooks outside registration.
+ *
+ * <p>Fabric port: the furnace-fuel event becomes a {@code FuelRegistry} entry, and the
+ * powdered-snow-bucket capability attachment becomes a {@code FluidStorage.ITEM}
+ * registration on the vanilla item.
  */
-@SuppressWarnings("unused")
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.FORGE)
 public class FluidEvents {
-  @SubscribeEvent
-  static void onFurnaceFuel(FurnaceFuelBurnTimeEvent event) {
-    if (event.getItemStack().getItem() == TinkerFluids.blazingBlood.asItem()) {
-      // 150% efficiency compared to lava bucket, compare to casting blaze rods, which cast into 120%
-      event.setBurnTime(30000);
-    }
-  }
+  private FluidEvents() {}
 
-  @SubscribeEvent
-  static void attachCapabilities(AttachCapabilitiesEvent<ItemStack> event) {
-    ItemStack stack = event.getObject();
-    if (event.getObject().is(Items.POWDER_SNOW_BUCKET)) {
-      event.addCapability(
-        TConstruct.getResource("powdered_snow"),
-        new ConstantFluidContainerWrapper(new FluidStack(TinkerFluids.powderedSnow.get(), FluidType.BUCKET_VOLUME), stack, Items.BUCKET.getDefaultInstance()));
-    }
+  public static void init() {
+    // 150% efficiency compared to lava bucket, compare to casting blaze rods, which cast into 120%
+    FuelRegistry.INSTANCE.add(TinkerFluids.blazingBlood.asItem(), 30000);
+
+    // let the melter drain vanilla powder snow buckets into our powdered snow fluid
+    FluidStorage.ITEM.registerForItems(
+      (stack, context) -> new FullItemFluidStorage(context, Items.BUCKET, FluidVariant.of(TinkerFluids.powderedSnow.get()), FluidConstants.BUCKET),
+      Items.POWDER_SNOW_BUCKET);
   }
 }

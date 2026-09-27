@@ -2,26 +2,25 @@ package slimeknights.tconstruct.library.tools.capability.inventory;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import lombok.RequiredArgsConstructor;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.items.ItemHandlerHelper;
-import net.minecraftforge.network.NetworkHooks;
 import slimeknights.mantle.inventory.EmptyItemHandler;
+import slimeknights.mantle.transfer.cap.Capability;
+import slimeknights.mantle.transfer.cap.ForgeCapabilities;
+import slimeknights.mantle.transfer.cap.LazyOptional;
+import slimeknights.mantle.transfer.item.IItemHandler;
+import slimeknights.mantle.transfer.item.IItemHandlerModifiable;
+import slimeknights.mantle.transfer.item.ItemHandlerHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerTags;
-import slimeknights.tconstruct.common.config.Config;
-import slimeknights.tconstruct.common.config.Config.ToolSyncType;
 import slimeknights.tconstruct.library.modifiers.ModifierEntry;
 import slimeknights.tconstruct.library.modifiers.ModifierHooks;
 import slimeknights.tconstruct.library.module.ModuleHook;
@@ -32,7 +31,9 @@ import slimeknights.tconstruct.library.tools.definition.module.display.ToolNameH
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.nbt.ModDataNBT;
+import slimeknights.tconstruct.library.tools.nbt.ToolStack;
 import slimeknights.tconstruct.tools.menu.ToolContainerMenu;
+import slimeknights.tconstruct.tools.menu.ToolContainerMenu.OpeningData;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -121,9 +122,39 @@ public class ToolInventoryCapability extends InventoryModifierHookIterator<Modif
     return entry.getHook(HOOK);
   }
 
+  /**
+   * Fabric replacement for {@code stack.getCapability(ForgeCapabilities.ITEM_HANDLER)} on a tool stack.
+   *
+   * <p>Forge attached {@link Provider} to every tool through {@code ToolCapabilityProvider}; Fabric has
+   * no per-stack capability attach, so consumers call this directly. It performs the exact dispatch
+   * the Forge provider did: the stack must be a modifiable tool, and the tool's volatile data must
+   * report at least one slot under {@link #TOTAL_SLOTS}.
+   *
+   * <p><b>Contract.</b> The returned handler is a live view over the stack's persistent NBT: reads
+   * parse from it and {@link IItemHandlerModifiable#setStackInSlot} writes back into it, so it must
+   * only be held for as long as the stack is valid. A fresh view is built per call (Forge's provider
+   * cached one and cleared the cache on every capability fetch, so this never serves staler data than
+   * Forge did). Returns {@code null} — not an empty handler — when the stack is not a modifiable tool
+   * or the tool has no inventory slots, mirroring the absent capability on Forge; call sites that want
+   * Forge's {@code .orElse(EmptyItemHandler.INSTANCE)} should null-coalesce themselves.
+   */
+  @Nullable
+  public static IItemHandlerModifiable getInventory(ItemStack stack) {
+    if (stack.isEmpty() || !stack.is(TinkerTags.Items.MODIFIABLE)) {
+      return null;
+    }
+    ToolStack tool = ToolStack.from(stack);
+    if (tool.getVolatileData().getInt(TOTAL_SLOTS) <= 0) {
+      return null;
+    }
+    return new ToolInventoryCapability(() -> tool);
+  }
+
   /** If true, the given stack is blacklisted from being stored in a tool */
   public static boolean isBlacklisted(ItemStack stack) {
-    return !stack.getItem().canFitInsideContainerItems() || stack.is(TinkerTags.Items.TOOL_INVENTORY_BLACKLIST) || stack.getCapability(ForgeCapabilities.ITEM_HANDLER).isPresent();
+    // Forge asked the stack for an item handler capability to block nesting inventories. Fabric has no
+    // per-stack item handler capability at all, so the only stacks that can nest are our own tools.
+    return !stack.getItem().canFitInsideContainerItems() || stack.is(TinkerTags.Items.TOOL_INVENTORY_BLACKLIST) || getInventory(stack) != null;
   }
 
   @Override
@@ -537,23 +568,30 @@ public class ToolInventoryCapability extends InventoryModifierHookIterator<Modif
 
   /** Opens the tool inventory container if an inventory is present on the given tool */
   public static InteractionResult tryOpenContainer(ItemStack stack, @Nullable IToolStackView tool, ToolDefinition definition, Player player, int slotIndex) {
-    IItemHandler handler = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).filter(cap -> cap instanceof IItemHandlerModifiable).orElse(EmptyItemHandler.INSTANCE);
+    IItemHandlerModifiable toolInventory = getInventory(stack);
+    IItemHandler handler = toolInventory != null ? toolInventory : EmptyItemHandler.INSTANCE;
     // open if we have any slots or we have a crafting table
     if (handler.getSlots() > 0 || ModifierUtil.checkVolatileFlag(stack, CRAFTING_TABLE) || ModifierUtil.checkVolatileFlag(stack, INVENTORY_CRAFTING)) {
       if (player instanceof ServerPlayer serverPlayer) {
-        NetworkHooks.openScreen(serverPlayer, new SimpleMenuProvider(
-          (id, inventory, p) -> new ToolContainerMenu(id, inventory, stack, handler, slotIndex),
-          ToolNameHook.getName(definition, stack, tool)
-        ), buf -> {
-          buf.writeVarInt(slotIndex);
-          ToolSyncType syncType = Config.COMMON.toolInventorySync.get();
-          buf.writeEnum(syncType);
-          if (syncType == ToolSyncType.FULL_STACK) {
-            buf.writeItem(stack);
-          } else if (syncType == ToolSyncType.MINIMAL) {
-            buf.writeVarInt(ModifierUtil.getVolatileInt(stack, TOTAL_SLOTS));
-            buf.writeEnum(CraftingType.fromStack(stack));
-            buf.writeBoolean(ModifierUtil.checkVolatileFlag(stack, INCLUDE_OFFHAND));
+        // Forge wrote the opening details straight into the menu packet buffer. Fabric's
+        // ExtendedScreenHandlerFactory carries them as one typed value instead; the same fields go
+        // over the wire in the same conditional order, see ToolContainerMenu.OpeningData.
+        Component name = ToolNameHook.getName(definition, stack, tool);
+        OpeningData data = OpeningData.forStack(stack, slotIndex);
+        serverPlayer.openMenu(new ExtendedScreenHandlerFactory<OpeningData>() {
+          @Override
+          public OpeningData getScreenOpeningData(ServerPlayer serverPlayer) {
+            return data;
+          }
+
+          @Override
+          public Component getDisplayName() {
+            return name;
+          }
+
+          @Override
+          public AbstractContainerMenu createMenu(int id, Inventory inventory, Player menuPlayer) {
+            return new ToolContainerMenu(id, inventory, stack, handler, slotIndex);
           }
         });
       }

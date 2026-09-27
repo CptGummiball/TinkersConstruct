@@ -2,9 +2,10 @@ package slimeknights.tconstruct.smeltery.network;
 
 import lombok.AllArgsConstructor;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraftforge.network.NetworkEvent.Context;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.inventory.BaseContainerMenu;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.tconstruct.smeltery.block.entity.tank.ISmelteryTankHandler;
@@ -21,7 +22,7 @@ public class SmelteryFluidClickedPacket implements IThreadsafePacket {
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeVarInt(index);
   }
 

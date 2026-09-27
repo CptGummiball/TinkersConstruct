@@ -10,7 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.fml.ModLoader;
 import slimeknights.mantle.data.listener.MergingJsonDataLoader;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.util.JsonHelper;
@@ -38,7 +37,7 @@ import java.util.function.Predicate;
 /**
  * Manager for getting modifier models
  */
-public class ModifierModelMapManager extends MergingJsonDataLoader<Builder> {
+public class ModifierModelMapManager extends MergingJsonDataLoader<Builder> implements net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener {
   /** Folder for the modifier models */
   public static final String FOLDER = "tinkering/modifiers/sprites";
   /** Instance of this manager */
@@ -51,14 +50,23 @@ public class ModifierModelMapManager extends MergingJsonDataLoader<Builder> {
     super(JsonHelper.DEFAULT_GSON, FOLDER, id -> new Builder());
   }
 
+  /** Registers this manager with the client resource manager */
+  public static void init() {
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return TConstruct.getResource("modifier_model_map");
+  }
+
   @Override
   public CompletableFuture<Void> reload(PreparationBarrier stage, ResourceManager resourceManager, ProfilerFiller preparationsProfiler, ProfilerFiller reloadProfiler, Executor backgroundExecutor, Executor gameExecutor) {
     // run in the first stage instead of the second stage
-    return CompletableFuture.runAsync(() -> {
-      if (ModLoader.isLoadingStateValid()) {
-        this.onResourceManagerReload(resourceManager);
-      }
-    }, backgroundExecutor).thenCompose(stage::wait);
+    // Forge guarded this with ModLoader.isLoadingStateValid(), which suppressed the load while its
+    // error screen was up. Fabric has no partially-loaded state to guard against: a failed entrypoint
+    // aborts startup outright, so the reload only ever runs with the mod fully constructed.
+    return CompletableFuture.runAsync(() -> this.onResourceManagerReload(resourceManager), backgroundExecutor).thenCompose(stage::wait);
   }
 
   /** Builder for a given tool model */
@@ -128,7 +136,7 @@ public class ModifierModelMapManager extends MergingJsonDataLoader<Builder> {
         // for simplicity, treat an array as a compound
         model = CompoundModifierModel.create(CompoundModifierModel.LIST_LOADABLE.convert(value, key.toString(), context.apply(id, key)));
       } else if (value.isJsonPrimitive()) {
-        model = new NormalModifierModel(ModifierModel.blockAtlas(new ResourceLocation(value.getAsString())), null);
+        model = new NormalModifierModel(ModifierModel.blockAtlas(ResourceLocation.parse(value.getAsString())), null);
       } else {
         JsonObject json = value.getAsJsonObject();
         if (!json.has("type")) {

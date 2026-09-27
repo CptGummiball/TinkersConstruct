@@ -14,7 +14,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.ToolAction;
+import slimeknights.mantle.item.ToolAction;
 import org.jetbrains.annotations.ApiStatus.Internal;
 import slimeknights.mantle.data.loadable.Loadables;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -91,7 +91,7 @@ public record ToolActionWalkerTransformModule(ToolAction action, SoundEvent soun
       context.setOffsetPos(mutable);
       // transform the block
       BlockState original = world.getBlockState(mutable);
-      BlockState transformed = original.getToolModifiedState(context, action, false);
+      BlockState transformed = slimeknights.mantle.item.ToolActionTransforms.getToolModifiedState(original, context, action, false);
       if (transformed != null) {
         world.setBlock(mutable, transformed, Block.UPDATE_ALL_IMMEDIATE);
         world.destroyBlock(target, true);

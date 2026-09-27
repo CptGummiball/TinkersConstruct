@@ -1,15 +1,17 @@
 package slimeknights.tconstruct.library.client;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fluids.capability.templates.FluidTank;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import slimeknights.mantle.block.entity.MantleBlockEntity;
+import slimeknights.mantle.transfer.fluid.FluidTank;
 
 /**
  * This class contains various methods that are safe to call on both sides, which internally call client only code.
+ *
+ * <p>Fabric port: upstream guarded these with {@code FMLEnvironment.dist} and hid the body in a
+ * nested class, because the body touched {@code Minecraft}. It no longer does — asking a block
+ * entity to rebuild its model is a common-side call that checks the level's own side — so the guard
+ * and the nested class are gone. The class stays because it is the seam the tank code calls.
  */
 public class SafeClient {
   /**
@@ -20,24 +22,10 @@ public class SafeClient {
    * @param newAmount   New fluid amount
    */
   public static void updateFluidModel(BlockEntity be, FluidTank tank, int oldAmount, int newAmount) {
-    if (FMLEnvironment.dist == Dist.CLIENT) {
-      ClientOnly.updateFluidModel(be, tank, oldAmount, newAmount);
-    }
-  }
-
-  /** This class is only ever loaded client side */
-  private static class ClientOnly {
-    /** @see SafeClient#updateFluidModel(BlockEntity, FluidTank, int, int)  */
-    public static void updateFluidModel(BlockEntity be, FluidTank tank, int oldAmount, int newAmount) {
-      Level level = be.getLevel();
-      if (level != null && level.isClientSide) {
-        // if the amount change is bigger than a single increment, or we changed whether we have a fluid, update the world renderer
-        BlockState state = be.getBlockState();
-        if (oldAmount != newAmount) {
-          be.requestModelDataUpdate();
-          Minecraft.getInstance().levelRenderer.blockChanged(level, be.getBlockPos(), state, state, 3);
-        }
-      }
+    Level level = be.getLevel();
+    // if the amount changed at all, the fluid's height in the model changed with it
+    if (level != null && level.isClientSide && oldAmount != newAmount && be instanceof MantleBlockEntity mantle) {
+      mantle.requestModelDataUpdate();
     }
   }
 }

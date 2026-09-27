@@ -1,0 +1,37 @@
+{
+  "type": "tconstruct:modifier",
+  "allow_crystal": true,
+  "inputs": [
+    {
+      "tag": "c:bottles/splash"
+    },
+    {
+      "fabric:type": "tconstruct:no_container",
+      "tag": "tconstruct:tanks"
+    },
+    {
+      "tag": "c:bottles/splash"
+    },
+    {
+      "tag": "c:ingots/copper"
+    },
+    {
+      "tag": "c:ingots/copper"
+    }
+  ],
+  "result": "tconstruct:splashing",
+  "slots": {
+    "abilities": 1
+  },
+  "tools": {
+    "fabric:type": "fabric:all",
+    "ingredients": [
+      {
+        "tag": "tconstruct:modifiable/durability"
+      },
+      {
+        "tag": "tconstruct:modifiable/interactable"
+      }
+    ]
+  }
+}

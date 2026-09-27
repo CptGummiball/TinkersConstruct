@@ -3,13 +3,13 @@ package slimeknights.tconstruct.library.recipe.melting;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
 import slimeknights.mantle.recipe.ICustomOutputRecipe;
 import slimeknights.mantle.registration.object.FluidObject;
 import slimeknights.tconstruct.library.recipe.FluidValues;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 /**
  * Common interface for all melting recipes
@@ -52,7 +52,7 @@ public interface IMeltingRecipe extends ICustomOutputRecipe<IMeltingContainer> {
 
   @Override
   default ItemStack getToastSymbol() {
-    return new ItemStack(TinkerSmeltery.searedMelter);
+    return ContentLookups.toastSymbol("seared_melter");
   }
 
   /* Utils */
@@ -61,12 +61,12 @@ public interface IMeltingRecipe extends ICustomOutputRecipe<IMeltingContainer> {
 
   /** Gets the temperature for a fluid */
   static int getTemperature(Fluid fluid) {
-    return fluid.getFluidType().getTemperature() - 300;
+    return slimeknights.mantle.transfer.fluid.FluidType.of(fluid).getTemperature() - 300;
   }
 
   /** Gets the temperature for a fluid */
   static int getTemperature(FluidStack fluid) {
-    return fluid.getFluid().getFluidType().getTemperature(fluid) - 300;
+    return slimeknights.mantle.transfer.fluid.FluidType.of(fluid.getFluid()).getTemperature() - 300;
   }
 
   /** Gets the temperature for a fluid */

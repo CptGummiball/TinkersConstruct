@@ -11,8 +11,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
-import net.minecraft.world.item.alchemy.Potions;
+import net.minecraft.world.item.alchemy.PotionContents;
 import slimeknights.mantle.client.model.util.MantleItemLayerModel;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.ItemLayerPixels;
@@ -74,9 +73,12 @@ public class PotionModifierModel implements SimpleModifierModel {
       if (toolData.contains(key, Tag.TAG_STRING)) {
         ResourceLocation id = ResourceLocation.tryParse(toolData.getString(key));
         if (id != null) {
+          // 1.21 deleted the empty potion along with PotionUtils; an unresolvable id is now simply
+          // absent from the registry, so the null check covers what the Potions.EMPTY compare did
           Potion potion = BuiltInRegistries.POTION.get(id);
-          if (potion != Potions.EMPTY) {
-            quadConsumer.accept(MantleItemLayerModel.getQuadsForSprite(0xFF000000 | PotionUtils.getColor(potion), -1, spriteGetter.apply(texture), transforms, 0, pixels));
+          if (potion != null) {
+            int color = PotionContents.getColor(BuiltInRegistries.POTION.wrapAsHolder(potion));
+            quadConsumer.accept(MantleItemLayerModel.getQuadsForSprite(0xFF000000 | color, -1, spriteGetter.apply(texture), transforms, 0, pixels));
           }
         }
       }

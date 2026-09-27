@@ -28,7 +28,7 @@ import slimeknights.tconstruct.library.tools.helper.ToolAttackUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
 import slimeknights.tconstruct.library.utils.Util;
-import slimeknights.tconstruct.shared.TinkerEffects;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -117,7 +117,7 @@ public class ToolAttackContext {
   public DamageSource makeDamageSource() {
     // if we have a projectile, use the projectile damage source except when targeting an enderman with enderference
     if (projectile != null) {
-      ResourceKey<DamageType> damageType = TinkerEffects.needsEnderferenceOverride(livingTarget) ? TinkerDamageTypes.MELEE_THROWN_TOOL : TinkerDamageTypes.THROWN_TOOL;
+      ResourceKey<DamageType> damageType = ContentLookups.needsEnderferenceOverride(livingTarget) ? TinkerDamageTypes.MELEE_THROWN_TOOL : TinkerDamageTypes.THROWN_TOOL;
       return CombatHelper.damageSource(damageType, projectile, attacker);
     }
     if (playerAttacker != null) {

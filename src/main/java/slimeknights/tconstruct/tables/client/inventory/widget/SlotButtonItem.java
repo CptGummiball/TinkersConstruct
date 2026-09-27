@@ -39,11 +39,7 @@ public class SlotButtonItem extends Button {
     return this;
   }
 
-  @Override
-  public void render(GuiGraphics pGuiGraphics, int pMouseX, int pMouseY, float pPartialTick) {
-    super.render(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
-  }
-
+  // 1.21 made AbstractWidget#render final; the pass-through override it replaced is gone.
   @Override
   public void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
       int x = getX();

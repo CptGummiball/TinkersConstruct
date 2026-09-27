@@ -10,7 +10,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -32,15 +32,11 @@ public class CongealedSlimeBlock extends Block {
   }
 
   @Override
-  public boolean isPathfindable(BlockState state, BlockGetter worldIn, BlockPos pos, PathComputationType type) {
+  protected boolean isPathfindable(BlockState state, PathComputationType type) {
     return false;
   }
 
-  @Nullable
-  @Override
-  public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
-    return BlockPathTypes.STICKY_HONEY;
-  }
+  // Forge's getBlockPathType override is replaced by LandPathNodeTypesRegistry (STICKY_HONEY) in TinkerWorld.init()
 
   @Override
   public void updateEntityAfterFallOn(BlockGetter worldIn, Entity entity) {
@@ -89,7 +85,7 @@ public class CongealedSlimeBlock extends Block {
             entityIn.setDeltaMovement(new Vec3(velocity * Math.signum(direction.x()), motion.y(), motion.z()));
             entityIn.hurtMarked = true;
             if (velocity > 0.1) {
-              worldIn.playSound(null, pos, getSoundType(state, worldIn, pos, entityIn).getStepSound(), SoundSource.BLOCKS, 1.0f, 1.0f);
+              worldIn.playSound(null, pos, state.getSoundType().getStepSound(), SoundSource.BLOCKS, 1.0f, 1.0f);
             }
           }
         } else {
@@ -97,7 +93,7 @@ public class CongealedSlimeBlock extends Block {
             entityIn.setDeltaMovement(new Vec3(motion.x(), motion.y(), velocity * Math.signum(direction.z())));
             entityIn.hurtMarked = true;
             if (velocity > 0.1) {
-              worldIn.playSound(null, pos, getSoundType(state, worldIn, pos, entityIn).getStepSound(), SoundSource.BLOCKS, 1.0f, 1.0f);
+              worldIn.playSound(null, pos, state.getSoundType().getStepSound(), SoundSource.BLOCKS, 1.0f, 1.0f);
             }
           }
         }

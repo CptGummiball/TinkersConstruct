@@ -1,7 +1,7 @@
 package slimeknights.tconstruct.world.block;
 
 import lombok.Getter;
-import net.minecraft.tags.BlockTags;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.Tiers;
@@ -21,6 +21,9 @@ public enum FoliageType implements StringRepresentable {
   ICHOR(0xd09800, Tiers.IRON,    MapColor.COLOR_ORANGE, true),
   ENDER(0xa92dff, Tiers.DIAMOND, MapColor.COLOR_PURPLE, false),
   BLOOD(0xb80000, Tiers.WOOD,    MapColor.COLOR_RED, true);
+
+  /** Vanilla codec for 1.21 block codecs */
+  public static final net.minecraft.util.StringRepresentable.EnumCodec<FoliageType> CODEC = net.minecraft.util.StringRepresentable.fromEnum(FoliageType::values);
 
   /** Foliage types fully implemented in game */
   public static final FoliageType[] VISIBLE = {EARTH, SKY, BLOOD, ENDER};
@@ -50,7 +53,7 @@ public enum FoliageType implements StringRepresentable {
     this.mapColor = mapColor;
     this.nether = nether;
     // tags
-    grassBlockTag = BlockTags.create(TConstruct.getResource((nether ? "slimy_nylium/" : "slimy_grass/") + this.getSerializedName()));
+    grassBlockTag = TagKey.create(Registries.BLOCK, TConstruct.getResource((nether ? "slimy_nylium/" : "slimy_grass/") + this.getSerializedName()));
   }
 
   private SlimeType slimeType;

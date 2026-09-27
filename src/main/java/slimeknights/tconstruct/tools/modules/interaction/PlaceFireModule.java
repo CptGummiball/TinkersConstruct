@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.TntBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraftforge.common.ToolAction;
+import slimeknights.mantle.item.ToolAction;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.data.loadable.record.SingletonLoader;
 import slimeknights.tconstruct.common.TinkerTags;
@@ -101,8 +101,9 @@ public enum PlaceFireModule implements ModifierModule, EntityInteractionModifier
     }
 
     // ignite the TNT
-    if (state.getBlock() instanceof TntBlock tnt) {
-      tnt.onCaughtFire(state, world, pos, sideHit, player);
+    if (state.getBlock() instanceof TntBlock) {
+      // 1.21: Forge's onCaughtFire hook is gone; vanilla primes TNT through the static explode
+      TntBlock.explode(world, pos);
       world.setBlock(pos, Blocks.AIR.defaultBlockState(), 11);
       return true;
     }
@@ -165,7 +166,7 @@ public enum PlaceFireModule implements ModifierModule, EntityInteractionModifier
       didIgnite = ignite(world, pos, state, sideHit, horizontalFacing, player);
       if (didIgnite && ToolDamageUtil.damage(tool, 1, player, stack, modifier.getId())) {
         if (player != null) {
-          player.broadcastBreakEvent(slotType);
+          player.onEquippedItemBroken(stack.getItem(), slotType);
         }
         return InteractionResult.sidedSuccess(world.isClientSide);
       }
@@ -176,7 +177,7 @@ public enum PlaceFireModule implements ModifierModule, EntityInteractionModifier
         didIgnite = true;
         if (ToolDamageUtil.damage(tool, 1, player, stack, modifier.getId())) {
           if (player != null) {
-            player.broadcastBreakEvent(slotType);
+            player.onEquippedItemBroken(stack.getItem(), slotType);
           }
           break;
         }

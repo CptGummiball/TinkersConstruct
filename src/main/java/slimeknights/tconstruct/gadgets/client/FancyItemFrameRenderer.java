@@ -2,24 +2,25 @@ package slimeknights.tconstruct.gadgets.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ItemFrameRenderer;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.MapItem;
+import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.client.event.RenderItemInFrameEvent;
-import net.minecraftforge.client.event.RenderNameTagEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event.Result;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.gadgets.entity.FancyItemFrameEntity;
 import slimeknights.tconstruct.gadgets.entity.FrameType;
@@ -27,6 +28,18 @@ import slimeknights.tconstruct.gadgets.entity.FrameType;
 import java.util.EnumMap;
 import java.util.Map;
 
+/**
+ * Renderer for the fancy item frames.
+ *
+ * <p>Fabric port: the frame models are not referenced by any blockstate or item model, so they are
+ * registered as extra models from {@code GadgetClientEvents} and fetched back through Fabric's
+ * {@link FabricBakedModelManager}; Forge used {@code ModelEvent.RegisterAdditional} for the same job.
+ *
+ * <p>Two Forge events are gone with no Fabric counterpart. {@code RenderNameTagEvent} let other mods
+ * veto or reword the name tag, and {@code RenderItemInFrameEvent} let them replace the item render;
+ * both are now done unconditionally, matching what vanilla's own item frame renderer does. The
+ * upstream comment complaining that Forge gave no way to fire these correctly still applies.
+ */
 public class FancyItemFrameRenderer<T extends FancyItemFrameEntity> extends ItemFrameRenderer<T> {
   public static final Map<FrameType, ResourceLocation> LOCATIONS_MODEL = new EnumMap<>(FrameType.class);
   public static final Map<FrameType, ResourceLocation> LOCATIONS_MODEL_MAP = new EnumMap<>(FrameType.class);
@@ -38,8 +51,14 @@ public class FancyItemFrameRenderer<T extends FancyItemFrameEntity> extends Item
     }
   }
 
+  /** Vanilla keeps both of these private, so this renderer holds its own references */
+  private final ItemRenderer itemRenderer;
+  private final BlockRenderDispatcher blockRenderer;
+
   public FancyItemFrameRenderer(EntityRendererProvider.Context context) {
     super(context);
+    this.itemRenderer = context.getItemRenderer();
+    this.blockRenderer = context.getBlockRenderDispatcher();
   }
 
   @Override
@@ -48,17 +67,13 @@ public class FancyItemFrameRenderer<T extends FancyItemFrameEntity> extends Item
     return frame.getFrameType() == FrameType.MANYULLYN ? Math.max(7, baseLight) : baseLight;
   }
 
-  @SuppressWarnings({"UnstableApiUsage", "deprecation"})  // no thanks forge, I'm matching vanilla behavior so I'll call the methods there
-  // seriously forge, how am I supposed to implement something like vanilla if I cannot create events?
   @Override
   public void render(T frame, float entityYaw, float partialTicks, PoseStack matrices, MultiBufferSource bufferIn, int packedLight) {
     FrameType frameType = frame.getFrameType();
 
     // base entity rendering logic, since calling super gives us the item frame renderer that we are replacing
-    RenderNameTagEvent renderNameplate = new RenderNameTagEvent(frame, frame.getDisplayName(), this, matrices, bufferIn, packedLight, partialTicks);
-    MinecraftForge.EVENT_BUS.post(renderNameplate);
-    if (renderNameplate.getResult() == Result.ALLOW || (renderNameplate.getResult() != Result.DENY && this.shouldShowName(frame))) {
-      this.renderNameTag(frame, renderNameplate.getContent(), matrices, bufferIn, packedLight);
+    if (this.shouldShowName(frame)) {
+      this.renderNameTag(frame, frame.getDisplayName(), matrices, bufferIn, packedLight, partialTicks);
     }
 
     // orient the renderer
@@ -77,9 +92,10 @@ public class FancyItemFrameRenderer<T extends FancyItemFrameEntity> extends Item
     if (frameVisible) {
       matrices.pushPose();
       matrices.translate(-0.5D, -0.5D, -0.5D);
+      ResourceLocation model = isMap ? LOCATIONS_MODEL_MAP.get(frameType) : LOCATIONS_MODEL.get(frameType);
       blockRenderer.getModelRenderer().renderModel(
         matrices.last(), bufferIn.getBuffer(Sheets.cutoutBlockSheet()), null,
-        blockRenderer.getBlockModelShaper().getModelManager().getModel(isMap ? LOCATIONS_MODEL_MAP.get(frameType) : LOCATIONS_MODEL.get(frameType)),
+        ((FabricBakedModelManager) Minecraft.getInstance().getModelManager()).getModel(model),
         1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
       matrices.popPose();
     }
@@ -103,20 +119,17 @@ public class FancyItemFrameRenderer<T extends FancyItemFrameEntity> extends Item
         int rotation = mapdata != null ? (frameRotation + 2) % 4 * 2 : frameRotation;
         matrices.mulPose(Axis.ZP.rotationDegrees(rotation * 360f / 8f));
       }
-      if (!MinecraftForge.EVENT_BUS.post(new RenderItemInFrameEvent(frame, this, matrices, bufferIn, packedLight))) {
-        if (mapdata != null) {
-          matrices.scale(0.0078125F, 0.0078125F, 0.0078125F);
-          matrices.translate(-64.0D, -64.0D, -1.0D);
-          int light = frameType == FrameType.MANYULLYN ? 0x00F000F0 : packedLight;
-          Integer mapId = MapItem.getMapId(stack);
-          assert mapId != null;
-          Minecraft.getInstance().gameRenderer.getMapRenderer().render(matrices, bufferIn, mapId, mapdata, true, light);
-        } else {
-          float scale = frameType == FrameType.CLEAR ? 0.75f : 0.5f;
-          matrices.scale(scale, scale, scale);
-          int light = frameType == FrameType.MANYULLYN ? 0x00F000F0 : packedLight;
-          this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, matrices, bufferIn, frame.level(), frame.getId());
-        }
+      MapId mapId = stack.get(DataComponents.MAP_ID);
+      if (mapdata != null && mapId != null) {
+        matrices.scale(0.0078125F, 0.0078125F, 0.0078125F);
+        matrices.translate(-64.0D, -64.0D, -1.0D);
+        int light = frameType == FrameType.MANYULLYN ? 0x00F000F0 : packedLight;
+        Minecraft.getInstance().gameRenderer.getMapRenderer().render(matrices, bufferIn, mapId, mapdata, true, light);
+      } else {
+        float scale = frameType == FrameType.CLEAR ? 0.75f : 0.5f;
+        matrices.scale(scale, scale, scale);
+        int light = frameType == FrameType.MANYULLYN ? 0x00F000F0 : packedLight;
+        this.itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, light, OverlayTexture.NO_OVERLAY, matrices, bufferIn, frame.level(), frame.getId());
       }
     }
 

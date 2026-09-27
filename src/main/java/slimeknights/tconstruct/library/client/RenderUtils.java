@@ -8,12 +8,10 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.FluidType;
 import slimeknights.mantle.client.render.FluidCuboid;
 import slimeknights.mantle.client.render.FluidRenderer;
 import slimeknights.mantle.client.render.MantleRenderTypes;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.library.fluid.FluidTankAnimated;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -49,7 +47,13 @@ public final class RenderUtils {
   }
 
   /**
-   * Adds a fluid cuboid with transparency
+   * Adds a fluid cuboid with transparency.
+   *
+   * <p>Fabric port: the sprites, tint and gas flag came from Forge's
+   * {@code IClientFluidTypeExtensions}; on Fabric they come from the fluid variant helpers wrapped
+   * by {@link FluidRenderer}. Fabric's tint is opaque RGB, so the fade below is applied to the
+   * forced alpha rather than to one the fluid supplied.
+   *
    * @param matrices  Matrix stack instance
    * @param buffer    Render type buffer instance
    * @param fluid     Fluid to render
@@ -63,15 +67,16 @@ public final class RenderUtils {
       return;
     }
 
-    IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(fluid.getFluid());
-    TextureAtlasSprite still = FluidRenderer.getBlockSprite(attributes.getStillTexture(fluid));
-    TextureAtlasSprite flowing = FluidRenderer.getBlockSprite(attributes.getFlowingTexture(fluid));
-    FluidType fluidType = fluid.getFluid().getFluidType();
-    boolean isGas = fluidType.isLighterThanAir();
-    light = FluidRenderer.withBlockLight(light, fluidType.getLightLevel(fluid));
+    TextureAtlasSprite still = FluidRenderer.getStillSprite(fluid);
+    if (still == null) {
+      return;
+    }
+    TextureAtlasSprite flowing = FluidRenderer.getFlowingSprite(fluid);
+    boolean isGas = FluidRenderer.isGas(fluid);
+    light = FluidRenderer.withBlockLight(light, FluidRenderer.getLuminosity(fluid));
 
     // add in fluid opacity if given
-    int color = attributes.getTintColor(fluid);
+    int color = FluidRenderer.getColor(fluid);
     if (opacity < 0xFF) {
       // alpha is top 8 bits, multiply by opacity and divide out remainder
       int alpha = ((color >> 24) & 0xFF) * opacity / 0xFF;

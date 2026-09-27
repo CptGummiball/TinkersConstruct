@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.entries.LootPoolEntryType;
-import net.minecraftforge.registries.RegistryObject;
+import slimeknights.mantle.registration.RegistryObject;
 import slimeknights.mantle.registration.object.EnumObject;
 import slimeknights.mantle.registration.object.ItemObject;
 import slimeknights.tconstruct.TConstruct;
@@ -42,7 +42,7 @@ import java.util.function.Supplier;
 public final class TinkerToolParts extends TinkerModule {
   /** Tab for all tool parts or tool components with many variants */
   public static final RegistryObject<CreativeModeTab> tabToolParts = CREATIVE_TABS.register(
-    "tool_parts", () -> CreativeModeTab.builder().title(TConstruct.makeTranslation("itemGroup", "tool_parts"))
+    "tool_parts", () -> net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder().title(TConstruct.makeTranslation("itemGroup", "tool_parts"))
                                        .icon(() -> {
                                          MaterialVariantId material;
                                          if (MaterialRegistry.isFullyLoaded()) {
@@ -53,8 +53,7 @@ public final class TinkerToolParts extends TinkerModule {
                                          return TinkerToolParts.pickHead.get().withMaterialForDisplay(material);
                                        })
                                        .displayItems(TinkerToolParts::addTabItems)
-                                       .withTabsBefore(TinkerTools.tabTools.getId())
-                                       .withSearchBar()
+                                       // PORT: Forge's withTabsBefore/withSearchBar have no Fabric equivalent
                                        .build());
 
   // repair kits
@@ -92,7 +91,7 @@ public final class TinkerToolParts extends TinkerModule {
   public static final ItemObject<ToolPartItem> toolHandle = ITEMS.register("tool_handle", () -> new ToolPartItem(ITEM_PROPS, HandleMaterialStats.ID));
   public static final ItemObject<ToolPartItem> toughHandle = ITEMS.register("tough_handle", () -> new ToolPartItem(ITEM_PROPS, HandleMaterialStats.ID));
   // armor
-  public static final EnumObject<ArmorItem.Type,ToolPartItem> plating = ITEMS.registerEnum(ArmorItem.Type.values(), "plating", type -> new ToolPartItem(ITEM_PROPS, PlatingMaterialStats.TYPES.get(type.ordinal()).getId()));
+  public static final EnumObject<ArmorItem.Type,ToolPartItem> plating = ITEMS.registerEnum(slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial.HUMANOID_SLOTS, "plating", type -> new ToolPartItem(ITEM_PROPS, PlatingMaterialStats.TYPES.get(type.ordinal()).getId()));
   public static final ItemObject<ToolPartItem> maille = ITEMS.register("maille", () -> new ToolPartItem(ITEM_PROPS, StatlessMaterialStats.MAILLE.getIdentifier()));
   public static final ItemObject<ToolPartItem> shieldCore = ITEMS.register("shield_core", () -> new ToolPartItem(ITEM_PROPS, StatlessMaterialStats.SHIELD_CORE.getIdentifier()));
   // slimesuit
@@ -106,7 +105,7 @@ public final class TinkerToolParts extends TinkerModule {
   public static final RegistryObject<BlockEntityType<MaterialBlockEntity>> materialBlock = BLOCK_ENTITIES.register("material_block", MaterialBlockEntity::new, fakeStorageBlock);
 
   // loot
-  public static final RegistryObject<LootPoolEntryType> toolPartLootEntry = LOOT_ENTRIES.register("tool_part", () -> new LootPoolEntryType(new ToolPartLootEntry.Serializer()));
+  public static final RegistryObject<LootPoolEntryType> toolPartLootEntry = LOOT_ENTRIES.register("tool_part", () -> new LootPoolEntryType(ToolPartLootEntry.CODEC));
 
   /** Adds all relevant items to the creative tab */
   private static void addTabItems(ItemDisplayParameters itemDisplayParameters, CreativeModeTab.Output tab) {
@@ -136,7 +135,7 @@ public final class TinkerToolParts extends TinkerModule {
     accept(output, arrowShaft);
     accept(output, fletching);
     // plating, pair each one with the dummy plating item
-    for (ArmorItem.Type type : ArmorItem.Type.values()) {
+    for (ArmorItem.Type type : slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial.HUMANOID_SLOTS) {
       tab.accept(TinkerSmeltery.dummyPlating.get(type));
       plating.get(type).addVariants(output, "");
     }
@@ -150,6 +149,9 @@ public final class TinkerToolParts extends TinkerModule {
     // end with modifier crystal dynamic listing
     ModifierCrystalItem.addVariants(output);
   }
+
+  /** Touches the class so its eager registrations run; called once from the bootstrap. */
+  public static void init() {}
 
   /** Adds a tool part to the tab */
   private static void accept(Consumer<ItemStack> output, Supplier<? extends IMaterialItem> item) {

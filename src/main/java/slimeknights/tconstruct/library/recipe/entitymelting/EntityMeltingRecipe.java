@@ -8,7 +8,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -17,7 +17,7 @@ import slimeknights.mantle.recipe.container.IEmptyContainer;
 import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.ingredient.EntityIngredient;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.Collection;
 
@@ -74,7 +74,7 @@ public class EntityMeltingRecipe implements ICustomOutputRecipe<IEmptyContainer>
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerSmeltery.entityMeltingSerializer.get();
+    return ContentLookups.recipeSerializer("entity_melting");
   }
 
   @Override

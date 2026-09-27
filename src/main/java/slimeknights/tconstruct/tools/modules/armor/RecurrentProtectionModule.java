@@ -62,7 +62,7 @@ public record RecurrentProtectionModule(LevelingValue percent, LevelingInt durat
   @Override
   public float modifyDamageTaken(IToolStackView tool, ModifierEntry modifier, EquipmentContext context, EquipmentSlot slotType, DamageSource source, float amount, boolean isDirectDamage) {
     if (!source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)) {
-      int level = SlotInChargeModule.getLevel(context.getTinkerData(), SLOT_KEY, slotType);
+      int level = context.getTinkerData().map(data -> SlotInChargeModule.getLevel(data, SLOT_KEY, slotType)).orElse(0);
       if (level > 0) {
         // step 1: reduce damage based on the current effect level
         MobEffect effect = TinkerModifiers.momentumEffect.get(ToolType.ARMOR);
@@ -72,7 +72,7 @@ public record RecurrentProtectionModule(LevelingValue percent, LevelingInt durat
         // step 2: apply momentum based on damage taken
         int reduction = (int)(percent.compute(level) * amount);
         if (reduction > 0) {
-          entity.addEffect(new MobEffectInstance(effect, duration.compute(level), reduction - 1, false, false, true));
+          entity.addEffect(new MobEffectInstance(net.minecraft.core.registries.BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect), duration.compute(level), reduction - 1, false, false, true));
         }
       }
     }

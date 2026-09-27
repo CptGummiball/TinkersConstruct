@@ -11,8 +11,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.gameevent.GameEvent;
-import net.minecraftforge.common.ToolAction;
-import net.minecraftforge.common.ToolActions;
+import slimeknights.mantle.item.ToolAction;
+import slimeknights.mantle.item.ToolActions;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.data.loadable.record.SingletonLoader;
 import slimeknights.mantle.util.OffhandCooldownTracker;
@@ -70,7 +70,7 @@ public enum FishingModule implements ModifierModule, GeneralInteractionModifierH
   @Override
   public InteractionResult onToolUse(IToolStackView tool, ModifierEntry modifier, Player player, InteractionHand hand, InteractionSource source) {
     // disallow casting if the main hand can cast. Only comes up if the main hand is doing left click fishing; vanilla limitations means we can't support that
-    if (source != InteractionSource.ARMOR && !tool.isBroken() && tool.getHook(ToolHooks.INTERACTION).canInteract(tool, modifier.getId(), source) && (hand == InteractionHand.MAIN_HAND || !player.getMainHandItem().canPerformAction(ToolActions.FISHING_ROD_CAST))) {
+    if (source != InteractionSource.ARMOR && !tool.isBroken() && tool.getHook(ToolHooks.INTERACTION).canInteract(tool, modifier.getId(), source) && (hand == InteractionHand.MAIN_HAND || !slimeknights.tconstruct.library.tools.helper.ModifierUtil.canCastFishingRod(player.getMainHandItem()))) {
       Level level = player.level();
       if (player.fishing != null) {
         ItemStack stack = player.getItemInHand(hand);
@@ -148,7 +148,7 @@ public enum FishingModule implements ModifierModule, GeneralInteractionModifierH
     // if the main hand changed such that it gained the ability to fish, then vanilla is going to move our fishing bobber to attach to the mainhand
     // so just retrieve it to prevent a cheese
     // there is technically an issue with us inheriting someone elses bobber, but thats just a worse version of our bobber, so not really a cheese
-    if (slotType == EquipmentSlot.OFFHAND && context.getChangedSlot() == EquipmentSlot.MAINHAND && context.getEntity() instanceof Player player && player.fishing != null && !context.getOriginal().canPerformAction(ToolActions.FISHING_ROD_CAST) && context.getReplacement().canPerformAction(ToolActions.FISHING_ROD_CAST)) {
+    if (slotType == EquipmentSlot.OFFHAND && context.getChangedSlot() == EquipmentSlot.MAINHAND && context.getEntity() instanceof Player player && player.fishing != null && !slimeknights.tconstruct.library.tools.helper.ModifierUtil.canCastFishingRod(context.getOriginal()) && slimeknights.tconstruct.library.tools.helper.ModifierUtil.canCastFishingRod(context.getReplacement())) {
       player.fishing.discard();
     }
   }

@@ -6,7 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.BooleanLoadable;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
@@ -16,7 +16,7 @@ import slimeknights.mantle.recipe.helper.FluidOutput;
 import slimeknights.mantle.recipe.ingredient.FluidIngredient;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 import java.util.BitSet;
 import java.util.List;
@@ -200,7 +200,7 @@ public class AlloyRecipe implements ICustomOutputRecipe<IAlloyTank> {
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerSmeltery.alloyingSerializer.get();
+    return ContentLookups.recipeSerializer("alloy");
   }
 
   public record AlloyIngredient(FluidIngredient fluid, boolean catalyst) {

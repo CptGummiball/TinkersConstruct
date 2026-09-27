@@ -29,6 +29,7 @@ import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
 import slimeknights.tconstruct.library.materials.stats.IMaterialStats;
 import slimeknights.tconstruct.library.materials.stats.MaterialStatType;
 import slimeknights.tconstruct.library.materials.stats.MaterialStatsId;
+import slimeknights.tconstruct.library.tools.definition.ModifiableArmorMaterial;
 import slimeknights.tconstruct.library.tools.helper.ToolBuildHandler;
 import slimeknights.tconstruct.library.tools.stat.FloatToolStat;
 import slimeknights.tconstruct.library.tools.stat.ToolStats;
@@ -107,9 +108,15 @@ public class ArmorMaterialContent extends AbstractMaterialContent {
     return SUPPORTED.contains(statsId);
   }
 
-  /** Gets the tool to display for the given stat type, just hardcoding to plate armor for simplicity */
+  /**
+   * Gets the tool to display for the given stat type, just hardcoding to plate armor for simplicity.
+   *
+   * <p>Iterates the four humanoid slots rather than every {@code ArmorItem.Type}: 1.21 added BODY
+   * for wolf armor, which lines up with the shield plating stat by ordinal and then asks the
+   * plating item map for a slot it never registered.
+   */
   private static void addPlatingItem(MaterialStatsId statType, List<ItemStack> stacks, MaterialVariantId variant) {
-    for (ArmorItem.Type slotType : ArmorItem.Type.values()) {
+    for (ArmorItem.Type slotType : ModifiableArmorMaterial.HUMANOID_SLOTS) {
       if (statType.equals(PlatingMaterialStats.TYPES.get(slotType.ordinal()).getId())) {
         stacks.add(TinkerToolParts.plating.get(slotType).withMaterialForDisplay(variant));
         return;
@@ -158,8 +165,10 @@ public class ArmorMaterialContent extends AbstractMaterialContent {
       addStatLine(lineData, stats, ToolStats.ARMOR, PlatingMaterialStats::armor);
       addStatLine(lineData, stats, ToolStats.ARMOR_TOUGHNESS, PlatingMaterialStats::toughness);
       addStatLine(lineData, stats, ToolStats.KNOCKBACK_RESISTANCE, stat -> stat.knockbackResistance() * 10);
-      list.add(new TextComponentElement(x - 2, y, BookScreen.PAGE_WIDTH - 20, BookScreen.PAGE_HEIGHT, lineData));
-      y += lineData.size() * 10;
+      // measured rather than assumed: the durability line lists five numbers and wraps
+      TextComponentElement platingStats = new TextComponentElement(x - 2, y, BookScreen.PAGE_WIDTH - 20, BookScreen.PAGE_HEIGHT, lineData);
+      list.add(platingStats);
+      y += Math.max(lineData.size() * 10, platingStats.measureHeight(getFont()));
     }
 
     // material traits
@@ -205,10 +214,11 @@ public class ArmorMaterialContent extends AbstractMaterialContent {
 
     List<TextComponentData> lineData = Lists.newArrayList();
     addTraitLines(lineData, registry.getTraits(material.getId(), statsId));
-    list.add(new TextComponentElement(x, y, STAT_WIDTH, BookScreen.PAGE_HEIGHT, lineData));
+    TextComponentElement traitLines = new TextComponentElement(x, y, STAT_WIDTH, BookScreen.PAGE_HEIGHT, lineData);
+    list.add(traitLines);
 
-    // TODO: calculate actual height to properly wrap long lines?
-    return y + (lineData.size() * 10) + 3;
+    // trait names are long and the column is half a page, so this block wraps more often than not
+    return y + Math.max(lineData.size() * 10, traitLines.measureHeight(getFont())) + 3;
   }
 
   @Override

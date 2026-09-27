@@ -26,7 +26,8 @@ public class PlagueModifier extends NoLevelsModifier implements DamageDealtModif
       // copy all negative effects to target
       LivingEntity attacker = context.getEntity();
       for (MobEffectInstance effect : context.getEntity().getActiveEffects()) {
-        if (!effect.getEffect().isBeneficial() && !effect.getCurativeItems().isEmpty()) {
+        // 1.21: effects travel as holders, and Forge's curative-items concept is gone
+        if (!effect.getEffect().value().isBeneficial() && !effect.isInfiniteDuration()) {
           target.addEffect(new MobEffectInstance(effect), attacker);
         }
       }

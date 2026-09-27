@@ -9,9 +9,8 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.registries.ForgeRegistries;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.transfer.fluid.IFluidHandler;
 import slimeknights.tconstruct.smeltery.block.entity.CastingBlockEntity;
 
 import javax.annotation.Nonnull;
@@ -166,6 +165,15 @@ public class CastingFluidHandler implements IFluidHandler {
     return tank == 0 && isFluidValid(stack);
   }
 
+  /** Restores both the fluid and the recipe state after an aborted Fabric transfer. */
+  @Override
+  public void restoreSnapshot(java.util.List<FluidStack> snapshot) {
+    FluidStack restored = snapshot.isEmpty() ? FluidStack.EMPTY : snapshot.get(0).copy();
+    // updateFluidTo re-selects the recipe if an executed drain reset the table, and resets all
+    // recipe/filter state if an insertion into an empty table is rolled back.
+    tile.updateFluidTo(restored);
+  }
+
   /* Tag */
   private static final String TAG_FLUID = "fluid";
   private static final String TAG_FILTER = "filter";
@@ -178,7 +186,7 @@ public class CastingFluidHandler implements IFluidHandler {
       setFluid(FluidStack.loadFluidStackFromNBT(nbt.getCompound(TAG_FLUID)));
     }
     if (nbt.contains(TAG_FILTER, Tag.TAG_STRING)) {
-      Fluid fluid = ForgeRegistries.FLUIDS.getValue(new ResourceLocation(nbt.getString(TAG_FILTER)));
+      Fluid fluid = BuiltInRegistries.FLUID.get(ResourceLocation.parse(nbt.getString(TAG_FILTER)));
       if (fluid != null) {
         filter = fluid;
       }

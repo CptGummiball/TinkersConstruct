@@ -72,7 +72,7 @@ public class ToolHarvestContext {
 
   /** Creates a copy of this context for the given position */
   public ToolHarvestContext forPosition(BlockPos pos, BlockState state) {
-    return new ToolHarvestContext(world, living, player, projectile, state, pos, this.sideHit, state.canHarvestBlock(world, pos, player), true, true, targetedPos, targetedState);
+    return new ToolHarvestContext(world, living, player, projectile, state, pos, this.sideHit, player == null || player.hasCorrectToolForDrops(state), true, true, targetedPos, targetedState);
   }
 
   /** Checks if this is a projectile */

@@ -3,14 +3,12 @@ package slimeknights.tconstruct.library.utils;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import lombok.Getter;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.LeftClickBlock.Action;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,26 +30,19 @@ public class BlockSideHitListener {
       return;
     }
     init = true;
-    MinecraftForge.EVENT_BUS.addListener(BlockSideHitListener::onLeftClickBlock);
-    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, BlockSideHitListener::breakBlock);
-    MinecraftForge.EVENT_BUS.addListener(BlockSideHitListener::onLeaveServer);
-  }
-
-  /** Called when the player left-clicks a block to store the face */
-  private static void onLeftClickBlock(LeftClickBlock event) {
-    if (event.getAction() == Action.START) {
-      Player player = event.getEntity();
-      if (player.level().isClientSide()) {
-        clientSideHit = event.getFace();
+    // Forge's LeftClickBlock(START) maps onto Fabric's attack-block callback, which fires
+    // on both sides at the start of block attacks
+    AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+      if (world.isClientSide()) {
+        clientSideHit = direction;
       } else {
-        HIT_FACE.put(player.getUUID(), event.getFace());
+        HIT_FACE.put(player.getUUID(), direction);
       }
-    }
-  }
-
-  /** Called on block break to store the last break XP */
-  private static void breakBlock(BlockEvent.BreakEvent event) {
-    LAST_XP.put(event.getPlayer().getUUID(), event.getExpToDrop());
+      return InteractionResult.PASS;
+    });
+    // Forge's BlockEvent.BreakEvent carried the block's XP; the break-XP bridge lands with
+    // the event-layer step (PORTING.md), so LAST_XP keeps its default until then.
+    MinecraftForge.EVENT_BUS.addListener(PlayerLoggedOutEvent.class, BlockSideHitListener::onLeaveServer);
   }
 
   /** Called when a player leaves the server to clear the face */

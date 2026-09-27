@@ -12,15 +12,15 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.client.armor.texture.ArmorTextureSupplier;
 import slimeknights.tconstruct.tools.client.material.CombatFishingHookRenderer;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public class ArmorModelManager extends SimpleJsonResourceReloadListener {
+public class ArmorModelManager extends SimpleJsonResourceReloadListener implements IdentifiableResourceReloadListener {
   /** Folder containing the logic */
   public static final String FOLDER = "tinkering/armor_models";
 
@@ -49,11 +49,18 @@ public class ArmorModelManager extends SimpleJsonResourceReloadListener {
   private static final List<ArmorModelDispatcher> DISPATCHERS = new ArrayList<>();
 
   /**
-   * Initializes this manager, registering it with the resource manager
-   * @param manager  Manager
+   * Initializes this manager, registering it with the client resource manager.
+   *
+   * <p>Fabric port: Forge registered through {@code RegisterClientReloadListenersEvent} on the mod
+   * bus; the Fabric equivalent registers directly and needs an id for reload ordering.
    */
-  public static void init(RegisterClientReloadListenersEvent manager) {
-    manager.registerReloadListener(INSTANCE);
+  public static void init() {
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
+  }
+
+  @Override
+  public ResourceLocation getFabricId() {
+    return TConstruct.getResource("armor_models");
   }
 
   private ArmorModelManager() {
@@ -102,18 +109,22 @@ public class ArmorModelManager extends SimpleJsonResourceReloadListener {
     return models.getOrDefault(name, ArmorModel.EMPTY);
   }
 
-  /** Helper to cache armor models in the item */
-  public abstract static class ArmorModelDispatcher implements IClientItemExtensions {
+  /**
+   * Caches one item's armor model, resolved on first use and dropped on every reload.
+   *
+   * <p>Forge's version implemented {@code IClientItemExtensions} and answered
+   * {@code getGenericArmorModel}; on Fabric the model is chosen by an
+   * {@link net.fabricmc.fabric.api.client.rendering.v1.ArmorRenderer} instead, so only the cache is
+   * left here and {@link TinkerArmorRenderer} extends it.
+   */
+  public abstract static class ArmorModelDispatcher {
     private ArmorModel model;
 
     public ArmorModelDispatcher() {
       DISPATCHERS.add(this);
     }
 
-    /**
-     * Gets the name of the model to use.
-     * Not a constructor parameter as forge initializes client extensions before we can store fields from the parent constructor.
-     */
+    /** Gets the name of the model to use */
     protected abstract ResourceLocation getName();
 
     /** Fetches the model from the cache */
@@ -127,9 +138,8 @@ public class ArmorModelManager extends SimpleJsonResourceReloadListener {
       return model;
     }
 
-    @Nonnull
-    @Override
-    public Model getGenericArmorModel(LivingEntity living, ItemStack stack, EquipmentSlot slot, HumanoidModel<?> original) {
+    /** Builds the model to render for the given wearer */
+    protected Model getGenericArmorModel(LivingEntity living, ItemStack stack, EquipmentSlot slot, HumanoidModel<?> original) {
       return MultilayerArmorModel.INSTANCE.setup(living, stack, slot, original, getModel(stack));
     }
   }

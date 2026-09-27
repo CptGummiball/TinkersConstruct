@@ -1,0 +1,420 @@
+# Port gate — packages handed to javac.
+#
+# Append a line when a module finishes porting. Everything not listed here is
+# still Forge/1.20.1 source and is skipped, so the build stays green and each
+# module is verifiable on its own.
+#
+# Progress is tracked in PORTING.md.
+
+# --- Fabric bootstrap ---
+slimeknights/tconstruct/fabric/**
+
+# --- Forge-compat shims ---
+slimeknights/mantle/transfer/**
+slimeknights/mantle/item/**
+slimeknights/mantle/recipe/condition/ICondition.java
+slimeknights/mantle/recipe/condition/ConditionHelper.java
+
+# --- Mantle-lite: ported subpackage by subpackage ---
+slimeknights/mantle/Mantle.java
+slimeknights/mantle/util/typed/**
+slimeknights/mantle/util/JsonHelper.java
+slimeknights/mantle/util/TablePrinter.java
+slimeknights/mantle/command/**
+slimeknights/mantle/data/datamap/**
+slimeknights/mantle/data/GenericDataProvider.java
+slimeknights/mantle/data/ExistingFileHelper.java
+slimeknights/mantle/util/RegistryHelper.java
+slimeknights/mantle/registration/object/IdAwareObject.java
+slimeknights/mantle/data/JsonCodec.java
+slimeknights/mantle/data/DatapackRegistries.java
+slimeknights/mantle/data/gson/**
+slimeknights/mantle/data/loadable/**
+slimeknights/mantle/data/registry/**
+slimeknights/mantle/data/predicate/**
+slimeknights/mantle/util/DataLoadedConditionContext.java
+slimeknights/mantle/registration/**
+# recipe/ is copied in but not yet gated: 93 errors, dominated by Forge's custom
+# ingredient system (AbstractIngredient/IIngredientSerializer), which maps onto
+# Fabric's CustomIngredient API in fabric-recipe-api-v1. Next chunk of work.
+slimeknights/mantle/recipe/IMultiRecipe.java
+slimeknights/mantle/recipe/ICommonRecipe.java
+slimeknights/mantle/recipe/ICustomOutputRecipe.java
+slimeknights/mantle/recipe/container/**
+slimeknights/mantle/recipe/ingredient/**
+slimeknights/mantle/recipe/helper/**
+slimeknights/mantle/fluid/**
+slimeknights/mantle/datagen/MantleTags.java
+slimeknights/mantle/util/TranslationHelper.java
+slimeknights/mantle/network/**
+slimeknights/mantle/block/**
+slimeknights/mantle/inventory/**
+slimeknights/mantle/util/ItemStackList.java
+slimeknights/mantle/util/BlockEntityHelper.java
+slimeknights/mantle/util/RetexturedHelper.java
+slimeknights/mantle/registration/deferred/**
+slimeknights/mantle/registration/DelayedSupplier.java
+
+# --- TConstruct phase 3: common layer ---
+slimeknights/tconstruct/common/registration/**
+slimeknights/tconstruct/library/utils/**
+slimeknights/tconstruct/library/recipe/melting/IMeltingContainer.java
+slimeknights/tconstruct/world/TinkerHeadType.java
+slimeknights/tconstruct/TConstruct.java
+slimeknights/tconstruct/common/network/TinkerNetwork.java
+slimeknights/tconstruct/common/config/Config.java
+slimeknights/tconstruct/common/config/ConfigurableAction.java
+# --- The core slice: COMPLETE — materials, modifiers, tools, json, ToolStack all compile ---
+slimeknights/tconstruct/library/exception/**
+slimeknights/tconstruct/library/json/**
+slimeknights/tconstruct/library/module/**
+slimeknights/tconstruct/library/materials/**
+slimeknights/tconstruct/library/modifiers/**
+slimeknights/tconstruct/library/tools/**
+slimeknights/tconstruct/common/TinkerTags.java
+slimeknights/tconstruct/common/Sounds.java
+slimeknights/tconstruct/library/recipe/partbuilder/Pattern.java
+slimeknights/tconstruct/world/block/CrystalBlock.java
+slimeknights/tconstruct/world/block/CrystalClusterBlock.java
+slimeknights/tconstruct/world/block/BuddingCrystalBlock.java
+slimeknights/tconstruct/tools/stats/**
+slimeknights/tconstruct/library/recipe/TagPredicate.java
+slimeknights/tconstruct/tools/modules/ArmorModuleBuilder.java
+slimeknights/mantle/util/CombatHelper.java
+slimeknights/mantle/client/ResourceColorManager.java
+slimeknights/mantle/client/TooltipKey.java
+slimeknights/mantle/client/SafeClientAccess.java
+slimeknights/mantle/event/**
+# library/recipe mixes runtime recipes with datagen builders and references the
+# content modules' serializer statics; it gates in per-subpackage with phase 4.
+slimeknights/tconstruct/tools/TinkerToolActions.java
+slimeknights/mantle/util/LogicHelper.java
+slimeknights/tconstruct/common/TinkerDamageTypes.java
+slimeknights/tconstruct/library/recipe/RecipeResult.java
+slimeknights/mantle/item/TierSortingRegistry.java
+slimeknights/tconstruct/library/client/materials/MaterialTooltipCache.java
+slimeknights/tconstruct/library/tools/capability/TinkerDataCapability.java
+slimeknights/mantle/data/listener/**
+# --- Gated in while clearing the slice's cross-references ---
+slimeknights/mantle/util/OffhandCooldownTracker.java
+slimeknights/mantle/recipe/data/ItemNameOutput.java
+slimeknights/tconstruct/common/recipe/RecipeCacheInvalidator.java
+slimeknights/tconstruct/common/network/SyncPersistentDataPacket.java
+slimeknights/tconstruct/library/events/**
+# Static recipe caches used by predicates and modules; the recipe classes that fill them
+# gate in with phase 4 (MaterialRecipe is in already, carrying three ContentLookups seams).
+slimeknights/tconstruct/library/recipe/melting/MeltingRecipeLookup.java
+slimeknights/tconstruct/library/recipe/casting/CastingRecipeLookup.java
+slimeknights/tconstruct/library/recipe/material/MaterialRecipe.java
+slimeknights/tconstruct/library/recipe/material/MaterialRecipeCache.java
+slimeknights/tconstruct/library/recipe/material/IMaterialValue.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialCastingLookup.java
+slimeknights/tconstruct/library/recipe/casting/material/MaterialFluidRecipe.java
+slimeknights/tconstruct/library/recipe/casting/ICastingContainer.java
+slimeknights/tconstruct/tools/network/PushBlockRowPacket.java
+# Library-clean content constants/modules pulled in by slice files.
+slimeknights/tconstruct/tools/data/ModifierIds.java
+slimeknights/tconstruct/tools/data/material/MaterialIds.java
+slimeknights/tconstruct/tools/modules/OvergrowthModule.java
+slimeknights/tconstruct/tools/modules/armor/CounterModule.java
+
+# --- Phase 4: shared module (blocks, items, effects, attributes, conditions) ---
+slimeknights/tconstruct/common/TinkerModule.java
+slimeknights/tconstruct/common/TinkerEffect.java
+slimeknights/tconstruct/common/json/**
+slimeknights/mantle/loot/**
+slimeknights/mantle/recipe/condition/**
+# shared content; client/commands/datagen/event pieces stay in unported.gradle
+slimeknights/tconstruct/shared/**
+# slime enum trio spans modules; the other world blocks come with the world module
+slimeknights/tconstruct/world/block/FoliageType.java
+slimeknights/tconstruct/world/block/DirtType.java
+# TiC custom ingredients on the Fabric ingredient API
+slimeknights/tconstruct/library/recipe/ingredient/**
+# fluid type for the registration extension; render handler lands in phase 5
+slimeknights/tconstruct/fluids/fluids/SlimeFluidType.java
+# status effects living in the tools module (registered by TinkerEffects)
+slimeknights/tconstruct/tools/modifiers/effect/**
+slimeknights/tconstruct/tools/modifiers/traits/skull/SelfDestructiveModifier.java
+
+# --- Phase 4: fluids module (~90 fluids, bottles, potion bucket, cauldron/brewing/dispenser) ---
+slimeknights/tconstruct/fluids/**
+slimeknights/tconstruct/library/recipe/FluidValues.java
+slimeknights/tconstruct/tools/network/FluidDataSerializer.java
+
+# --- Phase 4: world module (slime islands, trees, entities, geodes, heads) ---
+slimeknights/tconstruct/world/**
+
+# --- Phase 4: recipe tree + tables module ---
+slimeknights/tconstruct/common/SoundUtils.java
+slimeknights/mantle/util/sync/**
+slimeknights/tconstruct/common/network/InventorySlotSyncPacket.java
+slimeknights/tconstruct/library/recipe/**
+slimeknights/tconstruct/tables/**
+
+# --- Phase 4: smeltery module (multiblock, melter, alloyer, casting, tanks) ---
+slimeknights/tconstruct/smeltery/**
+slimeknights/tconstruct/common/multiblock/**
+slimeknights/tconstruct/library/fluid/**
+slimeknights/mantle/util/WeakConsumerWrapper.java
+
+# --- Phase 4: tools module (tools, armor, modifiers, tool parts, projectiles) ---
+slimeknights/tconstruct/tools/**
+slimeknights/tconstruct/common/network/UpdateNeighborsPacket.java
+slimeknights/mantle/util/AbstractProjectileDispenseBehavior.java
+
+# --- Phase 4: gadgets module (punji, cakes, item frames, throwables, piggyback) ---
+slimeknights/tconstruct/gadgets/**
+
+# --- Data migration round: recipe-layer additions ---
+slimeknights/mantle/recipe/MantleRecipes.java
+slimeknights/mantle/recipe/crafting/ShapedFallbackRecipe.java
+slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipe.java
+
+# --- Event-layer round ---
+slimeknights/mantle/util/Lazy.java
+
+# --- Phase 5: the custom-geometry model bridge ---
+# Replaces Forge's patched model deserializer: a "loader" key in a model JSON now dispatches
+# through a Fabric ModelResolver instead. The shim interfaces mirror the Forge ones, so the
+# geometry classes port by import swap. Also holds the mantle model support classes the geometry
+# needs; upstream Mantle's client model package was never copied into this tree, so they are
+# written here as the consumers require them: SimpleBlockModel, ColoredBlockModel,
+# MantleItemLayerModel, RetexturedModel, ExtraTextureContext, DynamicBakedWrapper, ModelHelper,
+# plus shims for ModelData/ModelProperty, IQuadTransformer/QuadTransformers, CompositeModel,
+# SimpleModelState, UnbakedGeometryHelper and StandaloneGeometryBakingContext.
+slimeknights/mantle/client/model/**
+# Overlap record for stacked item layers; a type the material models' signatures need.
+slimeknights/mantle/util/ItemLayerPixels.java
+# Forge-compat shims that sit outside the model package: the fluid client extensions (Fabric side
+# is FluidVariantRendering) and the render type group, which collapses to a no-op on Fabric.
+slimeknights/mantle/client/extensions/**
+slimeknights/mantle/client/RenderTypeGroup.java
+# Geometry consumers, in the order their support landed. TinkerModelLoaders holds the
+# id -> loader registrations; each file's header note records what its port gave up, if anything.
+slimeknights/tconstruct/library/client/model/UniqueGuiModel.java
+slimeknights/tconstruct/library/client/model/TinkerModelLoaders.java
+slimeknights/tconstruct/library/client/model/ModelProperties.java
+slimeknights/tconstruct/library/client/model/FluidContainerModel.java
+slimeknights/tconstruct/library/client/model/package-info.java
+# Material render info: which sprite and tint a material draws with. Its reload hook moved from
+# Forge's ModelEvent.RegisterAdditional to the preparation stage of a Fabric model loading plugin,
+# and the "parent" merge that mantle.data.datamap used to do is now local to the loader.
+slimeknights/tconstruct/library/client/materials/package-info.java
+slimeknights/tconstruct/library/client/materials/MaterialTextureField.java
+slimeknights/tconstruct/library/client/materials/MaterialRenderInfo.java
+slimeknights/tconstruct/library/client/materials/MaterialRenderInfoLoader.java
+slimeknights/tconstruct/library/client/materials/MaterialGeneratorInfo.java
+slimeknights/tconstruct/library/client/data/GenericTextureGenerator.java
+slimeknights/tconstruct/library/client/data/spritetransformer/**
+slimeknights/tconstruct/library/client/data/util/package-info.java
+slimeknights/tconstruct/library/client/data/util/AbstractSpriteReader.java
+slimeknights/tconstruct/library/client/data/util/ResourceManagerSpriteReader.java
+slimeknights/tconstruct/library/client/data/util/DataGenSpriteReader.java
+slimeknights/tconstruct/library/client/data/material/package-info.java
+slimeknights/tconstruct/library/client/data/material/MaterialPartTextureGenerator.java
+slimeknights/tconstruct/library/client/data/material/AbstractMaterialSpriteProvider.java
+slimeknights/tconstruct/library/client/data/material/AbstractPartSpriteProvider.java
+slimeknights/tconstruct/library/client/data/material/GeneratorPartTextureJsonGenerator.java
+slimeknights/tconstruct/library/client/data/material/TrimMaterialPaletteGenerator.java
+slimeknights/tconstruct/tools/data/sprite/**
+slimeknights/tconstruct/smeltery/data/SmelteryCompat.java
+slimeknights/tconstruct/plugin/emi/**
+slimeknights/tconstruct/smeltery/data/package-info.java
+# Block geometry: the fluid-textured smeltery components and the tanks.
+slimeknights/tconstruct/library/client/model/block/package-info.java
+slimeknights/tconstruct/library/client/model/block/IncrementalFluidCuboid.java
+slimeknights/tconstruct/library/client/model/block/FluidTextureModel.java
+slimeknights/tconstruct/library/client/model/block/TankModel.java
+# Tool geometry: the tool parts and repair kits (material), plus the anvils and the fake storage
+# block (material_block). ToolModel stays out; its header names what it still waits on.
+slimeknights/tconstruct/library/client/model/tools/package-info.java
+slimeknights/tconstruct/library/client/model/tools/NestedOverrides.java
+slimeknights/tconstruct/library/client/model/tools/MaterialBlockModel.java
+slimeknights/tconstruct/library/client/model/tools/MaterialModel.java
+
+# --- Phase 5: client screens ---
+# Mantle screen infrastructure (elements, widgets, module screens) rewritten for the 1.21
+# GuiGraphics API; TConstruct's table and smeltery GUIs build on it.
+slimeknights/mantle/client/screen/**
+# Shared TConstruct GUI helpers the screens draw through.
+slimeknights/tconstruct/common/ClientEventBase.java
+slimeknights/tconstruct/library/client/package-info.java
+slimeknights/tconstruct/library/client/GuiUtil.java
+slimeknights/tconstruct/library/client/Icons.java
+# Modifier button icons on the worktable; the modifier *models* stay with the model slice.
+slimeknights/tconstruct/library/client/modifiers/package-info.java
+slimeknights/tconstruct/library/client/modifiers/ModifierIconManager.java
+# Tables module screens (crafting station, tinker station, part builder, worktable, chests).
+slimeknights/tconstruct/tables/client/**
+
+# --- Phase 5: block entity and entity renderers ---
+# Mantle's client render package: the fluid cuboid geometry, its quad renderer, the resource driven
+# block state data maps behind them, and the shared item/rotation helpers. Written for this tree, as
+# upstream Mantle's client packages were never copied in; the JSON they read is the data the render
+# providers already generated into assets/tconstruct/mantle/model.
+slimeknights/mantle/client/render/**
+# TConstruct's own render helpers: the fluid tank/cuboid wrappers and the two custom render types.
+slimeknights/tconstruct/library/client/RenderUtils.java
+slimeknights/tconstruct/library/client/TinkerRenderTypes.java
+# Display contexts: Forge registered six custom ItemDisplayContext values, Fabric maps them onto the
+# vanilla context each declared as its fallback.
+slimeknights/tconstruct/library/TinkerItemDisplays.java
+
+# --- Phase 5 slice 2: fluid rendering ---
+slimeknights/mantle/fluid/texture/**
+
+# --- Phase 5 slice 3: the tool model ---
+# ReversedListBuilder (assemble top down, emit bottom up) and the IModelBuilder shim, the last two
+# model utilities ToolModel waited on. ItemLayerPixels stays a marker type; its class doc records
+# why the per-pixel suppression has nothing to trim once vanilla's item generator draws the layer.
+slimeknights/mantle/util/ReversedListBuilder.java
+slimeknights/mantle/client/model/IModelBuilder.java
+# The modifier model tree: the live map manager plus the deprecated per-tool manager, both of which
+# ToolModel reads, and the model/ subpackage holding the sprite types the map names.
+# Banner pattern texture listing, shared by the shield sprite source and the banner modifier model.
+slimeknights/tconstruct/library/client/BannerPatternTextures.java
+# Missing-texture logging the modifier models validate through.
+slimeknights/tconstruct/library/client/model/DynamicTextureLoader.java
+slimeknights/tconstruct/library/client/modifiers/**
+# Item properties the tool models' overrides read (broken, charging, charge, cast, ammo).
+slimeknights/tconstruct/library/client/model/TinkerItemProperties.java
+# tconstruct:tool itself, 122 model files, the last of the six geometry consumers.
+slimeknights/tconstruct/library/client/model/tools/ToolModel.java
+slimeknights/tconstruct/tools/client/OverslimeModifierModel.java
+
+# --- Phase 5 slice 4: armor rendering ---
+# The armor model tree on Fabric's ArmorRenderer: the manager reading tinkering/armor_models, the
+# multilayer model it drives, and the texture supplier types the layers name.
+slimeknights/tconstruct/library/client/armor/**
+slimeknights/tconstruct/library/tools/item/armor/ArmorModelItem.java
+# Slimeskull draws a second model under the helmet; the fishing hook uses the same texture suppliers.
+slimeknights/tconstruct/tools/client/SlimeskullArmorModel.java
+slimeknights/tconstruct/tools/client/material/CombatFishingHookRenderer.java
+# Head models the slimeskull draws under the helmet, plus the block-model skull renderer they use.
+slimeknights/tconstruct/world/client/BlockModelSkullRenderer.java
+slimeknights/tconstruct/world/client/SkullModelHelper.java
+slimeknights/tconstruct/world/client/DragonSkullModel.java
+# The world module's client half: slime renderers, plant colours, particles, mob head models.
+slimeknights/tconstruct/world/client/**
+slimeknights/tconstruct/world/WorldClientEvents.java
+slimeknights/tconstruct/fabric/client/SkullModelRegistry.java
+# Particles: the slime splash and the tool attack sprites.
+slimeknights/tconstruct/library/client/particle/**
+slimeknights/tconstruct/fabric/client/ClientReloadListeners.java
+
+# --- Phase 5 slice 5: tool interaction, overlays and the tool inventory screen ---
+slimeknights/tconstruct/tools/client/**
+
+# --- Phase 5 slice 6: the book system ---
+# Mantle's book framework, written from scratch: none of it was vendored, since nothing before this
+# slice referenced it. The data model and loader...
+slimeknights/mantle/client/book/**
+# ...the screen and its elements (client/screen/** already gated in)...
+slimeknights/mantle/util/html/**
+# ...and the three book items, unblocked now that the screen and the page packets exist.
+slimeknights/tconstruct/library/client/book/**
+slimeknights/tconstruct/library/TinkerBookIDs.java
+
+# --- Phase 5 slice 7: model data delivery and the last client events ---
+# The side-guarded tank model refresh; the guard is gone, the seam stays.
+slimeknights/tconstruct/library/client/SafeClient.java
+
+# --- Phase 7 slice 1: datagen, the recipe layer ---
+# Mantle datagen core: RecipeOutput-based builders, condition writing, the Forge Tags shim.
+slimeknights/mantle/recipe/data/**
+slimeknights/mantle/datagen/Tags.java
+# The eight module recipe providers and their library helper tree; the base provider and
+# the tags/loot/model/worldgen providers follow in later datagen slices.
+slimeknights/tconstruct/common/data/BaseRecipeProvider.java
+slimeknights/tconstruct/common/data/package-info.java
+slimeknights/tconstruct/shared/data/**
+slimeknights/tconstruct/tables/data/**
+slimeknights/tconstruct/gadgets/data/**
+slimeknights/tconstruct/world/data/WorldRecipeProvider.java
+slimeknights/tconstruct/world/data/package-info.java
+slimeknights/tconstruct/smeltery/data/Byproduct.java
+slimeknights/tconstruct/smeltery/data/SmelteryRecipeProvider.java
+slimeknights/tconstruct/tools/data/ToolsRecipeProvider.java
+slimeknights/tconstruct/tools/data/ModifierRecipeProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialRecipeProvider.java
+slimeknights/tconstruct/tools/data/package-info.java
+slimeknights/tconstruct/tools/data/material/package-info.java
+slimeknights/tconstruct/library/data/recipe/CraftingNBTWrapper.java
+slimeknights/tconstruct/library/data/recipe/IByproduct.java
+slimeknights/tconstruct/library/data/recipe/ICastCreationHelper.java
+slimeknights/tconstruct/library/data/recipe/IMaterialRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/ISmelteryRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/IToolRecipeHelper.java
+slimeknights/tconstruct/library/data/recipe/SmelteryRecipeBuilder.java
+slimeknights/tconstruct/library/data/recipe/package-info.java
+slimeknights/mantle/recipe/crafting/ShapedRetexturedRecipeBuilder.java
+# --- Phase 7 slice 2: datagen wave 2 (server data) ---
+# The JSON data providers: modifiers, fluid effects, materials/stats/traits, tool
+# definitions, slot layouts, mob equipment, fluid container transfers and tooltips.
+slimeknights/tconstruct/library/data/tinkering/AbstractFluidEffectProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractEnchantmentToModifierProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractModifierProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractMobEquipmentProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractStationSlotLayoutProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractToolDefinitionDataProvider.java
+slimeknights/tconstruct/library/data/tinkering/package-info.java
+slimeknights/tconstruct/library/data/material/**
+slimeknights/tconstruct/library/data/GenericNBTProvider.java
+slimeknights/tconstruct/tools/data/ModifierProvider.java
+slimeknights/tconstruct/tools/data/FluidEffectProvider.java
+slimeknights/tconstruct/tools/data/EnchantmentToModifierProvider.java
+slimeknights/tconstruct/tools/data/StationSlotLayoutProvider.java
+slimeknights/tconstruct/tools/data/ToolDefinitionDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialStatsDataProvider.java
+slimeknights/tconstruct/tools/data/material/MaterialTraitsDataProvider.java
+slimeknights/tconstruct/world/data/MobEquipmentProvider.java
+slimeknights/tconstruct/smeltery/data/FluidContainerTransferProvider.java
+slimeknights/tconstruct/fluids/data/FluidTooltipProvider.java
+slimeknights/mantle/fluid/transfer/AbstractFluidContainerTransferProvider.java
+slimeknights/mantle/fluid/tooltip/AbstractFluidTooltipProvider.java
+slimeknights/tconstruct/library/json/loot/equipment/**
+slimeknights/tconstruct/common/data/FakeRegistryEntry.java
+# Tag providers: the twelve registries tinkers tags, the mantle provider shims with the
+# forge remove extension, and the dynamic-registry tag base.
+slimeknights/mantle/data/BuiltinRegistryTagProvider.java
+slimeknights/mantle/data/BlockTagsProvider.java
+slimeknights/tconstruct/library/data/AbstractTagProvider.java
+slimeknights/tconstruct/common/data/tags/**
+slimeknights/tconstruct/library/data/recipe/CostTagAppender.java
+slimeknights/tconstruct/library/data/tinkering/AbstractMaterialTagProvider.java
+slimeknights/tconstruct/library/data/tinkering/AbstractModifierTagProvider.java
+# Loot: the table provider with its three sub providers, global loot modifiers, injections.
+slimeknights/tconstruct/common/data/loot/**
+# Loot injection stack (forge LootTableLoadEvent parity) and the GLM datagen shim.
+slimeknights/mantle/loot/LootTableInjection.java
+slimeknights/mantle/loot/LootTableInjector.java
+slimeknights/mantle/loot/AbstractLootTableInjectionProvider.java
+slimeknights/mantle/data/GlobalLootModifierProvider.java
+# Advancements, config data, damage types, worldgen registries, structure repaletting.
+slimeknights/tconstruct/common/data/AdvancementsProvider.java
+slimeknights/tconstruct/common/data/ConfigurationDataProvider.java
+slimeknights/tconstruct/common/data/DamageTypeProvider.java
+slimeknights/tconstruct/common/data/CountRequirementsStrategy.java
+slimeknights/mantle/data/ConditionalAdvancement.java
+# --- Phase 7 slice 17: client asset datagen ---
+# Forge model-generator framework rehomed to mantle, plus the custom-loader builders
+slimeknights/mantle/client/model/generators/**
+slimeknights/mantle/client/model/builder/**
+slimeknights/mantle/data/SpriteSourceProvider.java
+# blockstates, item models, atlas sources, render datamaps, tool/modifier model providers
+slimeknights/tconstruct/common/data/model/**
+slimeknights/tconstruct/common/data/render/**
+slimeknights/tconstruct/library/data/AbstractToolItemModelProvider.java
+slimeknights/tconstruct/library/data/AbstractModifierModelMapProvider.java
+# --- Phase 7 slice 18: texture generators ---
+slimeknights/mantle/data/client/**
+slimeknights/tconstruct/library/client/data/AbstractArmorModelProvider.java
+slimeknights/tconstruct/library/client/data/material/AbstractMaterialRenderInfoProvider.java
+slimeknights/tconstruct/library/client/data/material/MaterialPaletteDebugGenerator.java
+# --- Phase 7 slice 19: structure repaletting and the recipe remover ---
+slimeknights/tconstruct/library/data/AbstractStructureRepalleter.java
+slimeknights/tconstruct/world/data/StructureRepalleter.java
+slimeknights/tconstruct/world/data/WorldgenProvider.java
+slimeknights/mantle/data/MantleTagsProvider.java

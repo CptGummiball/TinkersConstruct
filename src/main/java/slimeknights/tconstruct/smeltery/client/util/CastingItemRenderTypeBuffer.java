@@ -12,7 +12,11 @@ import net.minecraft.world.inventory.InventoryMenu;
 import java.util.Set;
 
 /**
- * Render type buffer builder to render cooling items transparent and tinted them based on cooling time
+ * Render type buffer builder to render cooling items transparent and tinted them based on cooling time.
+ *
+ * <p>Fabric port: unchanged in behaviour. Reading a render type's name and its texture back out
+ * needs four access widener entries, as {@code CompositeRenderType} and the fields behind it are
+ * package private or private in vanilla; Forge's access transformer opened the same ones.
  */
 public class CastingItemRenderTypeBuffer implements MultiBufferSource {
   private static final Set<String> MAKE_TRANSPARENT = ImmutableSet.of("entity_solid", "entity_cutout", "entity_cutout_no_cull", "entity_translucent", "entity_no_outline");

@@ -1,19 +1,19 @@
 package slimeknights.tconstruct.common.data;
 
-import net.minecraft.advancements.RequirementsStrategy;
+import net.minecraft.advancements.AdvancementRequirements;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class CountRequirementsStrategy implements RequirementsStrategy {
+public class CountRequirementsStrategy implements AdvancementRequirements.Strategy {
   private final int[] sizes;
   public CountRequirementsStrategy(int... sizes) {
     this.sizes = sizes;
   }
 
   @Override
-  public String[][] createRequirements(Collection<String> strings) {
+  public AdvancementRequirements create(Collection<String> strings) {
     String[][] requirements = new String[sizes.length][];
     List<String> list = new ArrayList<>(strings);
     int nextIndex = 0;
@@ -24,6 +24,6 @@ public class CountRequirementsStrategy implements RequirementsStrategy {
         nextIndex++;
       }
     }
-    return requirements;
+    return new AdvancementRequirements(java.util.Arrays.stream(requirements).map(java.util.List::of).toList());
   }
 }

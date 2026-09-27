@@ -1,7 +1,5 @@
 package slimeknights.tconstruct.library.tools;
 
-import net.minecraft.network.protocol.Packet;
-import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
@@ -10,10 +8,9 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 import slimeknights.tconstruct.TConstruct;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
-import slimeknights.tconstruct.tools.TinkerTools;
 
 import javax.annotation.Nullable;
 
@@ -25,22 +22,28 @@ public class IndestructibleItemEntity extends ItemEntity {
   public IndestructibleItemEntity(EntityType<? extends IndestructibleItemEntity> entityType, Level world) {
     super(entityType, world);
     // using setUnlimitedLifetime() makes the item no longer spin, dumb design
-    // since age is a short, this value should never be reachable so the item will never despawn
-    this.lifespan = Integer.MAX_VALUE;
+  }
+
+  @Override
+  public void tick() {
+    super.tick();
+    // Forge had a lifespan field to set; vanilla despawns at age 6000, so hold the age
+    // below the threshold while still letting it advance for the spin animation
+    if (this.age >= 5900) {
+      this.age = 0;
+    }
   }
 
   public IndestructibleItemEntity(Level worldIn, double x, double y, double z, ItemStack stack) {
-    this(TinkerTools.indestructibleItem.get(), worldIn);
+    this(ContentLookups.indestructibleItem(), worldIn);
     this.setPos(x, y, z);
     this.setYRot(this.random.nextFloat() * 360.0F);
     this.setDeltaMovement(this.random.nextDouble() * 0.2D - 0.1D, 0.2D, this.random.nextDouble() * 0.2D - 0.1D);
     this.setItem(stack);
   }
 
-  @Override
-  public Packet<ClientGamePacketListener> getAddEntityPacket() {
-    return NetworkHooks.getEntitySpawningPacket(this);
-  }
+  // Forge needed a NetworkHooks spawn packet override here; 1.21 vanilla's add-entity
+  // packet handles modded entity types, so the default ItemEntity implementation is correct.
 
   /** Copies the pickup delay from another entity */
   public void setPickupDelayFrom(Entity reference) {

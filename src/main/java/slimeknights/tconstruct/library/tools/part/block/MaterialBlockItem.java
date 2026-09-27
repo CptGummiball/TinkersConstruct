@@ -22,7 +22,7 @@ public class MaterialBlockItem extends BlockItem implements IMaterialItem {
 
   @Override
   public MaterialVariantId getMaterial(ItemStack stack) {
-    return MaterialItem.getMaterialId(stack.getTag());
+    return MaterialItem.getMaterialId(slimeknights.tconstruct.library.tools.nbt.TagCompat.getTag(stack));
   }
 
   @Override
@@ -31,18 +31,16 @@ public class MaterialBlockItem extends BlockItem implements IMaterialItem {
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
     MaterialItem.appendHoverText(this, stack, tooltip, flag);
-    super.appendHoverText(stack, level, tooltip, flag);
+    super.appendHoverText(stack, context, tooltip, flag);
   }
 
   @Nullable
-  @Override
   public String getCreatorModId(ItemStack stack) {
     return MaterialItem.getCreatorModId(this, stack);
   }
 
-  @Override
   public void verifyTagAfterLoad(CompoundTag tag) {
     MaterialItem.verifyTag(tag);
   }

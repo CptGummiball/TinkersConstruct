@@ -11,13 +11,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.Direction.Plane;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
-import net.minecraftforge.fluids.FluidStack;
 import slimeknights.mantle.client.render.ChannelFluids;
 import slimeknights.mantle.client.render.FluidCuboid;
 import slimeknights.mantle.client.render.FluidRenderer;
 import slimeknights.mantle.client.render.MantleRenderTypes;
 import slimeknights.mantle.client.render.RenderingHelper;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.tconstruct.smeltery.block.ChannelBlock;
 import slimeknights.tconstruct.smeltery.block.ChannelBlock.ChannelConnection;
 import slimeknights.tconstruct.smeltery.block.entity.ChannelBlockEntity;
@@ -44,13 +43,15 @@ public class ChannelBlockEntityRenderer implements BlockEntityRenderer<ChannelBl
 			return;
 		}
 
-		// fluid attributes
-		IClientFluidTypeExtensions attributes = IClientFluidTypeExtensions.of(fluid.getFluid());
-		TextureAtlasSprite still = FluidRenderer.getBlockSprite(attributes.getStillTexture(fluid));
-		TextureAtlasSprite flowing = FluidRenderer.getBlockSprite(attributes.getFlowingTexture(fluid));
+		// fluid attributes; Forge read these off IClientFluidTypeExtensions, Fabric off the fluid variant
+		TextureAtlasSprite still = FluidRenderer.getStillSprite(fluid);
+		if (still == null) {
+			return;
+		}
+		TextureAtlasSprite flowing = FluidRenderer.getFlowingSprite(fluid);
 		VertexConsumer builder = buffer.getBuffer(MantleRenderTypes.FLUID);
-		int color = attributes.getTintColor(fluid);
-		light = FluidRenderer.withBlockLight(light, fluid.getFluid().getFluidType().getLightLevel(fluid));
+		int color = FluidRenderer.getColor(fluid);
+		light = FluidRenderer.withBlockLight(light, FluidRenderer.getLuminosity(fluid));
 
 		// render sides first, while doing so we will determine center "flow"
 		FluidCuboid cube;

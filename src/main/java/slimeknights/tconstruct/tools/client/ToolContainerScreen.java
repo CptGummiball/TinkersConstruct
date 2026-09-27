@@ -99,7 +99,7 @@ public class ToolContainerScreen extends AbstractContainerScreen<ToolContainerMe
   @Override
   protected void slotClicked(Slot slot, int slotId, int index, ClickType type) {
     // disallow swapping the tool slot
-    if (type == ClickType.SWAP && slot.container == menu.getPlayer().getInventory() && slot.getSlotIndex() == menu.getSlotIndex()) {
+    if (type == ClickType.SWAP && slot.container == menu.getPlayer().getInventory() && slot.getContainerSlot() == menu.getSlotIndex()) {
       return;
     }
     super.slotClicked(slot, slotId, index, type);
@@ -107,7 +107,7 @@ public class ToolContainerScreen extends AbstractContainerScreen<ToolContainerMe
 
   @Override
   public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-    this.renderBackground(graphics);
+    this.renderBackground(graphics, mouseX, mouseY, partialTicks);
     super.render(graphics, mouseX, mouseY, partialTicks);
     this.renderTooltip(graphics, mouseX, mouseY);
   }

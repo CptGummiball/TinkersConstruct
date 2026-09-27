@@ -1,0 +1,17 @@
+{
+  "type": "tconstruct:casting_table",
+  "conditions": [
+    {
+      "type": "mantle:tag_filled",
+      "tag": "c:cheeses"
+    }
+  ],
+  "cooling_time": 52,
+  "fluid": {
+    "amount": 250,
+    "tag": "tconstruct:molten_cheese"
+  },
+  "result": {
+    "tag": "c:cheeses"
+  }
+}

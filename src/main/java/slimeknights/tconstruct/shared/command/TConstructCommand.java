@@ -6,9 +6,8 @@ import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import com.mojang.brigadier.CommandDispatcher;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import slimeknights.mantle.command.argument.TagSourceArgument;
 import slimeknights.mantle.registration.deferred.ArgumentTypeDeferredRegister;
 import slimeknights.tconstruct.TConstruct;
@@ -23,7 +22,6 @@ import slimeknights.tconstruct.shared.command.argument.SlotTypeArgument;
 import slimeknights.tconstruct.shared.command.argument.ToolStatArgument;
 import slimeknights.tconstruct.shared.command.subcommand.DurabilityCommand;
 import slimeknights.tconstruct.shared.command.subcommand.GenerateHiddenFluidsCommand;
-import slimeknights.tconstruct.shared.command.subcommand.GenerateMeltingRecipesCommand;
 import slimeknights.tconstruct.shared.command.subcommand.GeneratePartTexturesCommand;
 import slimeknights.tconstruct.shared.command.subcommand.MaterialsCommand;
 import slimeknights.tconstruct.shared.command.subcommand.ModifierPriorityCommand;
@@ -40,7 +38,6 @@ public class TConstructCommand {
 
   /** Registers all TConstruct command related content */
   public static void init() {
-    ARGUMENT_TYPE.register(FMLJavaModLoadingContext.get().getModEventBus());
     ARGUMENT_TYPE.registerSingleton("slot_type", SlotTypeArgument.class, SlotTypeArgument::slotType);
     ARGUMENT_TYPE.registerSingleton("tool_stat", ToolStatArgument.class, ToolStatArgument::stat);
     ARGUMENT_TYPE.registerSingleton("modifier", ModifierArgument.class, ModifierArgument::modifier);
@@ -53,7 +50,7 @@ public class TConstructCommand {
     TagSourceArgument.registerCustom(MaterialRegistry.getTagSource());
 
     // add command listener
-    MinecraftForge.EVENT_BUS.addListener(TConstructCommand::registerCommand);
+    CommandRegistrationCallback.EVENT.register((dispatcher, buildContext, environment) -> registerCommand(dispatcher, buildContext));
   }
 
   /** Registers a sub command for the root Mantle command */
@@ -63,10 +60,9 @@ public class TConstructCommand {
     root.then(subCommand);
   }
 
-  /** Event listener to register the Mantle command */
-  private static void registerCommand(RegisterCommandsEvent event) {
+  /** Callback to register the TConstruct command */
+  private static void registerCommand(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext context) {
     LiteralArgumentBuilder<CommandSourceStack> builder = Commands.literal(TConstruct.MOD_ID);
-    CommandBuildContext context = event.getBuildContext();
 
     // sub commands
     register(builder, "modifiers", ModifiersCommand::register);
@@ -80,11 +76,12 @@ public class TConstructCommand {
     });
     register(builder, "generate", b -> {
       register(b, "part_textures", GeneratePartTexturesCommand::register);
-      register(b, "melting_recipes", bb -> GenerateMeltingRecipesCommand.register(bb, context));
+      // PORT: melting_recipes serializes through the datagen recipe builders, which port in
+      // phase 7; its registration returns with them (the build context parameter went with it)
       register(b, "hidden_fluids_tag", GenerateHiddenFluidsCommand::register);
     });
 
     // register final command
-    event.getDispatcher().register(builder);
+    dispatcher.register(builder);
   }
 }

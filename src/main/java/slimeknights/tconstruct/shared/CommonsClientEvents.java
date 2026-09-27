@@ -1,37 +1,35 @@
 package slimeknights.tconstruct.shared;
 
+import net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.font.FontManager;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ModelEvent.RegisterGeometryLoaders;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.ClientEventBase;
 import slimeknights.tconstruct.library.client.book.TinkerBook;
-import slimeknights.tconstruct.library.client.model.UniqueGuiModel;
-import slimeknights.tconstruct.library.utils.DomainDisplayName;
 import slimeknights.tconstruct.shared.client.FluidParticle;
 
-@EventBusSubscriber(modid = TConstruct.MOD_ID, value = Dist.CLIENT, bus = Bus.MOD)
+/**
+ * Client half of the shared module.
+ *
+ * <p>Fabric port: the model loader and the resource listener that lived here register from the
+ * client entrypoint instead, alongside the other modules' — see {@code TinkerModelLoaders} and
+ * {@code DomainDisplayName}. What is left is what only this module knows: the font the books are
+ * set in, and the particle that draws a fluid.
+ */
 public class CommonsClientEvents extends ClientEventBase {
-  @SubscribeEvent
-  static void addResourceListeners(RegisterClientReloadListenersEvent event) {
-    DomainDisplayName.addResourceListener(event);
+  /** Wires up the pieces that have no home elsewhere */
+  public static void init() {
+    setBookFont();
+    ParticleFactoryRegistry.getInstance().register(TinkerCommons.fluidParticle.get(), new FluidParticle.Factory());
   }
 
-  @SubscribeEvent
-  static void registerModelLoaders(RegisterGeometryLoaders event) {
-    event.register("gui", UniqueGuiModel.LOADER);
-  }
-
-  @SubscribeEvent
-  static void clientSetup(final FMLClientSetupEvent event) {
+  /**
+   * Sets every book in the unicode font.
+   *
+   * <p>The books are written in eight languages and their pages are laid out against a fixed page
+   * width; the default font's per-glyph widths differ enough between scripts to break that layout,
+   * while the unicode font is uniform. Upstream made the same choice for the same reason.
+   */
+  private static void setBookFont() {
     Font unicode = unicodeFontRender();
     TinkerBook.MATERIALS_AND_YOU.fontRenderer = unicode;
     TinkerBook.TINKERS_GADGETRY.fontRenderer = unicode;
@@ -41,21 +39,13 @@ public class CommonsClientEvents extends ClientEventBase {
     TinkerBook.ENCYCLOPEDIA.fontRenderer = unicode;
   }
 
-  @SubscribeEvent
-  static void registerParticleFactories(RegisterParticleProvidersEvent event) {
-    event.registerSpecial(TinkerCommons.fluidParticle.get(), new FluidParticle.Factory());
-  }
-
   private static Font unicodeRenderer;
 
   /** Gets the unicode font renderer */
   public static Font unicodeFontRender() {
-    if (unicodeRenderer == null)
-      unicodeRenderer = new Font(rl -> {
-        FontManager resourceManager = Minecraft.getInstance().fontManager;
-        return resourceManager.fontSets.get(Minecraft.UNIFORM_FONT);
-      }, false);
-
+    if (unicodeRenderer == null) {
+      unicodeRenderer = new Font(rl -> Minecraft.getInstance().fontManager.fontSets.get(Minecraft.UNIFORM_FONT), false);
+    }
     return unicodeRenderer;
   }
 }

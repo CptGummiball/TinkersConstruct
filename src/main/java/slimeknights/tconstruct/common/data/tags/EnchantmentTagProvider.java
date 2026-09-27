@@ -1,13 +1,14 @@
 package slimeknights.tconstruct.common.data.tags;
 
+import net.minecraft.data.tags.TagsProvider;
 import net.minecraft.core.HolderLookup.Provider;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.tags.TagsProvider;
+import slimeknights.mantle.data.MantleTagsProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.common.data.ExistingFileHelper;
+import slimeknights.mantle.data.ExistingFileHelper;
 import org.jetbrains.annotations.Nullable;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
@@ -16,9 +17,9 @@ import slimeknights.tconstruct.tools.data.ModifierIds;
 
 import java.util.concurrent.CompletableFuture;
 
-public class EnchantmentTagProvider extends TagsProvider<Enchantment> {
+public class EnchantmentTagProvider extends MantleTagsProvider<Enchantment> {
   public EnchantmentTagProvider(PackOutput packOutput, CompletableFuture<Provider> lookupProvider, @Nullable ExistingFileHelper existingFileHelper) {
-    super(packOutput, Registries.ENCHANTMENT, lookupProvider, TConstruct.MOD_ID, existingFileHelper);
+    super(packOutput, Registries.ENCHANTMENT, lookupProvider, null, TConstruct.MOD_ID, existingFileHelper);
   }
 
   @Override
@@ -56,7 +57,7 @@ public class EnchantmentTagProvider extends TagsProvider<Enchantment> {
   private void modifierTag(ModifierId modifier, String... ids) {
     TagsProvider.TagAppender<Enchantment> appender = tag(TagKey.create(Registries.ENCHANTMENT, TConstruct.getResource("modifier_like/" + modifier.getPath())));
     for (String id : ids) {
-      appender.addOptional(new ResourceLocation(id));
+      appender.addOptional(ResourceLocation.parse(id));
     }
   }
 

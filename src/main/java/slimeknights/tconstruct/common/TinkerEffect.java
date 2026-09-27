@@ -1,20 +1,33 @@
 package slimeknights.tconstruct.common;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation;
-import net.minecraftforge.client.extensions.common.IClientMobEffectExtensions;
 
-import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import java.util.function.Supplier;
 
-/** Effect extension with a few helpers */
+/**
+ * Effect extension with a few helpers.
+ *
+ * <p>1.21 notes: attribute modifiers are keyed by {@link ResourceLocation} instead of UUID
+ * strings, and every entity-facing effect API wants a {@link Holder}, so {@link #holder()}
+ * caches the registry wrapper. The Forge {@code initializeClient} visibility extension is
+ * gone; {@link #isVisible()} keeps the flag for the client phase to consume.
+ */
 public class TinkerEffect extends MobEffect {
   /** If true, effect is visible, false for hidden */
   private final boolean show;
+  /** Cached registry holder for APIs that want holders; effects register before first use */
+  @Nullable
+  private Holder<MobEffect> holder;
+
   public TinkerEffect(MobEffectCategory typeIn, boolean show) {
     this(typeIn, 0xffffff, show);
   }
@@ -26,26 +39,22 @@ public class TinkerEffect extends MobEffect {
 
   // override to change return type
   @Override
-  public TinkerEffect addAttributeModifier(Attribute pAttribute, String pUuid, double pAmount, Operation pOperation) {
-    super.addAttributeModifier(pAttribute, pUuid, pAmount, pOperation);
+  public TinkerEffect addAttributeModifier(Holder<Attribute> attribute, ResourceLocation id, double amount, Operation operation) {
+    super.addAttributeModifier(attribute, id, amount, operation);
     return this;
   }
 
-  /* Visibility */
+  /** Gets the registry holder for this effect, for the many 1.21 APIs that take holders */
+  public Holder<MobEffect> holder() {
+    if (holder == null) {
+      holder = BuiltInRegistries.MOB_EFFECT.wrapAsHolder(this);
+    }
+    return holder;
+  }
 
-  @Override
-  public void initializeClient(Consumer<IClientMobEffectExtensions> consumer) {
-    consumer.accept(new IClientMobEffectExtensions() {
-      @Override
-      public boolean isVisibleInInventory(MobEffectInstance effect) {
-        return show;
-      }
-
-      @Override
-      public boolean isVisibleInGui(MobEffectInstance effect) {
-        return show;
-      }
-    });
+  /** If true, this effect shows in the inventory/HUD. Client phase wires the actual hiding. */
+  public boolean isVisible() {
+    return show;
   }
 
   /* Helpers */
@@ -86,9 +95,18 @@ public class TinkerEffect extends MobEffect {
    */
   @Deprecated
   public MobEffectInstance apply(LivingEntity entity, int duration, int amplifier, boolean showIcon) {
-    MobEffectInstance effect = new MobEffectInstance(this, duration, amplifier, false, false, showIcon);
+    MobEffectInstance effect = new MobEffectInstance(holder(), duration, amplifier, false, false, showIcon);
     entity.addEffect(effect);
     return effect;
+  }
+
+  /**
+   * Gets the level of the effect on the entity starting from 1, or 0 if not active
+   * @param entity  Entity to check
+   * @return  Level, or 0 if inactive
+   */
+  public static int getLevel(LivingEntity entity, Holder<MobEffect> effect) {
+    return getAmplifier(entity, effect) + 1;
   }
 
   /**
@@ -114,12 +132,21 @@ public class TinkerEffect extends MobEffect {
    * @param entity  Entity to check
    * @return  Amplifier, or -1 if inactive
    */
-  public static int getAmplifier(LivingEntity entity, MobEffect effect) {
+  public static int getAmplifier(LivingEntity entity, Holder<MobEffect> effect) {
     MobEffectInstance instance = entity.getEffect(effect);
     if (instance != null) {
       return instance.getAmplifier();
     }
     return -1;
+  }
+
+  /**
+   * Gets the amplifier of the effect on the entity starting from 0, or -1 if not active
+   * @param entity  Entity to check
+   * @return  Amplifier, or -1 if inactive
+   */
+  public static int getAmplifier(LivingEntity entity, MobEffect effect) {
+    return getAmplifier(entity, BuiltInRegistries.MOB_EFFECT.wrapAsHolder(effect));
   }
 
   /** @deprecated use {@link #getAmplifier(LivingEntity, MobEffect)} which is better named or {@link #getLevel(LivingEntity, MobEffect)} which gives a more useful return */

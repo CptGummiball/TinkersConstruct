@@ -23,7 +23,6 @@ public class BuddingCrystalBlock extends CrystalBlock {
     this.geode = geode;
   }
 
-  @Override
   public PushReaction getPistonPushReaction(BlockState pState) {
     return PushReaction.DESTROY;
   }

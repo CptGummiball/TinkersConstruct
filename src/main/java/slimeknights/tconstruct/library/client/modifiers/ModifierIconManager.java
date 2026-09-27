@@ -13,13 +13,13 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
 import slimeknights.mantle.data.listener.IEarlySafeManagerReloadListener;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.TConstruct;
-import slimeknights.tconstruct.library.client.RenderUtils;
+import slimeknights.tconstruct.library.client.GuiUtil;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.ModifierId;
 
@@ -34,7 +34,7 @@ import java.util.Map.Entry;
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
-public class ModifierIconManager implements IEarlySafeManagerReloadListener {
+public class ModifierIconManager implements IEarlySafeManagerReloadListener, IdentifiableResourceReloadListener {
   /** Icon file to load, has merging behavior but forge prevents multiple mods from loading the same file */
   private static final String ICONS = "tinkering/modifier_icons.json";
   /** First layer of the default icon, will be tinted */
@@ -48,16 +48,18 @@ public class ModifierIconManager implements IEarlySafeManagerReloadListener {
   private static Map<ModifierId,List<ResourceLocation>> modifierIcons = Collections.emptyMap();
 
   /**
-   * Initializes this manager, registering it relevant event busses
+   * Initializes this manager, registering it with the client resource manager.
+   *
+   * <p>Fabric port: Forge registered through {@code RegisterClientReloadListenersEvent} on the mod
+   * bus; the Fabric equivalent registers directly and needs an id for reload ordering.
    */
   public static void init() {
-    IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
-    bus.addListener(ModifierIconManager::onResourceManagerRegister);
+    ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(INSTANCE);
   }
 
-  /** Called on resource manager build to add the manager */
-  private static void onResourceManagerRegister(RegisterClientReloadListenersEvent manager) {
-    manager.registerReloadListener(INSTANCE);
+  @Override
+  public ResourceLocation getFabricId() {
+    return TConstruct.getResource("modifier_icons");
   }
 
   @Override
@@ -128,9 +130,9 @@ public class ModifierIconManager implements IEarlySafeManagerReloadListener {
       }
     } else {
       graphics.blit(x, y, z, size, size, atlas.getSprite(DEFAULT_PAGES));
-      RenderUtils.setColorRGBA(0xFF000000 | modifier.getColor());
+      GuiUtil.setColorRGBA(0xFF000000 | modifier.getColor());
       graphics.blit(x, y, z, size, size, atlas.getSprite(DEFAULT_COVER));
-      RenderUtils.setColorRGBA(-1);
+      GuiUtil.setColorRGBA(-1);
     }
   }
 }

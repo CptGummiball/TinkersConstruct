@@ -1,0 +1,217 @@
+package slimeknights.tconstruct.fabric.client;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.world.level.block.Block;
+import slimeknights.tconstruct.TConstruct;
+
+import javax.annotation.Nullable;
+import java.io.BufferedReader;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Applies the render type each block model declares.
+ *
+ * <p>Forge let a model JSON carry {@code "render_type"} and honored it directly; vanilla and
+ * Fabric only know a per-block mapping, and neither reads that key. Rather than duplicating
+ * the information in a hand-kept list that drifts from the models, this walks each block's
+ * blockstate to the models it references and applies whatever they declare — so the models
+ * stay the single source of truth, exactly as they were on Forge.
+ *
+ * <p>Runs once against the client resource manager; the mapping is global and not reloadable,
+ * which matches the Fabric API's own contract.
+ */
+public class BlockRenderTypes {
+  private BlockRenderTypes() {}
+
+  private static boolean applied = false;
+
+  /**
+   * Hooks the first client resource load; the mapping is global and one-shot, so later
+   * reloads are ignored rather than re-registering.
+   */
+  public static void init() {
+    net.fabricmc.fabric.api.resource.ResourceManagerHelper.get(net.minecraft.server.packs.PackType.CLIENT_RESOURCES)
+      .registerReloadListener(new net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener() {
+        @Override
+        public ResourceLocation getFabricId() {
+          return TConstruct.getResource("block_render_types");
+        }
+
+        @Override
+        public void onResourceManagerReload(ResourceManager manager) {
+          apply(manager);
+        }
+      });
+  }
+
+  /** Reads every Tinkers block's models and applies their declared render type */
+  public static void apply(ResourceManager manager) {
+    if (applied) {
+      return;
+    }
+    applied = true;
+    int count = 0;
+    for (Map.Entry<ResourceLocation,Block> entry : BuiltInRegistries.BLOCK.entrySet().stream()
+                                                                          .filter(e -> e.getKey().location().getNamespace().equals(TConstruct.MOD_ID))
+                                                                          .map(e -> Map.entry(e.getKey().location(), e.getValue()))
+                                                                          .toList()) {
+      RenderType type = resolve(manager, entry.getKey());
+      if (type != null) {
+        BlockRenderLayerMap.INSTANCE.putBlock(entry.getValue(), type);
+        count++;
+      }
+    }
+    TConstruct.LOG.info("Applied model-declared render types to {} blocks", count);
+  }
+
+  /** Finds the render type declared by any model the block's blockstate references */
+  @Nullable
+  private static RenderType resolve(ResourceManager manager, ResourceLocation block) {
+    JsonObject blockstate = readJson(manager, ResourceLocation.fromNamespaceAndPath(block.getNamespace(), "blockstates/" + block.getPath() + ".json"));
+    if (blockstate == null) {
+      return null;
+    }
+    RenderType found = null;
+    for (ResourceLocation model : collectModels(blockstate)) {
+      RenderType type = readRenderType(manager, model);
+      // a block renders on one layer; if its models disagree, the most permissive wins so
+      // nothing is silently culled (translucent > cutout > solid)
+      if (type != null && (found == null || priority(type) > priority(found))) {
+        found = type;
+      }
+    }
+    return found;
+  }
+
+  /** Collects every model id a blockstate references, across both variant and multipart forms */
+  private static Set<ResourceLocation> collectModels(JsonObject blockstate) {
+    Set<ResourceLocation> models = new HashSet<>();
+    if (blockstate.has("variants")) {
+      for (Map.Entry<String,JsonElement> variant : GsonHelper.getAsJsonObject(blockstate, "variants").entrySet()) {
+        addModels(models, variant.getValue());
+      }
+    }
+    if (blockstate.has("multipart")) {
+      for (JsonElement part : GsonHelper.getAsJsonArray(blockstate, "multipart")) {
+        if (part.isJsonObject() && part.getAsJsonObject().has("apply")) {
+          addModels(models, part.getAsJsonObject().get("apply"));
+        }
+      }
+    }
+    return models;
+  }
+
+  /** A variant entry is either a single model object or a weighted array of them */
+  private static void addModels(Set<ResourceLocation> models, JsonElement element) {
+    if (element.isJsonArray()) {
+      for (JsonElement child : element.getAsJsonArray()) {
+        addModels(models, child);
+      }
+    } else if (element.isJsonObject()) {
+      JsonObject object = element.getAsJsonObject();
+      if (object.has("model")) {
+        models.add(ResourceLocation.parse(GsonHelper.getAsString(object, "model")));
+      }
+    }
+  }
+
+  /** How far up a parent chain to look before assuming the models loop */
+  private static final int MAX_PARENTS = 8;
+
+  /**
+   * Reads the render type a model declares, following the parent chain to find it.
+   *
+   * <p>Most of Tinkers' blocks are a texture override on top of a shared template, and the template
+   * is where {@code render_type} is written: a tank's blockstate names {@code seared_fuel_tank},
+   * which is nothing but a parent link to {@code block/template/tank}. Stopping at the leaf leaves
+   * 42 blocks — every tank, gauge, drain, duct, faucet and glass pane — on the solid layer, where
+   * their transparent texels turn opaque black and hide whatever is behind them.
+   */
+  @Nullable
+  private static RenderType readRenderType(ResourceManager manager, ResourceLocation model) {
+    JsonObject json = null;
+    ResourceLocation current = model;
+    for (int i = 0; i <= MAX_PARENTS && current != null; i++) {
+      JsonObject read = readJson(manager, ResourceLocation.fromNamespaceAndPath(current.getNamespace(), "models/" + current.getPath() + ".json"));
+      if (read == null) {
+        break;
+      }
+      if (read.has("render_type")) {
+        json = read;
+        break;
+      }
+      // a composite model declares render types per child; the block map has one slot, so the
+      // most permissive child layer becomes the block's
+      if (read.has("children")) {
+        RenderType best = null;
+        for (Map.Entry<String,JsonElement> entry : GsonHelper.getAsJsonObject(read, "children").entrySet()) {
+          if (entry.getValue() instanceof JsonObject child && child.has("render_type")) {
+            RenderType type = parseRenderType(GsonHelper.getAsString(child, "render_type"));
+            if (type != null && (best == null || priority(type) > priority(best))) {
+              best = type;
+            }
+          }
+        }
+        if (best != null) {
+          return best;
+        }
+      }
+      current = read.has("parent") ? ResourceLocation.parse(GsonHelper.getAsString(read, "parent")) : null;
+    }
+    if (json == null) {
+      return null;
+    }
+    return parseRenderType(GsonHelper.getAsString(json, "render_type"));
+  }
+
+  /** Maps a {@code render_type} value to the chunk layer it names, or null for an unknown name */
+  @Nullable
+  private static RenderType parseRenderType(String name) {
+    return switch (name) {
+      case "minecraft:translucent", "translucent" -> RenderType.translucent();
+      case "minecraft:cutout", "cutout" -> RenderType.cutout();
+      case "minecraft:cutout_mipped", "cutout_mipped" -> RenderType.cutoutMipped();
+      case "minecraft:solid", "solid" -> RenderType.solid();
+      default -> null;
+    };
+  }
+
+  /** Ranks layers so a block whose models disagree renders on the most permissive one */
+  private static int priority(RenderType type) {
+    if (type == RenderType.translucent()) {
+      return 3;
+    }
+    if (type == RenderType.cutout()) {
+      return 2;
+    }
+    if (type == RenderType.cutoutMipped()) {
+      return 1;
+    }
+    return 0;
+  }
+
+  @Nullable
+  private static JsonObject readJson(ResourceManager manager, ResourceLocation path) {
+    Optional<Resource> resource = manager.getResource(path);
+    if (resource.isEmpty()) {
+      return null;
+    }
+    try (BufferedReader reader = resource.get().openAsReader()) {
+      return GsonHelper.parse(reader);
+    } catch (Exception e) {
+      TConstruct.LOG.error("Failed reading {} while resolving render types", path, e);
+      return null;
+    }
+  }
+}

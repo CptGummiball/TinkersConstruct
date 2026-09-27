@@ -1,13 +1,13 @@
 package slimeknights.tconstruct.library.utils;
 
+import net.fabricmc.fabric.api.entity.FakePlayer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingEvent.LivingTickEvent;
 import slimeknights.tconstruct.common.Sounds;
 
 import javax.annotation.Nullable;
@@ -20,8 +20,9 @@ public class SlimeBounceHandler {
 
   /** Registers event handlers */
   public static void init() {
-    MinecraftForge.EVENT_BUS.addListener(SlimeBounceHandler::onLivingTick);
-    MinecraftForge.EVENT_BUS.addListener(SlimeBounceHandler::serverStopping);
+    MinecraftForge.EVENT_BUS.addListener(LivingTickEvent.class, SlimeBounceHandler::onLivingTick);
+    // Forge's ServerStoppingEvent maps directly onto Fabric's lifecycle event; clears the map to prevent memory leaks
+    ServerLifecycleEvents.SERVER_STOPPING.register(server -> BOUNCING_ENTITIES.clear());
   }
 
   /**
@@ -38,7 +39,7 @@ public class SlimeBounceHandler {
    * @param bounce  Bounce amount
    */
   public static void addBounceHandler(LivingEntity entity, @Nullable Vec3 bounce) {
-    // no fake players PlayerTick event
+    // no fake players PlayerTick event; PORT: Fabric API's FakePlayer is the platform's fake player base
     if (entity instanceof FakePlayer) {
       return;
     }
@@ -126,11 +127,6 @@ public class SlimeBounceHandler {
         info.wasInAir = true;
       }
     }
-  }
-
-  /** Called on server shutdown to prevent memory leaks */
-  private static void serverStopping(ServerStoppingEvent event) {
-    BOUNCING_ENTITIES.clear();
   }
 
   /** Data class to keep track of bouncing info for an entity */

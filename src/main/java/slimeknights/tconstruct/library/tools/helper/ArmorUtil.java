@@ -3,7 +3,6 @@ package slimeknights.tconstruct.library.tools.helper;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EquipmentSlot;
 
-import static net.minecraft.world.damagesource.CombatRules.getDamageAfterAbsorb;
 
 /**
  * Utinet.minecraft.world.damagesource.CombatRulesation logic
@@ -129,5 +128,17 @@ public class ArmorUtil {
    */
   public static String getDummyArmorTexture(EquipmentSlot slot) {
     return slot == EquipmentSlot.LEGS ? DIAMOND_LEGGINGS : DIAMOND_ARMOR;
+  }
+
+  /**
+   * Base armor absorption formula, matching {@link net.minecraft.world.damagesource.CombatRules}.
+   * 1.21's CombatRules variant takes the entity and damage source to apply armor-effectiveness
+   * enchantment effects; this inverse-math helper needs the pure function, so the base formula
+   * lives here (the same way the inverse below re-implements it).
+   */
+  private static float getDamageAfterAbsorb(float damage, float armor, float toughness) {
+    float f = 2.0F + toughness / 4.0F;
+    float f1 = net.minecraft.util.Mth.clamp(armor - damage / f, armor * 0.2F, 20.0F);
+    return damage * (1.0F - f1 / 25.0F);
   }
 }

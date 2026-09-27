@@ -9,6 +9,12 @@ import slimeknights.tconstruct.TConstruct;
 
 import java.util.OptionalDouble;
 
+/**
+ * Tinkers' own render types.
+ *
+ * <p>Fabric port: unchanged apart from the access widener needed for {@code RenderType.create},
+ * which is private in vanilla; Forge's access transformer made it public.
+ */
 public class TinkerRenderTypes extends RenderType {
   public TinkerRenderTypes(String name, VertexFormat format, Mode mode, int bufferSize, boolean affectsCrumbling, boolean sort, Runnable setupState, Runnable clearState) {
     super(name, format, mode, bufferSize, affectsCrumbling, sort, setupState, clearState);

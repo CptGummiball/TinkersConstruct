@@ -1,17 +1,16 @@
 package slimeknights.tconstruct.common.config;
 
 import com.google.common.collect.ImmutableList;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
 import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
 import net.minecraftforge.common.ForgeConfigSpec.DoubleValue;
 import net.minecraftforge.common.ForgeConfigSpec.EnumValue;
 import net.minecraftforge.common.ForgeConfigSpec.IntValue;
-import net.minecraftforge.fml.ModLoadingContext;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
 import net.minecraftforge.fml.config.ModConfig;
 import org.apache.commons.lang3.tuple.Pair;
+import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingContainer.IOreRate;
 import slimeknights.tconstruct.library.recipe.melting.IMeltingContainer.OreRateType;
 import slimeknights.tconstruct.library.utils.Orientation2D;
@@ -27,6 +26,7 @@ public class Config {
    */
   public static class Common {
     public final BooleanValue shouldSpawnWithTinkersBook;
+    public final ConfigValue<List<? extends String>> tagPreferences;
     public final List<ConfigurableAction> toolTweaks;
     public final BooleanValue syncKnockbackResistance;
     public final EnumValue<ToolSyncType> toolInventorySync;
@@ -70,14 +70,18 @@ public class Config {
         .worldRestart()
         .define("shouldSpawnWithTinkersBook", true);
 
-      ImmutableList.Builder<ConfigurableAction> actions = ImmutableList.builder();
-      actions.add(new ConfigurableAction(builder, "extendFireProtectionSlots", true,
-                                         "If true, extends the applicable slots for the fire protection enchantment to work better with shields. Will not impact gameplay with the vanilla enchantment.\nIf false, fire protection on a shield will not reduce fire tick time.",
-                                         () -> Enchantments.FIRE_PROTECTION.slots = EquipmentSlot.values()));
-      actions.add(new ConfigurableAction(builder, "extendBlastProtectionSlots", true,
-                                         "If true, extends the applicable slots for the blast protection enchantment to work better with shields. Will not impact gameplay with the vanilla enchantment.\nIf false, blast protection on a shield will not reduce explosion knockback.",
-                                         () -> Enchantments.BLAST_PROTECTION.slots = EquipmentSlot.values()));
-      toolTweaks = actions.build();
+      this.tagPreferences = builder
+        .comment("Namespace priority when a recipe outputs a tag (e.g. #c:ingots/steel) and several mods provide an entry.",
+          "Earlier namespaces win; namespaces not listed rank after all listed ones, alphabetically by item id.",
+          "Packs running an output unifier (such as unify) should mirror its priority order here, so smeltery casts match unified crafting outputs.")
+        .translation("tconstruct.configgui.tagPreferences")
+        .defineList("tagPreferences", List.of("minecraft", "tconstruct"), entry -> entry instanceof String);
+
+      // 1.21 note: the fire/blast protection slot tweaks are gone. Enchantments moved into
+      // a datapack registry (Enchantments.* are now just ResourceKeys), so per-slot
+      // applicability is data, not a field to mutate. The shield-friendly variants return
+      // as an optional builtin datapack in phase 7 if wanted.
+      toolTweaks = ImmutableList.of();
 
       this.syncKnockbackResistance = builder
         .comment("If true, makes the knockback resistance attribute sync its value to client side. This allows modifiers such as springing and flinging to work properly.",
@@ -86,7 +90,7 @@ public class Config {
 
       this.repairKitAmount = builder
         .comment("Amount of durability restored by a repair kit in terms of ingots. Does not affect the cost to create the kit, that is controlled by JSON.")
-        .defineInRange("repairKitAmount", 2f, 0f, Short.MAX_VALUE);
+        .defineInRange("repairKitAmount", 2.0, 0.0, Short.MAX_VALUE);
 
       this.toolInventorySync = builder
         .comment("Method of syncing on opening a tool inventory. Options:",
@@ -375,7 +379,7 @@ public class Config {
             .defineInRange("yOffset", 0, Short.MIN_VALUE, Short.MAX_VALUE);
           this.mapScale = builder
             .comment("Size to render the minimap. Set to 0 to disable the renderer")
-            .defineInRange("scale", 0.75f, 0, 100);
+            .defineInRange("scale", 0.75, 0, 100);
           this.mapLocation = builder
             .comment("Location of the minimap on the screen.")
             .defineEnum("location", Orientation2D.TOP_LEFT);
@@ -409,8 +413,11 @@ public class Config {
 
   /** Registers any relevant listeners for config */
   public static void init() {
-    ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.commonSpec);
-    ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.clientSpec);
+    // hand the tag preference order to mantle; the supplier keeps config reloads live
+    slimeknights.mantle.recipe.helper.TagPreference.setPreferences(() -> COMMON.tagPreferences.get());
+    // Forge Config API Port keeps the ForgeConfigSpec API; only registration differs.
+    ForgeConfigRegistry.INSTANCE.register(TConstruct.MOD_ID, ModConfig.Type.COMMON, Config.commonSpec);
+    ForgeConfigRegistry.INSTANCE.register(TConstruct.MOD_ID, ModConfig.Type.CLIENT, Config.clientSpec);
   }
 
   /** Method of syncing the tool inventory on open to prevent desyncs down the line. */

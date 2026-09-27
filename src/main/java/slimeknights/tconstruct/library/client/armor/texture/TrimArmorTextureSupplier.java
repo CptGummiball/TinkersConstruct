@@ -118,10 +118,11 @@ public record TrimArmorTextureSupplier(ModifierId modifier, ResourceLocation pat
     }
 
     @Override
-    public void renderTexture(Model model, PoseStack matrices, MultiBufferSource bufferSource, int packedLight, int packedOverlay, float red, float green, float blue, float alpha, boolean hasGlint) {
+    public void renderTexture(Model model, PoseStack matrices, MultiBufferSource bufferSource, int packedLight, int packedOverlay, int color, boolean hasGlint) {
       // ignoring glint as odds are very low trim texture is the first one
-      VertexConsumer buffer = trimSprite.wrap(bufferSource.getBuffer(Sheets.armorTrimsSheet()));
-      model.renderToBuffer(matrices, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+      // 1.21 splits the trim sheet in two: the decal variant is the one vanilla's armor layer uses
+      VertexConsumer buffer = trimSprite.wrap(bufferSource.getBuffer(Sheets.armorTrimsSheet(true)));
+      model.renderToBuffer(matrices, buffer, packedLight, packedOverlay, color);
     }
   }
 }

@@ -47,17 +47,23 @@ public record SoulSpeedModule(LevelingInt level, ModifierCondition<IToolStackVie
   }
 
   @Override
-  public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, Enchantment enchantment, int level) {
-    if (enchantment == Enchantments.SOUL_SPEED && condition.matches(tool, modifier)) {
+  public int updateEnchantmentLevel(IToolStackView tool, ModifierEntry modifier, net.minecraft.core.Holder<Enchantment> enchantment, int level) {
+    if (enchantment.is(Enchantments.SOUL_SPEED) && condition.matches(tool, modifier)) {
       level += this.level.compute(modifier);
     }
     return level;
   }
 
   @Override
-  public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<Enchantment, Integer> map) {
+  public void updateEnchantments(IToolStackView tool, ModifierEntry modifier, Map<net.minecraft.core.Holder<Enchantment>, Integer> map) {
     if (condition.matches(tool, modifier)) {
-      EnchantmentModifierHook.addEnchantment(map, Enchantments.SOUL_SPEED, this.level.compute(modifier));
+      // 1.21: enchantments are a datapack registry, so the hardcoded soul speed key needs live registry
+      // access to become a holder; this shim path is only queried for display, so client registries suffice
+      net.minecraft.core.RegistryAccess access = slimeknights.mantle.client.SafeClientAccess.getRegistryAccess();
+      if (access != null) {
+        access.registryOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getHolder(Enchantments.SOUL_SPEED)
+              .ifPresent(holder -> EnchantmentModifierHook.addEnchantment(map, holder, this.level.compute(modifier)));
+      }
     }
   }
 
@@ -72,7 +78,8 @@ public record SoulSpeedModule(LevelingInt level, ModifierCondition<IToolStackVie
     if (level.isEmptyBlock(pos)) {
       BlockPos below = pos.below();
       BlockState blockstate = level.getBlockState(below);
-      if (blockstate.collisionExtendsVertically(level, below, living)) {
+      // 1.21: Forge's collisionExtendsVertically is gone; this mirrors vanilla Entity.getOnPos's fence handling
+      if (blockstate.is(BlockTags.FENCES) || blockstate.is(BlockTags.WALLS) || blockstate.getBlock() instanceof net.minecraft.world.level.block.FenceGateBlock) {
         return below;
       }
     }

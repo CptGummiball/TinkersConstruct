@@ -7,7 +7,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.LevelAccessor;
 import slimeknights.mantle.block.IMultipartConnectedBlock;
-import slimeknights.mantle.client.model.connected.ConnectedModelRegistry;
 
 import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 
@@ -31,6 +30,9 @@ public class ClearGlassPaneBlock extends BetterPaneBlock implements IMultipartCo
 
   @Override
   public boolean connects(BlockState state, BlockState neighbor) {
-    return ConnectedModelRegistry.getPredicate("pane").test(state, neighbor);
+    // phase 5 note: Forge Mantle asked ConnectedModelRegistry for the "pane" predicate here;
+    // until the connected-model system is ported this matches the same block, which is what
+    // that predicate resolved to for panes
+    return state.getBlock() == neighbor.getBlock();
   }
 }

@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.library.recipe.alloying;
 
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 
 /** Extension of IAlloyTank for the sake of receiving outputs and consuming inputs */
 public interface IMutableAlloyTank extends IAlloyTank {

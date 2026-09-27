@@ -1,11 +1,10 @@
 package slimeknights.tconstruct.smeltery.network;
-
-import lombok.AllArgsConstructor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import slimeknights.mantle.transfer.fluid.FluidStack;
+import slimeknights.mantle.network.NetworkEvent.Context;
 import slimeknights.mantle.network.packet.IThreadsafePacket;
 import slimeknights.mantle.util.BlockEntityHelper;
 import slimeknights.tconstruct.smeltery.block.entity.tank.ISmelteryTankHandler;
@@ -16,26 +15,32 @@ import java.util.List;
 /**
  * Packet sent whenever the contents of the smeltery tank change
  */
-@AllArgsConstructor
+
 public class SmelteryTankUpdatePacket implements IThreadsafePacket {
   private final BlockPos pos;
   private final List<FluidStack> fluids;
 
-  public SmelteryTankUpdatePacket(FriendlyByteBuf buffer) {
+  // Beim Senden: Kopie erstellen
+  public SmelteryTankUpdatePacket(BlockPos pos, List<FluidStack> fluids) {
+    this.pos = pos;
+    this.fluids = fluids.stream().map(FluidStack::copy).toList();
+  }
+
+  public SmelteryTankUpdatePacket(RegistryFriendlyByteBuf buffer) {
     pos = buffer.readBlockPos();
     int size = buffer.readVarInt();
     fluids = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
-      fluids.add(buffer.readFluidStack());
+      fluids.add(FluidStack.STREAM_CODEC.decode(buffer));
     }
   }
 
   @Override
-  public void encode(FriendlyByteBuf buffer) {
+  public void encode(RegistryFriendlyByteBuf buffer) {
     buffer.writeBlockPos(pos);
     buffer.writeVarInt(fluids.size());
     for (FluidStack fluid : fluids) {
-      buffer.writeFluidStack(fluid);
+      FluidStack.STREAM_CODEC.encode(buffer, fluid);
     }
   }
 

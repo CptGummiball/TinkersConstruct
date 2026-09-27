@@ -47,7 +47,8 @@ public record ReduceEffectOnUnequipModule(MobEffectCategory category, LevelingVa
       if (percent != 0) {
         // iterate all matching effects, updating the duration
         for (MobEffectInstance instance : entity.getActiveEffects()) {
-          if (!instance.isInfiniteDuration() && instance.getEffect().getCategory() == this.category && !instance.getCurativeItems().isEmpty()) {
+          // 1.21: effects travel as holders and Forge's curative-items filter is gone
+          if (!instance.isInfiniteDuration() && instance.getEffect().value().getCategory() == this.category) {
             instance.duration = Math.max(1, (int) (instance.duration * (1 - percent)));
           }
         }

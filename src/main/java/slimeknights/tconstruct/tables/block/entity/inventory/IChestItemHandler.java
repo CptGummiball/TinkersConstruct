@@ -1,8 +1,8 @@
 package slimeknights.tconstruct.tables.block.entity.inventory;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.common.util.INBTSerializable;
-import net.minecraftforge.items.IItemHandlerModifiable;
+import slimeknights.mantle.transfer.item.INBTSerializable;
+import slimeknights.mantle.transfer.item.IItemHandlerModifiable;
 import slimeknights.mantle.block.entity.MantleBlockEntity;
 
 /** Interface for tinker chest TEs */

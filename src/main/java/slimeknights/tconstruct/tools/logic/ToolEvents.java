@@ -3,6 +3,8 @@ package slimeknights.tconstruct.tools.logic;
 import com.google.common.collect.Multiset;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
@@ -32,18 +34,16 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.ProjectileImpactEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent;
-import net.minecraftforge.event.entity.living.LivingEvent.LivingVisibilityEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.Event.Result;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import slimeknights.mantle.event.Event.Result;
+import slimeknights.mantle.event.EventPriority;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.ProjectileImpactEvent;
+import slimeknights.mantle.event.entity.living.LivingDamageEvents.LivingAttackEvent;
+import slimeknights.mantle.event.entity.living.LivingDamageEvents.LivingDamageEvent;
+import slimeknights.mantle.event.entity.living.LivingDamageEvents.LivingHurtEvent;
+import slimeknights.mantle.event.entity.living.LivingEvent.LivingTickEvent;
+import slimeknights.mantle.event.entity.living.LivingMiscEvents.LivingVisibilityEvent;
+import slimeknights.mantle.event.entity.player.PlayerEvent;
 import slimeknights.mantle.data.predicate.damage.DamageSourcePredicate;
 import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.common.TinkerEffect;
@@ -91,10 +91,21 @@ import java.util.Objects;
 /**
  * Event subscriber for tool events
  */
-@EventBusSubscriber(modid = TConstruct.MOD_ID, bus = Bus.FORGE)
 public class ToolEvents {
-  @SuppressWarnings("removal")
-  @SubscribeEvent
+  /** Registers event listeners, replacing the Forge {@code @EventBusSubscriber} annotation scan */
+  public static void init() {
+    MinecraftForge.EVENT_BUS.addListener(PlayerEvent.BreakSpeed.class, ToolEvents::onBreakSpeed);
+    MinecraftForge.EVENT_BUS.addListener(ToolHarvestEvent.class, ToolEvents::onHarvest);
+    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOW, false, LivingAttackEvent.class, ToolEvents::livingAttack);
+    // low priority to minimize conflict as we apply reduction as if we are the final change to damage before vanilla
+    MinecraftForge.EVENT_BUS.addListener(EventPriority.LOW, false, LivingHurtEvent.class, ToolEvents::livingHurt);
+    MinecraftForge.EVENT_BUS.addListener(LivingDamageEvent.class, ToolEvents::livingDamage);
+    MinecraftForge.EVENT_BUS.addListener(LivingTickEvent.class, ToolEvents::livingWalk);
+    MinecraftForge.EVENT_BUS.addListener(LivingVisibilityEvent.class, ToolEvents::livingVisibility);
+    MinecraftForge.EVENT_BUS.addListener(PlayerEvent.StartTracking.class, ToolEvents::projectileSync);
+    MinecraftForge.EVENT_BUS.addListener(ProjectileImpactEvent.class, ToolEvents::projectileHit);
+  }
+
   static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
     Player player = event.getEntity();
 
@@ -129,13 +140,12 @@ public class ToolEvents {
     }
 
     // next, add in armor haste
-    double armorMultiplier = player.getAttributeValue(TinkerAttributes.MINING_SPEED_MULTIPLIER.get()) + ArmorStatModule.getStat(player, TinkerDataKeys.MINING_SPEED);
+    double armorMultiplier = player.getAttributeValue(TinkerAttributes.MINING_SPEED_MULTIPLIER) + ArmorStatModule.getStat(player, TinkerDataKeys.MINING_SPEED);
     if (armorMultiplier >= 0) {
       event.setNewSpeed((float) (event.getNewSpeed() * armorMultiplier));
     }
   }
 
-  @SubscribeEvent
   static void onHarvest(ToolHarvestEvent event) {
     // prevent processing if already processed
     if (event.getResult() != Result.DEFAULT) {
@@ -194,7 +204,6 @@ public class ToolEvents {
     }
   }
 
-  @SubscribeEvent(priority = EventPriority.LOW)
   static void livingAttack(LivingAttackEvent event) {
     LivingEntity entity = event.getEntity();
     // client side always returns false, so this should be fine?
@@ -265,15 +274,14 @@ public class ToolEvents {
   private static final ModifierId ARMOR_DAMAGE = new ModifierId(TConstruct.MOD_ID, "protection");
 
   // low priority to minimize conflict as we apply reduction as if we are the final change to damage before vanilla
-  @SuppressWarnings("removal")
-  @SubscribeEvent(priority = EventPriority.LOW)
   static void livingHurt(LivingHurtEvent event) {
     LivingEntity entity = event.getEntity();
 
     // determine if there is any modifiable armor, if not nothing to do
     DamageSource source = event.getSource();
     EquipmentContext context = new EquipmentContext(entity);
-    int vanillaModifier = 0;
+    // PORT 1.21: getDamageProtection returns float now that enchantments are data driven; keep the math float
+    float vanillaModifier = 0;
     float modifierValue = 0;
     float originalDamage = event.getAmount();
 
@@ -295,7 +303,7 @@ public class ToolEvents {
 
       // run shulking global damage "boost", its a bit hardcoded Java wise to make it softcoded in JSON
       if (attacker.isCrouching()) {
-        double crouchMultiplier = living.getAttributeValue(TinkerAttributes.CROUCH_DAMAGE_MULTIPLIER.get());
+        double crouchMultiplier = living.getAttributeValue(TinkerAttributes.CROUCH_DAMAGE_MULTIPLIER);
         crouchMultiplier += ArmorStatModule.getStat(attacker, TinkerDataKeys.CROUCH_DAMAGE);
         if (crouchMultiplier != 0) {
           originalDamage *= crouchMultiplier;
@@ -333,8 +341,9 @@ public class ToolEvents {
 
       // remaining logic is reducing damage like vanilla protection
       // fetch vanilla enchant level, assuming its not bypassed in vanilla
-      if (DamageSourcePredicate.CAN_PROTECT.matches(source)) {
-        modifierValue = vanillaModifier = EnchantmentHelper.getDamageProtection(entity.getArmorSlots(), source);
+      // PORT 1.21: protection enchantments are data driven, needing the server level; this event only fires serverside
+      if (DamageSourcePredicate.CAN_PROTECT.matches(source) && !entity.level().isClientSide && entity.level() instanceof ServerLevel serverLevel) {
+        modifierValue = vanillaModifier = EnchantmentHelper.getDamageProtection(serverLevel, entity, source);
       }
 
       // next, determine how much tinkers armor wants to change it
@@ -348,8 +357,10 @@ public class ToolEvents {
       if (entity.getType().is(TinkerTags.EntityTypes.SMALL_ARMOR)) {
         modifierValue *= 4;
       }
-    } else if (DamageSourcePredicate.CAN_PROTECT.matches(source) && entity.getType().is(TinkerTags.EntityTypes.SMALL_ARMOR)) {
-      vanillaModifier = EnchantmentHelper.getDamageProtection(entity.getArmorSlots(), source);
+    } else if (DamageSourcePredicate.CAN_PROTECT.matches(source) && entity.getType().is(TinkerTags.EntityTypes.SMALL_ARMOR)
+               && !entity.level().isClientSide && entity.level() instanceof ServerLevel serverLevel) {
+      // PORT 1.21: getDamageProtection now takes the server level instead of the armor slot list
+      vanillaModifier = EnchantmentHelper.getDamageProtection(serverLevel, entity, source);
       modifierValue = vanillaModifier * 4;
     }
 
@@ -359,7 +370,8 @@ public class ToolEvents {
     // that said, don't actually care about cap unless we have some protection, can use vanilla to simplify logic
     float cap = 20f;
     if (modifierValue > 0) {
-      cap = (float) ProtectionModifierHook.getProtectionCap(entity, context.getTinkerData());
+      // PORT: getTinkerData() now wraps the always-present weak-map holder; the entity overload fetches the same data
+      cap = (float) ProtectionModifierHook.getProtectionCap(entity);
     }
     if (vanillaModifier != modifierValue || (cap > 20 && vanillaModifier > 20) || (cap < 20 && vanillaModifier > cap)) {
       // fetch armor and toughness if blockable, passing in 0 to the logic will skip the armor calculations
@@ -381,14 +393,16 @@ public class ToolEvents {
           for (EquipmentSlot slotType : ModifiableArmorMaterial.ARMOR_SLOTS) {
             // for our own armor, saves effort to damage directly with our utility
             IToolStackView tool = context.getToolInSlot(slotType);
-            if (tool != null && (!source.is(DamageTypeTags.IS_FIRE) || !tool.getItem().isFireResistant())) {
+            // PORT 1.21: Item.isFireResistant() became the FIRE_RESISTANT data component
+            if (tool != null && (!source.is(DamageTypeTags.IS_FIRE) || !tool.getItem().components().has(DataComponents.FIRE_RESISTANT))) {
               // mark this as protection (any valid modifier really would do) so tanned can reduce it to not count it as separate damage
               ToolDamageUtil.damageAnimated(tool, damageMissed, entity, slotType, ARMOR_DAMAGE);
             } else {
               // if not our armor, damage using vanilla like logic
               ItemStack armorStack = entity.getItemBySlot(slotType);
-              if (!armorStack.isEmpty() && (!source.is(DamageTypeTags.IS_FIRE) || !armorStack.getItem().isFireResistant()) && armorStack.getItem() instanceof ArmorItem) {
-                armorStack.hurtAndBreak(damageMissed, entity, e -> e.broadcastBreakEvent(slotType));
+              if (!armorStack.isEmpty() && (!source.is(DamageTypeTags.IS_FIRE) || !armorStack.has(DataComponents.FIRE_RESISTANT)) && armorStack.getItem() instanceof ArmorItem) {
+                // PORT 1.21: hurtAndBreak takes the slot directly and handles the break animation broadcast itself
+                armorStack.hurtAndBreak(damageMissed, entity, slotType);
               }
             }
           }
@@ -397,7 +411,6 @@ public class ToolEvents {
     }
   }
 
-  @SubscribeEvent
   static void livingDamage(LivingDamageEvent event) {
     LivingEntity entity = event.getEntity();
     DamageSource source = event.getSource();
@@ -441,10 +454,11 @@ public class ToolEvents {
   }
 
   /** Called the modifier hook when an entity's position changes */
-  @SubscribeEvent
   static void livingWalk(LivingTickEvent event) {
     LivingEntity living = event.getEntity();
     // this event runs before vanilla updates prevBlockPos
+    // PORT: lastPos is the vanilla field tracking the previous block position (updated later in aiStep);
+    // the Forge build read it through its AT, the Fabric build widens the same field in the accesswidener
     BlockPos pos = living.blockPosition();
     if (!living.isSpectator() && !living.level().isClientSide() && living.isAlive() && !Objects.equals(living.lastPos, pos)) {
       ItemStack boots = living.getItemBySlot(EquipmentSlot.FEET);
@@ -458,7 +472,6 @@ public class ToolEvents {
   }
 
   /** Handles visibility effects of mob disguise and projectile protection */
-  @SubscribeEvent
   static void livingVisibility(LivingVisibilityEvent event) {
     // always nonnull in vanilla, not sure when it would be nullable but I dont see a need for either modifier
     Entity lookingEntity = event.getLookingEntity();
@@ -481,7 +494,6 @@ public class ToolEvents {
   }
 
   /** Syncs arrow modifier list to the client */
-  @SubscribeEvent
   static void projectileSync(PlayerEvent.StartTracking event) {
     Entity entity = event.getTarget();
     if (entity instanceof Projectile) {
@@ -490,8 +502,6 @@ public class ToolEvents {
   }
 
   /** Implements projectile hit hook */
-  @SuppressWarnings("removal")  // can't update without losing Neo compat
-  @SubscribeEvent
   static void projectileHit(ProjectileImpactEvent event) {
     Projectile projectile = event.getProjectile();
     ModifierNBT modifiers = EntityModifierCapability.getOrEmpty(projectile);

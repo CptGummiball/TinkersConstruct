@@ -18,10 +18,8 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.ForgeI18n;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoadingContext;
+import net.minecraft.locale.Language;
+import slimeknights.mantle.recipe.condition.ICondition;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -64,8 +62,9 @@ public class Util {
    * @return  Currently active mod ID
    */
   public static Optional<String> getCurrentlyActiveExternalMod() {
-    return Optional.ofNullable(ModLoadingContext.get().getActiveContainer().getModId())
-      .filter(activeModId -> !TConstruct.MOD_ID.equals(activeModId));
+    // Forge tracked which mod's initializer is currently running so addon mistakes could be
+    // attributed; Fabric has no such notion, so attribution is simply unavailable.
+    return Optional.empty();
   }
 
   /**
@@ -74,7 +73,7 @@ public class Util {
    * @return  True if it can be translated
    */
   public static boolean canTranslate(String key) {
-    return !ForgeI18n.getPattern(key).equals(key);
+    return Language.getInstance().has(key);
   }
 
   /**
@@ -176,8 +175,8 @@ public class Util {
 
   /** Calculates the given color */
   private static int calcColor(DyeColor color) {
-    float[] diffuse = color.getTextureDiffuseColors();
-    return FastColor.ARGB32.color(255, Math.round(255 * diffuse[0]), Math.round(255 * diffuse[1]), Math.round(255 * diffuse[2]));
+    // 1.21 packs the diffuse color as an opaque ARGB int directly
+    return color.getTextureDiffuseColor();
   }
 
   /** Array of tints for each dye color */
@@ -261,19 +260,20 @@ public class Util {
     return new ClientboundBlockEntityDataPacket(be.getBlockPos(), be.getType(), tagFunction.apply(be));
   }
 
-  /** Cache of neo forge status, to make lookups faster in hot code */
-  private static Boolean IS_NEO_FORGE = null;
-
-  /** Checks if we are currently running on NeoForge as opposed to Forge. Allows branching solutions for each loader if needed */
+  /** Checks if we are currently running on NeoForge. Always false: this build runs on Fabric. */
   public static boolean isNeo() {
-    if (IS_NEO_FORGE == null) {
-      IS_NEO_FORGE = ModList.get().getModContainerById("forge").filter(mod -> mod.getModInfo().getDisplayName().equals("NeoForge")).isPresent();
-    }
-    return IS_NEO_FORGE;
+    return false;
   }
 
   /** Checks if we are currently running on Forge as opposed to NeoForge. Allows branching solutions for each loader if needed */
   public static boolean isForge() {
     return !isNeo();
   }
+  /**
+   * Number of distinct {@link EquipmentSlot#getFilterFlag()} values, for arrays indexed by it.
+   *
+   * <p>1.21 added {@code BODY} for animal armor, taking the count from six to seven. Sizing an array
+   * to a literal six, as the 1.20 code did throughout, throws the moment a wolf in armor ticks.
+   */
+  public static final int EQUIPMENT_SLOTS = EquipmentSlot.values().length;
 }

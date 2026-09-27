@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.shared;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -10,18 +10,14 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.common.util.FakePlayer;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import slimeknights.tconstruct.TConstruct;
+import slimeknights.mantle.event.MinecraftForge;
+import slimeknights.mantle.event.entity.living.LivingDamageEvents.LivingHurtEvent;
+import slimeknights.mantle.event.entity.player.PlayerEvent;
 //import slimeknights.tconstruct.library.utils.TagUtil;
 //import slimeknights.tconstruct.tools.common.entity.EntityArrow;
 //import slimeknights.tconstruct.tools.tools.Pickaxe;
 
 // TODO: reevaluate
-@Mod.EventBusSubscriber(modid = TConstruct.MOD_ID)
 public final class AchievementEvents {
 
   private static final String ADVANCEMENT_STORY_ROOT = "minecraft:story/root";
@@ -29,9 +25,15 @@ public final class AchievementEvents {
   private static final String ADVANCEMENT_IRON_PICK = "minecraft:story/iron_tools";
   private static final String ADVANCEMENT_SHOOT_ARROW = "minecraft:adventure/shoot_arrow";
 
-  @SubscribeEvent
+  /** Registers event handlers; replaces Forge's {@code @EventBusSubscriber} scan with explicit shim-bus registration */
+  public static void init() {
+    MinecraftForge.EVENT_BUS.addListener(PlayerEvent.ItemCraftedEvent.class, AchievementEvents::onCraft);
+    MinecraftForge.EVENT_BUS.addListener(LivingHurtEvent.class, AchievementEvents::onDamageEntity);
+  }
+
   public static void onCraft(PlayerEvent.ItemCraftedEvent event) {
-    if (event.getEntity() == null || event.getEntity() instanceof FakePlayer || !(event.getEntity() instanceof ServerPlayer playerMP) || event.getCrafting().isEmpty()) {
+    // PORT: Forge's FakePlayer instanceof check becomes a subclass guard; fake players (Fabric API's included) extend ServerPlayer
+    if (!(event.getEntity() instanceof ServerPlayer playerMP) || playerMP.getClass() != ServerPlayer.class || event.getCrafting().isEmpty()) {
       return;
     }
     Item item = event.getCrafting().getItem();
@@ -50,10 +52,10 @@ public final class AchievementEvents {
     }*/
   }
 
-  @SubscribeEvent
   public static void onDamageEntity(LivingHurtEvent event) {
     DamageSource source = event.getSource();
-    if (source.is(DamageTypeTags.IS_PROJECTILE) && source.getEntity() instanceof ServerPlayer player && !(source.getEntity() instanceof FakePlayer)) {// && source.getImmediateSource() instanceof EntityArrow) {
+    // PORT: Forge's FakePlayer instanceof check becomes a subclass guard; fake players (Fabric API's included) extend ServerPlayer
+    if (source.is(DamageTypeTags.IS_PROJECTILE) && source.getEntity() instanceof ServerPlayer player && player.getClass() == ServerPlayer.class) {// && source.getImmediateSource() instanceof EntityArrow) {
       grantAdvancement(player, ADVANCEMENT_SHOOT_ARROW);
     }
   }
@@ -61,7 +63,8 @@ public final class AchievementEvents {
   private static void grantAdvancement(ServerPlayer playerMP, String advancementResource) {
     MinecraftServer server = playerMP.getServer();
     if (server != null) {
-      Advancement advancement = server.getAdvancements().getAdvancement(new ResourceLocation(advancementResource));
+      // PORT 1.21: advancements are now wrapped in AdvancementHolder, manager lookup renamed getAdvancement -> get
+      AdvancementHolder advancement = server.getAdvancements().get(ResourceLocation.parse(advancementResource));
       if (advancement != null) {
         AdvancementProgress advancementProgress = playerMP.getAdvancements().getOrStartProgress(advancement);
         if (!advancementProgress.isDone()) {

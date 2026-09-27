@@ -442,12 +442,16 @@ public abstract class MultiblockCuboid<T extends MultiblockStructureData> {
     if (!rootTag.contains(key, Tag.TAG_LIST)) {
       return Collections.emptyList();
     }
-    ListTag list = rootTag.getList(key, Tag.TAG_COMPOUND);
+    // 1.21 stores block positions as int arrays; the write side uses NbtUtils.writeBlockPos
+    ListTag list = rootTag.getList(key, Tag.TAG_INT_ARRAY);
     List<BlockPos> collection = new ArrayList<>(list.size());
     for (int i = 0; i < list.size(); i++) {
-      BlockPos pos = NbtUtils.readBlockPos(list.getCompound(i));
-      if (!pos.equals(BlockPos.ZERO)) {
-        collection.add(pos.offset(offset));
+      int[] parts = list.getIntArray(i);
+      if (parts.length == 3) {
+        BlockPos pos = new BlockPos(parts[0], parts[1], parts[2]);
+        if (!pos.equals(BlockPos.ZERO)) {
+          collection.add(pos.offset(offset));
+        }
       }
     }
     return collection;

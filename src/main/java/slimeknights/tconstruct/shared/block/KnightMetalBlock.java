@@ -3,7 +3,6 @@ package slimeknights.tconstruct.shared.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -16,10 +15,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import org.jetbrains.annotations.Nullable;
 import slimeknights.mantle.util.CombatHelper;
 import slimeknights.tconstruct.common.TinkerDamageTypes;
 
@@ -65,11 +62,8 @@ public class KnightMetalBlock extends Block implements SimpleWaterloggedBlock {
     builder.add(WATERLOGGED);
   }
 
-  @Nullable
-  @Override
-  public BlockPathTypes getBlockPathType(BlockState state, BlockGetter level, BlockPos pos, @Nullable Mob mob) {
-    return BlockPathTypes.DAMAGE_OTHER;
-  }
+  // Forge's getBlockPathType override is replaced by Fabric's LandPathNodeTypesRegistry
+  // registration (DAMAGE_OTHER), done in TinkerMaterials.init()
 
   @Override
   public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {

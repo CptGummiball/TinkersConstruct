@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Set;
 
 public class TConstructLootTableProvider extends LootTableProvider {
-  private static final Set<ResourceLocation> REQUIRED_TABLES = Set.of();
+  private static final Set<net.minecraft.resources.ResourceKey<net.minecraft.world.level.storage.loot.LootTable>> REQUIRED_TABLES = Set.of();
 
-  public TConstructLootTableProvider(PackOutput packOutput) {
+  public TConstructLootTableProvider(PackOutput packOutput, java.util.concurrent.CompletableFuture<net.minecraft.core.HolderLookup.Provider> registries) {
     super(packOutput, REQUIRED_TABLES, List.of(
       new LootTableProvider.SubProviderEntry(BlockLootTableProvider::new, LootContextParamSets.BLOCK),
       new LootTableProvider.SubProviderEntry(AdvancementLootTableProvider::new, LootContextParamSets.ADVANCEMENT_REWARD),
-      new LootTableProvider.SubProviderEntry(EntityLootTableProvider::new, LootContextParamSets.ENTITY)));
+      new LootTableProvider.SubProviderEntry(EntityLootTableProvider::new, LootContextParamSets.ENTITY)), registries);
   }
 
   /*

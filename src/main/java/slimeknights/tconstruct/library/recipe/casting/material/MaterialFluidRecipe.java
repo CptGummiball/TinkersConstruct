@@ -6,7 +6,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.material.Fluid;
-import net.minecraftforge.fluids.FluidStack;
+import slimeknights.mantle.transfer.fluid.FluidStack;
 import slimeknights.mantle.data.loadable.field.ContextKey;
 import slimeknights.mantle.data.loadable.primitive.IntLoadable;
 import slimeknights.mantle.data.loadable.record.RecordLoadable;
@@ -16,9 +16,8 @@ import slimeknights.tconstruct.TConstruct;
 import slimeknights.tconstruct.library.materials.definition.IMaterial;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariant;
 import slimeknights.tconstruct.library.materials.definition.MaterialVariantId;
-import slimeknights.tconstruct.library.recipe.TinkerRecipeTypes;
+import slimeknights.tconstruct.fabric.ContentLookups;
 import slimeknights.tconstruct.library.recipe.casting.ICastingContainer;
-import slimeknights.tconstruct.smeltery.TinkerSmeltery;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -85,12 +84,12 @@ public class MaterialFluidRecipe implements ICustomOutputRecipe<ICastingContaine
 
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerSmeltery.materialFluidRecipe.get();
+    return ContentLookups.materialFluidSerializer();
   }
 
   @Override
   public RecipeType<?> getType() {
-    return TinkerRecipeTypes.DATA.get();
+    return ContentLookups.dataRecipeType();
   }
 
   /** Checks that all materials in this recipe are known */

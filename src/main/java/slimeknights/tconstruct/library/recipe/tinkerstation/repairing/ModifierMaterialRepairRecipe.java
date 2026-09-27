@@ -17,7 +17,7 @@ import slimeknights.tconstruct.library.tools.definition.module.material.Material
 import slimeknights.tconstruct.library.tools.helper.ModifierUtil;
 import slimeknights.tconstruct.library.tools.nbt.IToolStackView;
 import slimeknights.tconstruct.tables.recipe.TinkerStationRepairRecipe;
-import slimeknights.tconstruct.tools.TinkerModifiers;
+import slimeknights.tconstruct.fabric.ContentLookups;
 
 /** @deprecated use {@link slimeknights.tconstruct.library.modifiers.modules.behavior.MaterialRepairModule} */
 @Deprecated(forRemoval = true)
@@ -65,7 +65,7 @@ public class ModifierMaterialRepairRecipe extends TinkerStationRepairRecipe impl
   @SuppressWarnings("removal")
   @Override
   public RecipeSerializer<?> getSerializer() {
-    return TinkerModifiers.modifierMaterialRepair.get();
+    return ContentLookups.recipeSerializer("modifier_material_repair");
   }
 
 

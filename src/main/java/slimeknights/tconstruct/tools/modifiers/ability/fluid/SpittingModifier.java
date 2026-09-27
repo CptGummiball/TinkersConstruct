@@ -1,6 +1,6 @@
 package slimeknights.tconstruct.tools.modifiers.ability.fluid;
 
-import net.minecraftforge.fluids.FluidType;
+import slimeknights.mantle.transfer.fluid.FluidType;
 import slimeknights.tconstruct.library.json.LevelingInt;
 import slimeknights.tconstruct.library.modifiers.Modifier;
 import slimeknights.tconstruct.library.modifiers.modules.build.StatBoostModule;

@@ -83,16 +83,16 @@ public class AutosmeltModule implements ModifierModule, ProcessLootModifierHook 
    * @return  Furnace recipe
    */
   private Optional<? extends AbstractCookingRecipe> findRecipe(ItemStack stack, Level world) {
-    INVENTORY.setStack(stack);
+    // 1.21 recipe lookup takes a recipe input and returns holders
+    net.minecraft.world.item.crafting.SingleRecipeInput input = new net.minecraft.world.item.crafting.SingleRecipeInput(stack);
     // try each recipe type to see if we have a recipe for any of them
     Optional<? extends AbstractCookingRecipe> recipe = Optional.empty();
     for (RecipeType<? extends AbstractCookingRecipe> recipeType : recipeTypes) {
-      recipe = world.getRecipeManager().getRecipeFor(recipeType, INVENTORY, world);
+      recipe = world.getRecipeManager().getRecipeFor(recipeType, input, world).map(net.minecraft.world.item.crafting.RecipeHolder::value);
       if (recipe.isPresent()) {
         break;
       }
     }
-    INVENTORY.setStack(ItemStack.EMPTY);
     return recipe;
   }
 
@@ -105,7 +105,7 @@ public class AutosmeltModule implements ModifierModule, ProcessLootModifierHook 
   @Nullable
   private AbstractCookingRecipe findCachedRecipe(ItemStack stack, Level world) {
     // don't use the cache if there is a tag, prevent breaking NBT sensitive recipes
-    if (stack.hasTag()) {
+    if (slimeknights.tconstruct.library.tools.nbt.TagCompat.hasTag(stack)) {
       return findRecipe(stack, world).orElse(null);
     }
     try {
@@ -129,9 +129,7 @@ public class AutosmeltModule implements ModifierModule, ProcessLootModifierHook 
     AbstractCookingRecipe recipe = findCachedRecipe(stack, world);
     if (recipe != null) {
       // fetch recipe result, may be input sensitive
-      INVENTORY.setStack(stack);
-      ItemStack output = recipe.assemble(INVENTORY, world.registryAccess());
-      INVENTORY.setStack(ItemStack.EMPTY);
+      ItemStack output = recipe.assemble(new net.minecraft.world.item.crafting.SingleRecipeInput(stack), world.registryAccess());
       // scale the stack size based on the input size
       if (stack.getCount() > 1) {
         // recipe output is a copy, safe to modify

@@ -36,7 +36,7 @@ import static slimeknights.mantle.Mantle.commonResource;
 @Deprecated
 public class OlympicModifier extends Modifier implements ProjectileLaunchModifierHook, ProjectileHitModifierHook {
   private static final ResourceLocation OLYMPIC_START = TConstruct.getResource("olympic_start");
-  private static final TagKey<Item> PLATINUM_NUGGET = ItemTags.create(commonResource("nuggets/platinum"));
+  private static final TagKey<Item> PLATINUM_NUGGET = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, commonResource("nuggets/platinum"));
 
   /** Gets the nugget for the given distance */
   private static Item getNugget(double distanceSq) {

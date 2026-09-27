@@ -7,8 +7,8 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.IConditionSerializer;
+import slimeknights.mantle.recipe.condition.ConditionHelper;
+import slimeknights.mantle.recipe.condition.ICondition;
 import slimeknights.mantle.util.JsonHelper;
 import slimeknights.tconstruct.TConstruct;
 
@@ -18,9 +18,14 @@ import java.util.List;
 
 /** @deprecated use {@link slimeknights.mantle.recipe.condition.TagCombinationCondition#intersection(TagKey[])} */
 @Deprecated(forRemoval = true)
-public class TagIntersectionPresentCondition<T> implements ICondition {
+public class TagIntersectionPresentCondition<T> implements ICondition, ConditionHelper.Writable {
   private static final ResourceLocation NAME = TConstruct.getResource("tag_intersection_present");
   public static final Serializer SERIALIZER = new Serializer();
+
+  /** Registers this condition type with the shim condition parser */
+  public static void register() {
+    ConditionHelper.register(NAME, SERIALIZER::read);
+  }
 
   private final List<TagKey<T>> names;
 
@@ -45,6 +50,11 @@ public class TagIntersectionPresentCondition<T> implements ICondition {
   @Override
   public ResourceLocation getID() {
     return NAME;
+  }
+
+  @Override
+  public void write(JsonObject json) {
+    SERIALIZER.write(json, this);
   }
 
   @Override
@@ -78,8 +88,8 @@ public class TagIntersectionPresentCondition<T> implements ICondition {
     return false;
   }
 
-  private static class Serializer implements IConditionSerializer<TagIntersectionPresentCondition<?>> {
-    @Override
+  /** Serializer, shaped like Forge's IConditionSerializer minus the interface (the shim parser takes a factory) */
+  public static class Serializer {
     public void write(JsonObject json, TagIntersectionPresentCondition<?> value) {
       JsonArray names = new JsonArray();
       json.addProperty("registry", value.names.get(0).registry().location().toString());
@@ -95,12 +105,10 @@ public class TagIntersectionPresentCondition<T> implements ICondition {
       return new TagIntersectionPresentCondition<>(JsonHelper.parseList(json, "tags", (element, s) -> TagKey.create(registry, JsonHelper.convertToResourceLocation(element, s))));
     }
 
-    @Override
     public TagIntersectionPresentCondition<?> read(JsonObject json) {
       return readGeneric(json);
     }
 
-    @Override
     public ResourceLocation getID() {
       return NAME;
     }

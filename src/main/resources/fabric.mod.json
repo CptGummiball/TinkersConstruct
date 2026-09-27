@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "tconstruct",
+  "version": "${version}",
+  "name": "Tinkers' Construct",
+  "description": "A little of this, a little of that, a lot of tinkering, and a lot of tools. Fabric 1.21.1 port for the GummiCraft modpack.",
+  "authors": [
+    "Slime Knights"
+  ],
+  "contributors": [
+    "CptGummiball (Fabric port)"
+  ],
+  "contact": {
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/tinkers-construct",
+    "sources": "https://github.com/CptGummiball/TinkersConstruct",
+    "issues": "https://github.com/CptGummiball/TinkersConstruct/issues"
+  },
+  "license": "MIT",
+  "icon": "logo.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "slimeknights.tconstruct.fabric.TConstructBootstrap"
+    ],
+    "client": [
+      "slimeknights.tconstruct.fabric.TConstructClientBootstrap"
+    ],
+    "fabric-datagen": [
+      "slimeknights.tconstruct.fabric.TConstructDataGenerator"
+    ],
+    "emi": [
+      "slimeknights.tconstruct.plugin.emi.TConstructEmiPlugin"
+    ],
+    "cardinal-components": [
+      "slimeknights.tconstruct.fabric.TinkerComponents"
+    ]
+  },
+  "mixins": [
+    "tconstruct.mixins.json",
+    {
+      "config": "tconstruct.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "accessWidener": "tconstruct.accesswidener",
+  "custom": {
+    "cardinal-components": [
+      "tconstruct:persistent_data",
+      "tconstruct:modifiers"
+    ]
+  },
+  "depends": {
+    "fabricloader": "${loader_range}",
+    "minecraft": "${minecraft_range}",
+    "java": ">=21",
+    "fabric-api": "${fabric_api_range}"
+  },
+  "suggests": {
+    "emi": "*",
+    "jade": "*",
+    "trinkets": "*",
+    "patchouli": "*",
+    "team_reborn_energy": ">=4.0.0"
+  }
+}

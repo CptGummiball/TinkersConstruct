@@ -45,7 +45,7 @@ public interface ITinkerStationDisplay extends ItemLike {
    * @param slot   Slot with attributes
    * @return  Attribute map
    */
-  default Multimap<Attribute,AttributeModifier> getAttributeModifiers(IToolStackView tool, EquipmentSlot slot) {
+  default Multimap<net.minecraft.core.Holder<Attribute>,AttributeModifier> getAttributeModifiers(IToolStackView tool, EquipmentSlot slot) {
     return ImmutableMultimap.of();
   }
 }

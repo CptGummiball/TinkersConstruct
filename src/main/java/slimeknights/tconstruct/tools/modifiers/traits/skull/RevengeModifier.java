@@ -31,9 +31,8 @@ public class RevengeModifier extends NoLevelsModifier implements EquipmentChange
     Entity trueSource = source.getEntity();
     LivingEntity living = context.getEntity();
     if (trueSource != null && trueSource != living) { // no making yourself mad with slurping or self-destruct or alike
+      // 1.21: Forge's curative-items customization is gone; the unequip hook below removes the effect instead
       MobEffectInstance effect = new MobEffectInstance(MobEffects.DAMAGE_BOOST, 300);
-      effect.getCurativeItems().clear();
-      effect.getCurativeItems().add(new ItemStack(living.getItemBySlot(slotType).getItem()));
       living.addEffect(effect);
     }
   }
@@ -43,8 +42,8 @@ public class RevengeModifier extends NoLevelsModifier implements EquipmentChange
     if (context.getChangedSlot() == EquipmentSlot.HEAD) {
       IToolStackView replacement = context.getReplacementTool();
       if (replacement == null || replacement.getModifierLevel(this) == 0) {
-        // cure effects using the helmet
-        context.getEntity().curePotionEffects(new ItemStack(tool.getItem()));
+        // cure the revenge strength boost; 1.21 lost item-based curing, so remove the effect directly
+        context.getEntity().removeEffect(MobEffects.DAMAGE_BOOST);
       }
     }
   }
